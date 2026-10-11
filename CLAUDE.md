@@ -17,6 +17,12 @@ Weekend-prototype scope, but the game **will keep growing**, so don't design any
   and all sound is generated in code (ZzFX sound effects, ZzFXM music).
 - Quality still matters. Go for a cute, round, cartoon style, and add polish (particles, easing, squash and stretch).
 - Python tooling runs in the project venv (`.venv`). Never install into global Python.
+- Fixed 16:9 game resolution (1920x1080, using `canvasFixedSize`), scaled to fit the browser window. Targets desktop and laptop.
+- No manual reset key. Resets come from level design: a narrator "correction" when Sammy ends up somewhere weird.
+- Saving is automatic, triggered by gameplay milestones (checkpoints, level complete, and later cat rescues), stored in localStorage.
+  The title screen offers New Game and Continue. New Game warns before overwriting an existing save.
+  The save data carries a schema version so it can change later.
+- Story and characters are in `docs/story/premise.md`. Narrator lines must follow the voice guide there.
 
 ## Stack
 
