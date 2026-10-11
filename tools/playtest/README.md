@@ -1,0 +1,26 @@
+# Playtest scripts
+
+Run from the repo root with the project venv:
+
+    .venv/Scripts/python tools/playtest/smoke.py
+    .venv/Scripts/python tools/playtest/input_scenario.py
+
+Screenshots land in `tools/playtest/out/` (gitignored). A non-zero exit means a console error,
+page error, or missing `window.__sammy`.
+
+## Adding a scenario
+
+Create `tools/playtest/<name>.py`:
+
+    import sys, harness
+    def main():
+        with harness.session() as s:
+            harness.hold(s.page, "KeyD", 0.5)
+            print(harness.state(s.page)["scene"])
+            harness.shot(s.page, "my_scenario")
+        return 1 if s.errors else 0
+    sys.exit(main())
+
+Helpers in `harness.py`: `session()`, `hold(page, key, seconds)`, `tap(page, key)`, `state(page)`,
+`shot(page, name)`, `wait_scene(page, name)`. Keys are KeyboardEvent codes (`KeyD`, `Space`).
+LittleJS "DEBUG build loaded" is a warning and is ignored.
