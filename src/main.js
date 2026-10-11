@@ -9,6 +9,7 @@ import { installDebugHook } from './core/debugHook.js';
 import { endInputFrame } from './core/input.js';
 import { tickFrame } from './core/clock.js';
 import { BootScene } from './scenes/BootScene.js';
+import { Narrator } from './systems/Narrator.js';
 
 const GAME_RESOLUTION = vec2(1920, 1080);
 const BACKGROUND_COLOR = rgb(.07, .07, .14);   // deep night blue
@@ -22,9 +23,14 @@ setInputWASDEmulateDirection(false);
 setDebugKey('Backquote');
 setDebugWatermark(false);
 
+// One narrator for the whole game; whichever scene hosts gameplay drives it (see Narrator.js).
+const narrator = new Narrator();
+
 const scenes = new SceneManager();
-scenes.register('boot', new BootScene());
-installDebugHook(scenes);
+scenes.register('boot', new BootScene(narrator));
+const debugHook = installDebugHook(scenes);
+debugHook.register('narrator', () => narrator.debugState());
+debugHook.commands.say = lineId => narrator.say(lineId, { now: true });
 
 function gameInit()
 {

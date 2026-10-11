@@ -7,11 +7,16 @@ import {
     keyIsDown, keyWasPressed, keyWasReleased,
     mouseIsDown, mouseWasPressed, mouseWasReleased, mousePosScreen,
 } from '../../lib/littlejs/littlejs.esm.js';
-import { ACTION_KEYS } from '../data/controls.js';
+import { ACTION_KEYS, GAMEPLAY_ACTIONS } from '../data/controls.js';
 
 // Keys masked until physically released, so a press that belonged to the previous
 // scene (e.g. Space to confirm a menu) doesn't leak into the next one as a held jump.
 const suppressedKeys = new Set();
+
+// Reasons gameplay input is currently locked (e.g. 'correction'). A set, so independent
+// systems can lock and unlock without stepping on each other.
+const gameplayLocks = new Set();
+const gameplayActions = new Set(GAMEPLAY_ACTIONS);
 
 function keysFor(action)
 {
@@ -23,7 +28,10 @@ function keysFor(action)
 
 function liveKeys(action)
 {
-    return keysFor(action).filter(key => !suppressedKeys.has(key));
+    const keys = keysFor(action);
+    if (gameplayLocks.size && gameplayActions.has(action))
+        return [];
+    return keys.filter(key => !suppressedKeys.has(key));
 }
 
 export function isDown(action)
@@ -55,6 +63,23 @@ export function suppressUntilReleased()
         for (const key of keys)
             if (keyIsDown(key))
                 suppressedKeys.add(key);
+}
+
+/** Mask the gameplay actions (movement, jump, interact) until unlockGameplay(reason). */
+export function lockGameplay(reason)
+{
+    gameplayLocks.add(reason);
+}
+
+export function unlockGameplay(reason)
+{
+    gameplayLocks.delete(reason);
+}
+
+/** Current lock reasons, for the test hook. Empty when gameplay input is live. */
+export function gameplayLockReasons()
+{
+    return [...gameplayLocks];
 }
 
 /** Call once per update step, after gameplay has read input (main.js does this in updatePost). */

@@ -2,8 +2,8 @@
 // Systems add their own state with register() so this file never needs to know about them.
 // Getters should return plain data: the playtest harness reads the hook via JSON.stringify.
 import { engineVersion } from '../../lib/littlejs/littlejs.esm.js';
-import { recentEvents } from './events.js';
-import { actionsDown } from './input.js';
+import { recentEvents, emit } from './events.js';
+import { actionsDown, gameplayLockReasons } from './input.js';
 import { GAME_VERSION } from '../data/version.js';
 
 const RESERVED_KEYS = new Set(['commands', 'register']);
@@ -28,9 +28,12 @@ export function installDebugHook(sceneManager)
     hook.register('scene', () => sceneManager.currentName);
     hook.register('events', recentEvents);
     hook.register('input', actionsDown);
+    hook.register('inputLocks', gameplayLockReasons);
 
     // Queued like any scene change: it takes effect on the next update step.
     hook.commands.changeScene = (name, params) => sceneManager.change(name, params);
+    // Fire any bus event, e.g. emit('correction:triggered', {id: 'pond'}) to test reactions.
+    hook.commands.emit = (name, data) => emit(name, data);
 
     window.__sammy = hook;
     return hook;
