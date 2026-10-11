@@ -1,3 +1,31 @@
 // Tuning constants (movement, camera, flaps, timings) live here so feel can be adjusted
 // without touching system code. Filled in by T-003 / T-004 and later tasks.
+// The engine runs a fixed 60 updates per second, so "per step" values assume 1/60 s.
 export const TUNING_VERSION = 1;
+
+// --- World (T-003) ---
+/** World units per tile is 1; this is screen pixels per tile (1920 px wide = 30 tiles across). */
+export const CAMERA_SCALE = 64;
+/** Downward acceleration per step squared. T-004 may retune this for Sammy's feel. */
+export const WORLD_GRAVITY = -0.02;
+/** How far below the level's bottom edge the implicit "fell off the world" correction zone starts. */
+export const WORLD_FALL_MARGIN = 2;
+
+// --- Camera (T-003) ---
+/** Fraction of the remaining distance covered per step (higher = snappier). */
+export const CAMERA_FOLLOW_LERP_X = 0.09;
+export const CAMERA_FOLLOW_LERP_Y = 0.06;
+/** Tiles the camera leads ahead of the direction of travel, so you can see where you're going. */
+export const CAMERA_LOOK_AHEAD = 3;
+/** How quickly the look-ahead swings to the other side when you turn around. */
+export const CAMERA_LOOK_AHEAD_LERP = 0.025;
+/** Horizontal speed (tiles per step) above which the camera treats the target as "heading" somewhere. */
+export const CAMERA_LOOK_AHEAD_MIN_SPEED = 0.02;
+/** Frame the target a little below center so there's more sky to look at. */
+export const CAMERA_OFFSET_Y = 1.5;
+
+// --- Temporary test box (T-003 only; T-004 replaces it with Sammy) ---
+export const TEMP_BOX_SIZE = 0.8;
+export const TEMP_BOX_SPEED = 0.14;
+export const TEMP_BOX_ACCEL = 0.2;
+export const TEMP_BOX_JUMP = 0.32;

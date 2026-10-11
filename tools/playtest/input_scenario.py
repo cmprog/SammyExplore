@@ -1,4 +1,5 @@
-"""Hold D and Space; the boot scene should list the held actions on screen."""
+"""Real key presses against the playing scene (test level): D walks the box right, Space hops it.
+Asserts the mapped actions show in __sammy.input and the box actually moves/jumps."""
 import sys
 import time
 

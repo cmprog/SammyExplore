@@ -6,14 +6,15 @@ Payloads are plain data (they get cloned). Owner = the system that emits it.
 | Event | Payload | Owner | Notes |
 |---|---|---|---|
 | `scene:change` | `{from, to}` | SceneManager | |
-| `level:start` | `{levelId}` | LevelLoader / playing scene | after level is built |
-| `level:complete` | `{levelId}` | LevelLoader (exit zone) | |
-| `checkpoint:reached` | `{checkpointId, pos}` | LevelLoader | first time each checkpoint is reached |
-| `correction:triggered` | `{zoneId, ...zoneProps}` | LevelLoader | Sammy is somewhere silly |
-| `correction:reset` | `{zoneId}` | Narrator | midpoint of rewrite effect; the player moves to the last checkpoint |
+| `level:start` | `{levelId, name, timeOfDay, size}` | playing scene | after the level is built; `size` = `{x, y}` in tiles |
+| `level:complete` | `{...zoneProps, id, levelId}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load |
+| `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load |
+| `correction:triggered` | `{...zoneProps, id, levelId}` | LevelLoader | Sammy is somewhere silly. `id` = zone id (`world-bottom` for falling off the world); optional `lineId`, `reason` |
+| `correction:reset` | `{zoneId}` | Narrator | midpoint of the rewrite effect. The playing scene moves the player to `level.respawn` |
 | `correction:done` | `{zoneId}` | Narrator | input unlocked |
-| `narration:zone` | `{key}` | LevelLoader | |
-| `narrator:blip` | none | Narrator | typewriter tick |
+| `narration:zone` | `{key, id, levelId}` | LevelLoader | |
+| `narrator:blip` | `{lineId}` | Narrator | typewriter tick; emitted quietly (kept out of the debug event ring) |
+| `narrator:line` | `{id, text}` | Narrator | a line started showing |
 | `player:jump` | none | Sammy | |
 | `player:flap` | `{chargesLeft}` | Sammy | |
 | `player:flapEmpty` | none | Sammy | tried to flap with 0 charges |
@@ -32,3 +33,7 @@ Payloads are plain data (they get cloned). Owner = the system that emits it.
 | `audio:changed` | settings object | Audio | |
 
 Settings in localStorage `sammyexplore.settings`: `{volume, muted, musicVolume, sfxVolume}`. Audio owns these keys. Other systems merge, never overwrite.
+
+Coordinates: level data (zone rects, entity x/y) uses tile column/row from the top-left of the map. Everything at runtime (events, `__sammy`, teleport) uses world space with y pointing up.
+
+Narrator line triggers `idle:N`, `spam:<event>`, `ignored:<id>`, and `followed:<id>` are internal to the Narrator. They are not bus events.

@@ -9,6 +9,7 @@ import { installDebugHook } from './core/debugHook.js';
 import { endInputFrame } from './core/input.js';
 import { tickFrame } from './core/clock.js';
 import { BootScene } from './scenes/BootScene.js';
+import { PlayingScene } from './scenes/PlayingScene.js';
 
 const GAME_RESOLUTION = vec2(1920, 1080);
 const BACKGROUND_COLOR = rgb(.07, .07, .14);   // deep night blue
@@ -24,11 +25,15 @@ setDebugWatermark(false);
 
 const scenes = new SceneManager();
 scenes.register('boot', new BootScene());
+const playingScene = new PlayingScene();
+scenes.register('playing', playingScene);
 installDebugHook(scenes);
+playingScene.installDebug(window.__sammy, scenes);
 
 function gameInit()
 {
-    scenes.change('boot');
+    // Until the title screen exists (T-008), start straight in the test level.
+    scenes.change('playing', { levelId: 'test' });
 }
 
 // gameUpdatePost runs every update step, even while the engine is paused,
