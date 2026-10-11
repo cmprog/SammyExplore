@@ -6,3 +6,6 @@
 - Day: the same layers in day colors, with a sun and fluffy clouds instead of moon and stars.
 - Rendered behind the tile layer. Parallax is relative to the camera. It must keep good framerate in headless playtests.
 - Must look polished in screenshots. This is the first thing the kid sees.
+
+## Event contract
+Use only events listed in `docs/EVENTS.md`. Add any new event to it in the same change.

@@ -7,3 +7,6 @@
 - Flap charge indicator: small feather pips near Sammy or in the HUD that are readable at a glance.
 - Feather particles on a flap. A dust puff on a hard landing.
 - Playtester screenshots of each pose are reviewed for "would a 9-year-old call this cute."
+
+## Event contract
+Use only events listed in `docs/EVENTS.md`. Add any new event to it in the same change.

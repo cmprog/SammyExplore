@@ -6,3 +6,6 @@
 - `src/data/narration/sandbox.js`: **real, funny lines** in the approved voice. Level intro (the narrator introducing the Eagle... and finding an owl), at least one "ignored instruction" gag, zone remarks, sign reading, door remarks, Twyx remarks, checkpoint remarks, and the level exit.
 - The New Game flow starts at the sandbox. Level complete shows "to be continued" and returns to title.
 - A full playthrough by the playtester is possible with scripted inputs.
+
+## Event contract
+Use only events listed in `docs/EVENTS.md`. Add any new event to it in the same change.

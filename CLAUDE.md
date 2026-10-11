@@ -43,6 +43,7 @@ All input goes through the input-mapping module; gameplay code never reads raw k
   under `src/data/`, separate from the systems that use them. Adding a level or a narrator line should not require touching engine code.
 - **One module per system**: scenes/state, input, level loading, player, narrator, interaction, audio, rendering helpers.
   Keep modules small. Systems talk through a small event bus (`src/core/events.js`) rather than importing each other directly.
+  **`docs/EVENTS.md` is the event contract.** Only emit or listen for events listed there. When you add an event, add it to the catalog in the same change.
 - **Scenes** (title, playing, paused, level complete, and so on) go through one scene manager.
 - **Resets are never framed as death or harm.** Sammy doesn't get hurt.
 - **Test hook.** `window.__sammy` exposes read-only game state (scene, player position/state, flap charges,
