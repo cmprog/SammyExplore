@@ -10,6 +10,7 @@ import { endInputFrame } from './core/input.js';
 import { tickFrame } from './core/clock.js';
 import { BootScene } from './scenes/BootScene.js';
 import { PlayingScene } from './scenes/PlayingScene.js';
+import { initAudio } from './systems/Audio.js';
 
 const GAME_RESOLUTION = vec2(1920, 1080);
 const BACKGROUND_COLOR = rgb(.07, .07, .14);   // deep night blue
@@ -32,6 +33,7 @@ playingScene.installDebug(window.__sammy, scenes);
 
 function gameInit()
 {
+    initAudio();   // after engineInit has created the master gain
     // Until the title screen exists (T-008), start straight in the test level.
     scenes.change('playing', { levelId: 'test' });
 }
