@@ -27,6 +27,7 @@ export const AUDIO_TUNING = {
     GLIDE_FADE_IN: .2,          // seconds
     GLIDE_FADE_OUT: .25,        // seconds
     MUSIC_FADE_IN: 2,           // seconds; music eases in instead of starting abruptly
+    LAND_IMPACT_FLOOR: .35,     // land volume = lerp(floor, 1, impact): soft hops stay audible
 };
 
 // One bell-ish note reused for chimes and the fanfare (pitched with `semitones`). C5 base.
@@ -112,8 +113,9 @@ export const SOUNDS = {
     ] },
 };
 
-// Bus event -> sound name. Change sounds for gameplay events here, not in Audio.js.
-// Glide start/stop is a loop, handled by Audio.js directly (see GLIDE_*_EVENTS).
+// Bus event -> sound name (contract: docs/EVENTS.md). Change sounds for gameplay events here,
+// not in Audio.js. Glide start/stop is a loop, handled by Audio.js directly (GLIDE_*_EVENTS).
+// player:land is listed here and Audio.js scales its volume by the payload's {impact}.
 export const SOUND_EVENTS = {
     'player:jump':          'jump',
     'player:flap':          'flap',
@@ -135,6 +137,8 @@ export const SOUND_EVENTS = {
 
 export const GLIDE_START_EVENTS = ['player:glideStart'];
 // Anything that means "not gliding any more" (or the world changed underneath).
+// player:glideEnd is the contract; the rest are a safety net in case it is ever missed.
 export const GLIDE_STOP_EVENTS = [
-    'player:glideEnd', 'player:land', 'correction:triggered', 'level:complete', 'scene:change',
+    'player:glideEnd', 'player:land', 'player:flap', 'player:jump',
+    'correction:triggered', 'level:complete', 'scene:change',
 ];

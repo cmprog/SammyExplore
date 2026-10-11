@@ -5,7 +5,7 @@
 // and touch, but not on keys, so we resume it ourselves on the first input of any kind and only
 // then start the music. Sounds requested before that are skipped, not queued.
 import {
-    Sound, ZzFXMusic, audioContext, audioIsRunning, setSoundVolume, clamp,
+    Sound, ZzFXMusic, audioContext, audioIsRunning, setSoundVolume, clamp, lerp,
 } from '../../lib/littlejs/littlejs.esm.js';
 import { on, emit } from '../core/events.js';
 import {
@@ -39,26 +39,27 @@ export function initAudio()
     library = buildLibrary();
 
     for (const [eventName, soundName] of Object.entries(SOUND_EVENTS))
-        on(eventName, () => playSound(soundName));
+        on(eventName, data => playSound(soundName, eventVolume(eventName, data)));
     for (const eventName of GLIDE_START_EVENTS)
         on(eventName, startGlide);
     for (const eventName of GLIDE_STOP_EVENTS)
         on(eventName, stopGlide);
 
-    on('audio:setVolume', data => setVolume(data?.volume ?? data));
-    on('audio:setMuted', data => setMuted(data?.muted ?? data));
+    // Contract payloads are bare values; {volume} / {muted} objects are accepted too.
+    on('audio:setVolume', data => setVolume(isObject(data) ? data.volume : data));
+    on('audio:setMuted', data => setMuted(isObject(data) ? data.muted : data));
     on('audio:toggleMute', () => setMuted(!settings.muted));
 
     for (const type of UNLOCK_EVENTS)
         document.addEventListener(type, onFirstInput, { capture: true });
 
     // Rendering the song blocks for a moment; let the first frame paint before doing it.
-    setTimeout(buildMusic, 0);
+    requestAnimationFrame(() => setTimeout(buildMusic, 0));
     registerDebugHook();
 }
 
-/** Play a named sound from the catalog. Returns true if it was triggered. */
-export function playSound(name)
+/** Play a named sound from the catalog, volume scaled by `volumeScale`. Returns true if triggered. */
+export function playSound(name, volumeScale = 1)
 {
     const entry = library.get(name);
     if (!entry)
@@ -77,8 +78,21 @@ export function playSound(name)
     soundCount++;
     if (!canPlay())
         return true;
-    playLayers(entry, settings.sfxVolume, false);
+    playLayers(entry, settings.sfxVolume * volumeScale, false);
     return true;
+}
+
+/** Per-event volume tweaks driven by the payload. */
+function eventVolume(eventName, data)
+{
+    if (eventName === 'player:land' && Number.isFinite(data?.impact))
+        return lerp(AUDIO_TUNING.LAND_IMPACT_FLOOR, 1, clamp(data.impact, 0, 1));
+    return 1;
+}
+
+function isObject(value)
+{
+    return value !== null && typeof value === 'object';
 }
 
 export function setVolume(volume)
@@ -186,8 +200,24 @@ function startGlide()
 function stopGlide()
 {
     for (const instance of glideInstances)
-        instance.stop(AUDIO_TUNING.GLIDE_FADE_OUT);
+        fadeOutAndStop(instance, AUDIO_TUNING.GLIDE_FADE_OUT);
     glideInstances = [];
+}
+
+// SoundInstance.stop(fade) restarts its ramp from full volume, which pops if we're still
+// fading in. Ramp from wherever the gain is right now instead.
+function fadeOutAndStop(instance, seconds)
+{
+    const gain = instance.gainNode?.gain;
+    if (!instance.isPlaying() || !gain)
+        return instance.stop();
+    const now = audioContext.currentTime;
+    const current = gain.value;
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(current, now);
+    gain.linearRampToValueAtTime(0, now + seconds);
+    instance.source.stop(now + seconds);
+    instance.source = undefined;   // mark stopped, like SoundInstance.stop does
 }
 
 function fadeIn(instance, seconds)
@@ -272,16 +302,29 @@ function loadSettings()
 
 function saveSettings()
 {
+    const base = readStoredSettings();
     try
     {
         // Merge, so settings owned by other systems in the same key survive.
-        const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null');
-        const base = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
         localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...base, ...settings }));
     }
     catch (error)
     {
         console.warn('audio: could not save settings', error);
+    }
+}
+
+/** The raw stored settings object, or {} if missing, corrupt, or unreadable. */
+function readStoredSettings()
+{
+    try
+    {
+        const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null');
+        return isObject(stored) && !Array.isArray(stored) ? stored : {};
+    }
+    catch
+    {
+        return {};
     }
 }
 
