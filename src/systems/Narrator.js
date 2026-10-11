@@ -7,7 +7,10 @@
 // HOW A HOST SCENE WIRES IT (one Narrator instance for the whole game, created in main.js):
 //   enter(params)   narrator.loadScript(levelId)      // common.js + narration/<levelId>.js
 //                   narrator.setPlayerPositionProvider(() => player ? { x, y } : null)
-//   update()        narrator.update()                 // once per engine update step
+//   update()        narrator.update()                 // once per engine update step, BEFORE the
+//                                                     // player and interaction systems: the
+//                                                     // narrator consumes the E/Enter press it
+//                                                     // uses, so it isn't also an `interact`
 //   renderPost()    narrator.renderPost()             // screen space, draws over the world
 //   exit()          narrator.dispose()                // drop lines, cancel a correction, unlock input, unsubscribe
 // While the host is paused, keep calling renderPost() but not update(): the text box freezes.
@@ -19,13 +22,14 @@
 //   narration:zone, checkpoint:reached, ...), plus correction:triggered (always).
 // Events emitted:
 //   narrator:line  {id, text}     a line started showing
-//   narrator:blip  {lineId}       typewriter blip, once per word (for the audio system)
+//   narrator:blip  {lineId}       typewriter blip, once per word (for the audio system); quiet,
+//                                 so it is not recorded in the recent-events buffer
 //   correction:reset {zoneId}     page is fully scribbled: move Sammy to the last checkpoint now
 //   correction:done  {zoneId}     the rewrite finished; gameplay input is unlocked again
 // During a correction, gameplay actions are locked via input.lockGameplay('correction').
 import { timeDelta } from '../../lib/littlejs/littlejs.esm.js';
 import { on, emit, recentEvents } from '../core/events.js';
-import { wasPressed, actionsDown } from '../core/input.js';
+import { wasPressed, consumePress, actionsDown } from '../core/input.js';
 import { NARRATOR } from '../data/tuning.js';
 import { COMMON_SCRIPT, LEVEL_SCRIPTS } from '../data/narration/index.js';
 import { drawStoryBox, layoutStoryText } from '../art/drawStoryBox.js';
@@ -46,8 +50,8 @@ export class Narrator
         const fire = trigger => this.trigger(trigger);
         this.book = new LineBook();
         this.textBox = new TextBox({
-            onBlip: line => emit('narrator:blip', { lineId: line.id }),
-            onRevealed: line => this.armInstruction(line),
+            onBlip: line => emit('narrator:blip', { lineId: line.id }, { quiet: true }),
+            onRevealed: line => this.onRevealed(line),
         });
         this.idle = new IdleWatcher(fire);
         this.spam = new SpamWatcher(fire);
@@ -123,7 +127,7 @@ export class Narrator
     /** Fire a trigger (bus event name or built-in like 'idle:12'). Plays the best matching line, if any. */
     trigger(name, payload)
     {
-        const line = this.book.pick(name, payload, this.conditionContext(payload), this.clock);
+        const line = this.book.pick(name, payload, this.conditionContext(payload), this.clock, this.textBox.busy);
         if (line)
             this.enqueue(this.book.instance(line, this.clock));
     }
@@ -167,25 +171,43 @@ export class Narrator
         if (current && instance.priority > current.priority)
             return this.play(instance);
         this.queue.push(instance);
-        // Stable sort: highest priority first, then oldest first.
-        this.queue.sort((a, b) => b.priority - a.priority);
+        // Stable sort: interrupted lines waiting to resume first, then highest priority, then oldest.
+        this.queue.sort((a, b) => (b.requeued - a.requeued) || (b.priority - a.priority));
         this.queue.length = Math.min(this.queue.length, NARRATOR.QUEUE_MAX);
     }
 
     play(instance)
     {
+        this.requeueIfInterrupted(this.textBox.line);
         instance.layout = null;   // laid out lazily at render time, when the canvas font is available
-        this.book.markPlayed(instance, this.clock);
+        this.book.markStarted(instance, this.clock);
         this.textBox.show(instance);
         emit('narrator:line', { id: instance.id, text: instance.text });
     }
 
+    /** A `once` line or an instruction cut off before the player read it would otherwise be
+     *  lost for good, so it goes back to the front of the queue. */
+    requeueIfInterrupted(line)
+    {
+        if (!line || this.textBox.revealed || !(line.once || line.instruction))
+            return;
+        line.requeued = true;
+        this.queue.unshift(line);
+    }
+
     playNextQueued()
     {
-        this.queue = this.queue.filter(queued => this.clock - queued.queuedAt <= NARRATOR.QUEUE_STALE);
+        // Interrupted lines don't go stale: they matter more than a passing reaction.
+        this.queue = this.queue.filter(queued => queued.requeued || this.clock - queued.queuedAt <= NARRATOR.QUEUE_STALE);
         const next = this.queue.shift();
         if (next)
             this.play(next);
+    }
+
+    onRevealed(line)
+    {
+        this.book.markSeen(line);
+        this.armInstruction(line);
     }
 
     armInstruction(line)
@@ -203,15 +225,28 @@ export class Narrator
     {
         const dt = timeDelta;
         this.clock += dt;
-        this.idle.update(dt, actionsDown().length > 0, this.correction.running);
+        // Idle time only counts while nobody is talking, so a long line isn't "idling".
+        this.idle.update(dt, actionsDown().length > 0, this.correction.running || this.textBox.busy);
         this.correction.update(dt);
         if (this.instructions.armed.length)
             this.instructions.update({ playerPos: this.playerPos(), events: recentEvents() }, this.clock);
 
-        if (this.textBox.update(dt, wasPressed('advance')))
-            this.gap = NARRATOR.GAP_BETWEEN_LINES;
+        if (wasPressed('advance') && this.textBox.tryAdvance())
+            consumePress('advance');
+        const showing = this.textBox.line;
+        if (this.textBox.update(dt))
+            this.lineEnded(showing);
         if (!this.textBox.busy && (this.gap -= dt) <= 0)
             this.playNextQueued();
+    }
+
+    lineEnded(line)
+    {
+        this.gap = NARRATOR.GAP_BETWEEN_LINES;
+        // After a regular line, idle counting starts over. After an idle line, keep the count
+        // (paused while it showed) so the idle remarks still escalate 12s -> 30s -> 60s.
+        if (!line.trigger?.startsWith('idle:'))
+            this.idle.reset();
     }
 
     renderPost()

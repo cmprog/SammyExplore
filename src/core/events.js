@@ -25,14 +25,19 @@ export function off(name, handler)
     listeners.get(name)?.delete(handler);
 }
 
-export function emit(name, data)
+/** options.quiet: skip the recent-events buffer and the payload copy. For high-frequency
+ *  events (e.g. narrator:blip) that would otherwise flush everything else out of the buffer. */
+export function emit(name, data, { quiet = false } = {})
 {
     // Copy so a listener (or later mutation by the sender) can't rewrite history in the buffer.
-    const payload = copyPayload(data);
-    // `time` freezes while the engine is paused; `frame` keeps counting.
-    recent.push({ name, data: payload, time, frame: currentFrame() });
-    if (recent.length > RECENT_EVENT_LIMIT)
-        recent.shift();
+    const payload = quiet ? data : copyPayload(data);
+    if (!quiet)
+    {
+        // `time` freezes while the engine is paused; `frame` keeps counting.
+        recent.push({ name, data: payload, time, frame: currentFrame() });
+        if (recent.length > RECENT_EVENT_LIMIT)
+            recent.shift();
+    }
 
     // Copy so handlers can safely unsubscribe while we iterate.
     for (const handler of [...(listeners.get(name) ?? [])])

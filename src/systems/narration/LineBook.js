@@ -56,7 +56,7 @@ export class LineBook
         }
         this.lines.push(line);
         this.byId.set(line.id, line);
-        if (line.trigger.startsWith('spam:'))
+        if (line.trigger?.startsWith('spam:'))
             this.spamSources.add(line.trigger.slice('spam:'.length));
     }
 
@@ -65,7 +65,7 @@ export class LineBook
     {
         const names = new Set(this.spamSources);
         for (const { trigger } of this.lines)
-            if (!BUILT_IN_PREFIXES.some(prefix => trigger.startsWith(prefix)))
+            if (trigger && !BUILT_IN_PREFIXES.some(prefix => trigger.startsWith(prefix)))
                 names.add(trigger);
         return names;
     }
@@ -74,7 +74,7 @@ export class LineBook
     idleThresholds()
     {
         return this.lines
-            .filter(line => line.trigger.startsWith('idle:'))
+            .filter(line => line.trigger?.startsWith('idle:'))
             .map(line => Number(line.trigger.slice('idle:'.length)))
             .filter(seconds => seconds > 0)
             .sort((a, b) => a - b);
@@ -85,8 +85,9 @@ export class LineBook
         return this.spamRules.get(event) ?? NARRATOR.DEFAULT_SPAM;
     }
 
-    /** Best line for a trigger right now, or null. Key-specific lines beat generic ones. */
-    pick(trigger, payload, ctx, now)
+    /** Best line for a trigger right now, or null. Key-specific lines beat generic ones.
+     *  busy: a line is showing, so `skipIfBusy` lines are out. */
+    pick(trigger, payload, ctx, now, busy = false)
     {
         const payloadKey = payload?.key ?? payload?.id;
         let best = null;
@@ -95,6 +96,8 @@ export class LineBook
             if (line.trigger !== trigger)
                 continue;
             if (line.key !== undefined && line.key !== payloadKey)
+                continue;
+            if (busy && line.skipIfBusy)
                 continue;
             if (!this.isAvailable(line, ctx, now))
                 continue;
@@ -137,9 +140,12 @@ export class LineBook
             id: line.id,
             text: variant >= 0 ? line.texts[variant] : line.text,
             variant,
+            trigger: line.trigger ?? null,
             priority: priorityOf(line),
+            once: !!line.once,
             instruction: line.instruction ?? null,
             queuedAt: now,
+            requeued: false,
         };
     }
 
@@ -153,10 +159,16 @@ export class LineBook
         return pool[randInt(pool.length)];
     }
 
-    markPlayed(instance, now)
+    /** The line started showing: its cooldown starts now. */
+    markStarted(instance, now)
+    {
+        this.lastPlayedAt.set(instance.id, now);
+    }
+
+    /** The line was fully revealed, so the player has actually read it. */
+    markSeen(instance)
     {
         this.seenIds.add(instance.id);
-        this.lastPlayedAt.set(instance.id, now);
         if (instance.variant < 0)
             return;
         if (!this.seenVariants.has(instance.id))

@@ -14,9 +14,12 @@
 //       priority?,          higher interrupts lower (default NARRATOR.DEFAULT_PRIORITY)
 //       once?,              never repeat (for the whole session)
 //       cooldown?,          seconds before this line can play again
+//       skipIfBusy?,        drop it (don't queue or interrupt) if another line is showing
 //       condition?(ctx),    extra gate; ctx = { playerPos, events, payload } (playerPos may be null)
 //       instruction?,       once this line is fully shown, instructions[instruction] is armed
 //   }]
+//   A line with no trigger is say-only: played by id, e.g. a correction zone's `lineId`.
+//   Lines count as seen once fully revealed. An interrupted `once`/instruction line is replayed.
 //   spam: { <event>: { count, seconds } }        thresholds for 'spam:<event>' triggers
 //   instructions: [{ id, success(ctx), failure(ctx), timeout? }]
 //       ctx = { playerPos, armedPos, armedFor, events }. playerPos/armedPos are {x, y} or null
@@ -28,14 +31,15 @@ const PRIORITY = {
     correction: 100,
     nag: 30,
     idle: 20,
-    shrug: 15,
+    shrug: 5,     // below the default: never interrupts anything
 };
 
 export default {
     id: 'common',
 
     spam: {
-        'player:flap':      { count: 7, seconds: 4 },
+        // ~3 charges plus the flap cooldown: 5 in 6s means two full airborne bursts.
+        'player:flap':      { count: 5, seconds: 6 },
         'player:flapEmpty': { count: 4, seconds: 3 },
         'interact:nothing': { count: 4, seconds: 5 },
     },
@@ -52,12 +56,12 @@ export default {
             texts: [
                 'No, no, no. That is NOT where the Eagle goes. Let me just... rewrite that bit.',
                 "Hmm. That's not in the script. *scribble scribble* There. Much better.",
-                'Let us all pretend that never happened. I certainly will.',
+                'Let us all pretend that never happened. An eagle would never. An owl, apparently, would.',
                 'How did you even GET there? Never mind. Rewinding the story.',
                 "I'm going to need a bigger eraser.",
-                "The Eagle soared gracefully back to safety. That's what happened. I wrote it down.",
+                "The Eagle soared gracefully back to the right page. That's what happened. I wrote it down.",
                 "Plot hole! Hold still, Sandy. Sammy. Sammy! I'm fixing it.",
-                "Page twelve does not say 'owl gets stuck somewhere silly.' Let's try page twelve again.",
+                'Page twelve does not say the owl gets stuck somewhere silly. Let us try page twelve again.',
             ],
         },
 
@@ -131,11 +135,12 @@ export default {
             trigger: 'interact:nothing',
             priority: PRIORITY.shrug,
             cooldown: 4,
+            skipIfBusy: true,
             texts: [
                 'You pressed E on... the air. The air says thank you.',
                 "There's nothing there. Trust me. I wrote this place.",
-                'Interacting with nothing. Bold. The Eagle would have found a doorknob by now.',
-                'Ahem. That is not a thing. Things have edges. Try something with edges.',
+                "Hoo are you talking to? There's nobody there.",
+                'The Eagle never pokes empty air. ...Wait. Are you poking ME?',
             ],
         },
         {
@@ -143,7 +148,7 @@ export default {
             trigger: 'spam:interact:nothing',
             priority: PRIORITY.nag,
             cooldown: 20,
-            text: "Pressing E faster won't make a door appear. I'd have to write one. I won't.",
+            text: "Pressing E faster won't make a door appear. I'm not going to. ...Probably.",
         },
     ],
 };

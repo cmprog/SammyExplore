@@ -18,6 +18,14 @@ const suppressedKeys = new Set();
 const gameplayLocks = new Set();
 const gameplayActions = new Set(GAMEPLAY_ACTIONS);
 
+// Gameplay actions still held when a lock ended. Masked per action (not per key) until
+// released, so a direction held through a correction doesn't snap Sammy into motion, while
+// a shared key's other actions (E is also `advance`) keep working.
+const heldThroughLock = new Set();
+
+// Keys whose press this frame was already used by someone (see consumePress).
+const consumedKeys = new Set();
+
 function keysFor(action)
 {
     const keys = ACTION_KEYS[action];
@@ -29,7 +37,7 @@ function keysFor(action)
 function liveKeys(action)
 {
     const keys = keysFor(action);
-    if (gameplayLocks.size && gameplayActions.has(action))
+    if (gameplayActions.has(action) && (gameplayLocks.size || heldThroughLock.has(action)))
         return [];
     return keys.filter(key => !suppressedKeys.has(key));
 }
@@ -41,7 +49,17 @@ export function isDown(action)
 
 export function wasPressed(action)
 {
-    return liveKeys(action).some(key => keyWasPressed(key));
+    return liveKeys(action).some(key => keyWasPressed(key) && !consumedKeys.has(key));
+}
+
+/** Claim this frame's press of `action`: wasPressed() is false for the rest of the frame for
+ *  every action sharing those keys (e.g. the narrator using E means it isn't also `interact`).
+ *  Whoever reads first wins, so the update order of systems matters. */
+export function consumePress(action)
+{
+    for (const key of keysFor(action))
+        if (keyWasPressed(key))
+            consumedKeys.add(key);
 }
 
 export function wasReleased(action)
@@ -73,7 +91,16 @@ export function lockGameplay(reason)
 
 export function unlockGameplay(reason)
 {
-    gameplayLocks.delete(reason);
+    if (!gameplayLocks.delete(reason) || gameplayLocks.size)
+        return;
+    for (const action of gameplayActions)
+        if (rawIsDown(action))
+            heldThroughLock.add(action);
+}
+
+function rawIsDown(action)
+{
+    return keysFor(action).some(key => keyIsDown(key) && !suppressedKeys.has(key));
 }
 
 /** Current lock reasons, for the test hook. Empty when gameplay input is live. */
@@ -89,6 +116,10 @@ export function endInputFrame()
     for (const key of suppressedKeys)
         if (!keyIsDown(key))
             suppressedKeys.delete(key);
+    for (const action of heldThroughLock)
+        if (!keysFor(action).some(key => keyIsDown(key)))
+            heldThroughLock.delete(action);
+    consumedKeys.clear();
 }
 
 // Mouse is for UI only. Positions are screen space (canvas pixels, 1920x1080).

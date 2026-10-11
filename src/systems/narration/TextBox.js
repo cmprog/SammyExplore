@@ -31,7 +31,7 @@ export class TextBox
     }
 
     /** Returns true on the step the line has fully left the screen. */
-    update(dt, advancePressed)
+    update(dt)
     {
         const target = this.line && !this.leaving ? 1 : 0;
         const ease = target ? NARRATOR.EASE_IN : NARRATOR.EASE_OUT;
@@ -40,9 +40,6 @@ export class TextBox
             return false;
 
         this.age += dt;
-        if (advancePressed && this.age >= NARRATOR.MIN_SHOW_BEFORE_SKIP)
-            this.advance();
-
         if (this.leaving)
             return this.appear <= 0 && this.finish();
         if (!this.revealed)
@@ -52,13 +49,18 @@ export class TextBox
         return false;
     }
 
-    /** First press finishes the reveal, the next one dismisses the line. */
-    advance()
+    /** A skip press: the first finishes the reveal, the next dismisses the line.
+     *  Returns false if the press wasn't used (nothing showing, already leaving, or so soon
+     *  after the line started that it's the same press that caused the line). */
+    tryAdvance()
     {
+        if (!this.line || this.leaving || this.age < NARRATOR.MIN_SHOW_BEFORE_SKIP)
+            return false;
         if (this.revealed)
             this.leaving = true;
         else
             this.reveal(this.line.text.length, false);
+        return true;
     }
 
     reveal(chars, withBlip = true)

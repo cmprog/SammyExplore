@@ -33,6 +33,20 @@ export default {
             text: 'The Eagle went RIGHT. You went left. Is this a mirror? Am I in a mirror?',
         },
         {
+            id: 'test.hello',
+            trigger: 'narration:zone',
+            key: 'test.hello',
+            priority: 40,
+            once: true,
+            text: 'Ah, our hero arrives! Mighty wings, sharp eyes, a big... round... fluffy... Hmm. Hold on.',
+        },
+        {
+            // Say-only: the pillar-top correction zone names it with lineId.
+            id: 'test.pillarTop',
+            priority: 100,
+            text: 'Off the pillar, please. That spot is for the Eagle statue. You are not the Eagle statue.',
+        },
+        {
             id: 'test.goRight.followed',
             trigger: 'followed:goRight',
             priority: 40,

@@ -35,13 +35,18 @@ export class CorrectionSequence
         if (!active)
             return;
         active.t += dt;
-        if (!active.resetSent && active.t >= CORRECTION.SCRIBBLE_IN)
-        {
-            active.resetSent = true;
-            emit('correction:reset', { zoneId: active.zoneId });
-        }
+        if (active.t >= CORRECTION.SCRIBBLE_IN)
+            this.sendReset();
         if (active.t >= totalDuration())
             this.finish();
+    }
+
+    sendReset()
+    {
+        if (this.active.resetSent)
+            return;
+        this.active.resetSent = true;
+        emit('correction:reset', { zoneId: this.active.zoneId });
     }
 
     finish()
@@ -52,11 +57,14 @@ export class CorrectionSequence
         emit('correction:done', { zoneId });
     }
 
-    /** Stop without events (host scene leaving). Always releases the input lock. */
+    /** Complete immediately (host leaving, level reload): skip the visuals but still send the
+     *  reset if it hasn't gone out, so Sammy is never stranded somewhere silly. */
     cancel()
     {
-        this.active = null;
-        unlockGameplay(LOCK_REASON);
+        if (!this.active)
+            return;
+        this.sendReset();
+        this.finish();
     }
 
     /** { phase: 'in'|'hold'|'out', progress 0..1 within the phase, seed } or null. */
