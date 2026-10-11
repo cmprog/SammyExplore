@@ -1,5 +1,6 @@
 // The in-level scene: loads a level by id, puts the player at the spawn, runs zones and the camera.
 // enter({ levelId }) loads; re-entering (e.g. __sammy.commands.loadLevel) tears down and reloads.
+// Hosts the narrator (see the wiring notes at the top of systems/Narrator.js).
 import {
     vec2, rgb, setGravity, mainCanvasSize, drawTextScreen,
 } from '../../lib/littlejs/littlejs.esm.js';
@@ -14,8 +15,9 @@ const ERROR_COLOR = rgb(1, .75, .75);
 
 export class PlayingScene
 {
-    constructor()
+    constructor(narrator)
     {
+        this.narrator = narrator;
         this.level = null;
         this.player = null;
         this.camera = new Camera();
@@ -29,14 +31,19 @@ export class PlayingScene
     enter({ levelId = DEFAULT_LEVEL_ID } = {})
     {
         setGravity(vec2(0, WORLD_GRAVITY));
-        // Temporary (T-003): snap back on corrections. T-006 takes this over with the rewrite effect.
-        this.unsubscribers.push(on('correction:triggered', () => this.resetPlayer()));
+        // Before load(): the narrator must be listening when the level emits level:start.
+        this.narrator.loadScript(levelId);
+        this.narrator.setPlayerPositionProvider(() => this.player?.pos ?? null);
+        // The narrator runs the rewrite effect; it asks for the move while the page is covered.
+        this.unsubscribers.push(on('correction:reset', () => this.resetPlayer()));
         this.load(levelId);
     }
 
     exit()
     {
         this.loadToken++;          // a load still in flight must not build into a scene we left
+        this.narrator.dispose();   // completes a running correction (its reset still lands)
+        this.narrator.setPlayerPositionProvider(null);
         this.unsubscribers.forEach(unsubscribe => unsubscribe());
         this.unsubscribers = [];
         this.unload();
@@ -87,8 +94,17 @@ export class PlayingScene
 
     resetPlayer()
     {
-        if (this.player && this.level)
-            this.player.resetTo(this.level.zones.respawnPoint);
+        if (!this.player || !this.level)
+            return;
+        this.player.resetTo(this.level.zones.respawnPoint);
+        this.camera.snap();   // under the page, so the world is already settled when it lifts
+    }
+
+    // Runs before engine objects update, so the narrator claims its E/Enter press before the
+    // player (and later the interaction system) read input.
+    update()
+    {
+        this.narrator.update();
     }
 
     // Zones and camera run after physics so they see this step's final positions.
@@ -104,6 +120,7 @@ export class PlayingScene
     {
         if (this.loadError)
             drawTextScreen(this.loadError, mainCanvasSize.scale(.5), 40, ERROR_COLOR);
+        this.narrator.renderPost();
     }
 
     // --- debug hook ---------------------------------------------------------------------------

@@ -14,6 +14,11 @@ def wait_loaded(pg):
     time.sleep(0.5)
 
 
+def wait_correction_done(pg, timeout=6):
+    """Corrections run the narrator's rewrite effect (~1.9s) with gameplay input locked."""
+    pg.wait_for_function("window.__sammy.narrator && window.__sammy.narrator.correction === null", timeout=timeout * 1000)
+
+
 def settle(pg, secs=1.0):
     time.sleep(secs)
 
@@ -102,6 +107,7 @@ def main():
         check(len(corr) > n_before and "world-bottom" in str(corr[-1]), f"correction world-bottom emitted: {corr[-1:] }")
         sp = st["player"]["pos"]
         check(sp["y"] > 3 and sp["x"] < 10, f"box reset near spawn: {sp}")
+        wait_correction_done(pg)
 
         # Checkpoint (x24-26, y 4-7) and exit (x46-48)
         pg.evaluate("__sammy.commands.teleport(20.5, 4.5)")  # not on gap? col 20 is gap; use ground col 25 instead
@@ -116,7 +122,8 @@ def main():
         harness.shot(pg, "level_checkpoint")
         # fall again: respawn should be at checkpoint now
         pg.evaluate("__sammy.commands.teleport(20, 6)")
-        time.sleep(2)
+        time.sleep(1)
+        wait_correction_done(pg)
         rp = harness.state(pg)["player"]["pos"]
         print("respawn after checkpoint:", rp)
         check(rp["x"] > 20, f"respawn moved to checkpoint after reaching it (x={rp['x']:.1f})")

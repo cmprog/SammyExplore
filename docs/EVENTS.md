@@ -2,6 +2,8 @@
 
 Every bus event goes here. To add an event, add it to this file in the same change.
 Payloads are plain data (they get cloned). Owner = the system that emits it.
+`emit(name, data, {quiet: true})` skips the clone and the debug ring buffer (`__sammy.events`); use it only for
+high-frequency events (currently `narrator:blip`). Quiet events still reach every listener.
 
 | Event | Payload | Owner | Notes |
 |---|---|---|---|
@@ -10,8 +12,8 @@ Payloads are plain data (they get cloned). Owner = the system that emits it.
 | `level:complete` | `{...zoneProps, id, levelId}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load |
 | `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load |
 | `correction:triggered` | `{...zoneProps, id, levelId}` | LevelLoader | Sammy is somewhere silly. `id` = zone id (`world-bottom` for falling off the world); optional `lineId`, `reason` |
-| `correction:reset` | `{zoneId}` | Narrator | midpoint of the rewrite effect. The playing scene moves the player to `level.respawn` |
-| `correction:done` | `{zoneId}` | Narrator | input unlocked |
+| `correction:reset` | `{zoneId}` | Narrator | midpoint of the rewrite effect. The playing scene moves the player to `level.respawn`. Also sent immediately (no visuals) if the narrator is disposed/reloaded mid-correction and the reset hadn't gone out yet |
+| `correction:done` | `{zoneId}` | Narrator | input unlocked. Also sent immediately (no visuals) on dispose/reload mid-correction. A `correction:triggered` arriving while a correction runs is ignored by the narrator |
 | `narration:zone` | `{key, id, levelId}` | LevelLoader | |
 | `narrator:blip` | `{lineId}` | Narrator | typewriter tick; emitted quietly (kept out of the debug event ring) |
 | `narrator:line` | `{id, text}` | Narrator | a line started showing |
