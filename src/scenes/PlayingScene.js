@@ -7,6 +7,7 @@ import { on, emit } from '../core/events.js';
 import { fetchLevelData, buildLevel } from '../systems/LevelLoader.js';
 import { Camera } from '../systems/Camera.js';
 import { TempBox } from '../entities/TempBox.js';
+import { Backdrop } from '../systems/Backdrop.js';
 import { WORLD_GRAVITY } from '../data/tuning.js';
 
 export const DEFAULT_LEVEL_ID = 'test';
@@ -19,6 +20,7 @@ export class PlayingScene
         this.level = null;
         this.player = null;
         this.camera = new Camera();
+        this.backdrop = null;
         this.levelId = null;
         this.loading = false;
         this.loadError = null;
@@ -31,6 +33,7 @@ export class PlayingScene
         setGravity(vec2(0, WORLD_GRAVITY));
         // Temporary (T-003): snap back on corrections. T-006 takes this over with the rewrite effect.
         this.unsubscribers.push(on('correction:triggered', () => this.resetPlayer()));
+        this.unsubscribers.push(on('level:start', ({ timeOfDay }) => this.showBackdrop(timeOfDay)));
         this.load(levelId);
     }
 
@@ -78,11 +81,19 @@ export class PlayingScene
 
     unload()
     {
+        this.backdrop?.destroy();
+        this.backdrop = null;
         this.camera.detach();
         this.player?.destroy();
         this.player = null;
         this.level?.destroy();
         this.level = null;
+    }
+
+    showBackdrop(timeOfDay)
+    {
+        this.backdrop?.destroy();
+        this.backdrop = new Backdrop(timeOfDay);
     }
 
     resetPlayer()
@@ -121,6 +132,7 @@ export class PlayingScene
         hook.register('level', () => this.levelDebugState());
         hook.register('camera', () => this.camera.debugState());
         hook.register('player', () => this.player?.debugState() ?? null);
+        hook.register('backdrop', () => this.backdrop?.debugState() ?? null);
         hook.commands.loadLevel = levelId => sceneManager.change('playing', { levelId });
         hook.commands.teleport = (x, y) =>
         {
