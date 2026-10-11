@@ -5,7 +5,7 @@
 // pressed/released flags right after gameUpdatePost, before render. isDown works anywhere.
 import {
     keyIsDown, keyWasPressed, keyWasReleased,
-    mouseIsDown, mouseWasPressed, mouseWasReleased, mousePosScreen,
+    mouseIsDown, mouseWasPressed, mouseWasReleased, mousePosScreen, mouseInWindow,
 } from '../../lib/littlejs/littlejs.esm.js';
 import { ACTION_KEYS, GAMEPLAY_ACTIONS } from '../data/controls.js';
 
@@ -128,4 +128,5 @@ export const mouse = {
     wasPressed:  (button = 0) => mouseWasPressed(button),
     wasReleased: (button = 0) => mouseWasReleased(button),
     get pos()    { return mousePosScreen.copy(); },
+    get inWindow() { return mouseInWindow; },
 };

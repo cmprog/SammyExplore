@@ -1,5 +1,6 @@
 // The in-level scene: loads a level by id, puts the player at the spawn, runs zones and the camera.
 // enter({ levelId }) loads; re-entering (e.g. __sammy.commands.loadLevel) tears down and reloads.
+// enter({ levelId, checkpointId }) starts at that checkpoint instead of the spawn (Continue).
 // Hosts the narrator (see the wiring notes at the top of systems/Narrator.js).
 import {
     vec2, rgb, setGravity, mainCanvasSize, drawTextScreen,
@@ -28,8 +29,9 @@ export class PlayingScene
         this.unsubscribers = [];
     }
 
-    enter({ levelId = DEFAULT_LEVEL_ID } = {})
+    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null } = {})
     {
+        this.startCheckpointId = checkpointId;
         setGravity(vec2(0, WORLD_GRAVITY));
         // Before load(): the narrator must be listening when the level emits level:start.
         this.narrator.loadScript(levelId);
@@ -62,7 +64,7 @@ export class PlayingScene
                 return;
             this.unload();
             this.level = buildLevel(data);
-            this.player = new TempBox(this.level.zones.spawnPoint);
+            this.player = new TempBox(this.startPoint());
             this.camera.attach(this.player, this.level.size);
         }
         catch (error)
@@ -81,6 +83,15 @@ export class PlayingScene
         }
         const { id, name, timeOfDay, size } = this.level;
         emit('level:start', { levelId: id, name, timeOfDay, size: { x: size.x, y: size.y } });
+    }
+
+    /** The spawn, or the saved checkpoint when continuing a story. */
+    startPoint()
+    {
+        const zones = this.level.zones;
+        if (this.startCheckpointId && !zones.restoreCheckpoint(this.startCheckpointId))
+            console.warn(`level "${this.level.id}" has no checkpoint "${this.startCheckpointId}"; starting at the spawn`);
+        return zones.respawnPoint;
     }
 
     unload()
@@ -138,7 +149,7 @@ export class PlayingScene
         hook.register('level', () => this.levelDebugState());
         hook.register('camera', () => this.camera.debugState());
         hook.register('player', () => this.player?.debugState() ?? null);
-        hook.commands.loadLevel = levelId => sceneManager.change('playing', { levelId });
+        hook.commands.loadLevel = (levelId, checkpointId = null) => sceneManager.change('playing', { levelId, checkpointId });
         hook.commands.teleport = (x, y) =>
         {
             // World coordinates (y up) of the player's center, the same as __sammy.player.pos.

@@ -40,6 +40,19 @@ export class Zones
         this.checkpointId = null;
     }
 
+    /** Resume at a checkpoint reached in an earlier session: it becomes the respawn point and
+     *  won't fire (or autosave) again this load. Returns false if there is no such checkpoint. */
+    restoreCheckpoint(id)
+    {
+        const zone = this.zones.find(z => z.type === 'checkpoint' && z.id === id);
+        if (!zone)
+            return false;
+        zone.fired = true;
+        this.checkpointId = zone.id;
+        this.respawnPoint = standingPoint(zone);
+        return true;
+    }
+
     /** Check the tracked body (an axis-aligned box) against every zone. */
     update(pos, size)
     {

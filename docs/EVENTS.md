@@ -7,10 +7,10 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 
 | Event | Payload | Owner | Notes |
 |---|---|---|---|
-| `scene:change` | `{from, to}` | SceneManager | |
+| `scene:change` | `{from, to, kind}` | SceneManager | `kind`: `change` (whole stack replaced), `push` (overlay opened, e.g. `pause`), `pop` (overlay closed). `from`/`to` are the top scene before/after |
 | `level:start` | `{levelId, name, timeOfDay, size}` | playing scene | after the level is built; `size` = `{x, y}` in tiles |
-| `level:complete` | `{...zoneProps, id, levelId}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load |
-| `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load |
+| `level:complete` | `{...zoneProps, id, levelId, nextLevel?}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load. `nextLevel` = the exit's own `nextLevel`, else the level data's; absent on the last level. Autosaved by SaveSystem; opens the level complete overlay |
+| `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load. Autosaved by SaveSystem. Not re-sent for a checkpoint restored by Continue |
 | `correction:triggered` | `{...zoneProps, id, levelId}` | LevelLoader | Sammy is somewhere silly. `id` = zone id (`world-bottom` for falling off the world); optional `lineId`, `reason` |
 | `correction:reset` | `{zoneId}` | Narrator | midpoint of the rewrite effect. The playing scene moves the player to `level.respawn`. Also sent immediately (no visuals) if the narrator is disposed/reloaded mid-correction and the reset hadn't gone out yet |
 | `correction:done` | `{zoneId}` | Narrator | input unlocked. Also sent immediately (no visuals) on dispose/reload mid-correction. A `correction:triggered` arriving while a correction runs is ignored by the narrator |
@@ -27,12 +27,14 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `interact:nothing` | none | Interaction | E pressed with nothing in range |
 | `interact:doorLocked` | `{id}` | Door | |
 | `door:open` | `{id}` | Door | when the open animation starts (plays the creak) |
-| `menu:move` | none | menu scenes | selection changed |
-| `menu:select` | none | menu scenes | item activated |
+| `menu:move` | none | menu scenes (Menu.js) | selection changed |
+| `menu:select` | none | menu scenes (Menu.js), level complete | item activated, slider adjusted, or celebration continued |
 | `audio:setVolume` | number | any (pause menu) | |
 | `audio:setMuted` | boolean | any | |
 | `audio:toggleMute` | none | any | |
 | `audio:changed` | settings object | Audio | |
+
+Save in localStorage `sammyexplore.save` (SaveSystem owns it): `{schemaVersion, levelId, checkpointId, flags, catsRescued, updatedAt}`.
 
 Settings in localStorage `sammyexplore.settings`: `{volume, muted, musicVolume, sfxVolume}`. Audio owns these keys. Other systems merge, never overwrite.
 

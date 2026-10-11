@@ -45,7 +45,8 @@ export function buildLevel(data)
         const terrain = new Terrain(types, TILE_PALETTES[data.timeOfDay]);   // cleans up after itself if it throws
         created.push(terrain);
 
-        const zones = new Zones(data.id, data.zones.map((zone, index) => toWorldZone(zone, index, height)), size, WORLD_FALL_MARGIN);
+        const worldZones = data.zones.map((zone, index) => toWorldZone(zone, index, height, data.nextLevel));
+        const zones = new Zones(data.id, worldZones, size, WORLD_FALL_MARGIN);
 
         const context = { levelId: data.id, levelSize: { x: width, y: height } };
         const entities = [];
@@ -67,8 +68,12 @@ export function buildLevel(data)
     }
 }
 
-function toWorldZone({ type, id, rect, ...props }, index, height)
+function toWorldZone({ type, id, rect, ...props }, index, height, nextLevel)
 {
+    // Exits carry where they lead (in their level:complete payload). An exit may name its own
+    // nextLevel; otherwise it uses the level's.
+    if (type === 'exit' && nextLevel && !props.nextLevel)
+        props.nextLevel = nextLevel;
     return {
         type,
         id: id ?? `${type}-${index}`,
@@ -90,6 +95,9 @@ function validateLevel(data, id)
         fail(`id is "${data.id}" but the file is named "${id}.js"`);
     if (!TILE_PALETTES[data.timeOfDay])
         fail(`timeOfDay must be one of ${Object.keys(TILE_PALETTES).join(', ')}`);
+    for (const target of [data.nextLevel, ...(data.zones ?? []).map(zone => zone.nextLevel)])
+        if (target !== undefined && (typeof target !== 'string' || !LEVEL_ID_PATTERN.test(target)))
+            fail(`nextLevel ${JSON.stringify(target)} is not a valid level id`);
     validateMap(data, fail);
     validateEntities(data, fail);
     validateZones(data, fail);

@@ -29,6 +29,7 @@
 
 const PRIORITY = {
     correction: 100,
+    celebrate: 60,   // level complete: worth cutting off whatever was still being said
     nag: 30,
     idle: 20,
     shrug: 5,     // below the default: never interrupts anything
@@ -149,6 +150,18 @@ export default {
             priority: PRIORITY.nag,
             cooldown: 20,
             text: "Pressing E faster won't make a door appear. I'm not going to. ...Probably.",
+        },
+
+        // Level complete: the narrator's remark while the celebration plays (T-008). Draft lines.
+        {
+            id: 'levelComplete.common',
+            trigger: 'level:complete',
+            priority: PRIORITY.celebrate,
+            texts: [
+                'And the Eagle reached the end of the chapter! ...The owl did. Fine. Well done, owl.',
+                'The end of the chapter! I wrote a victory speech for the Eagle. You may borrow it.',
+                "You made it! Don't tell the Eagle I said this, but... that was rather good.",
+            ],
         },
     ],
 };

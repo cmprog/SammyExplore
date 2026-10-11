@@ -35,8 +35,12 @@ class Session:
 
 
 @contextmanager
-def session(wait_hook=True, timeout=10):
-    """Yields a Session with the game loaded. Check session.errors at the end."""
+def session(wait_hook=True, timeout=10, start_level="test"):
+    """Yields a Session with the game loaded. Check session.errors at the end.
+
+    The game boots to the title screen. start_level (default "test") skips straight into that level
+    via __sammy.commands.loadLevel, so gameplay scenarios don't have to click through the menu.
+    Pass start_level=None to stay on the title screen."""
     OUT.mkdir(parents=True, exist_ok=True)
     server, url = start_server()
     try:
@@ -52,6 +56,10 @@ def session(wait_hook=True, timeout=10):
                     page.wait_for_function("window.__sammy !== undefined", timeout=timeout * 1000)
                 except Exception:
                     s.errors.append("window.__sammy missing")
+                if start_level and not s.errors:
+                    page.wait_for_function("window.__sammy.scene === 'title'", timeout=timeout * 1000)
+                    page.evaluate("id => window.__sammy.commands.loadLevel(id)", start_level)
+                    wait_scene(page, "playing", timeout)
             try:
                 yield s
             finally:

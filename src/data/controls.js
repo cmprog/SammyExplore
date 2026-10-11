@@ -9,6 +9,12 @@ export const ACTION_KEYS = {
     interact: ['KeyE'],
     pause:    ['Escape'],
     confirm:  ['Enter', 'NumpadEnter', 'Space'],   // menus only
+    // Menu navigation. Same keys as movement, but separate actions so a gameplay lock
+    // (e.g. a correction running when Esc is pressed) never freezes the pause menu.
+    menuUp:    ['KeyW', 'ArrowUp'],
+    menuDown:  ['KeyS', 'ArrowDown'],
+    menuLeft:  ['KeyA', 'ArrowLeft'],
+    menuRight: ['KeyD', 'ArrowRight'],
     // Narrator text box: finish the typewriter reveal / dismiss the line.
     // Not Space, so jumping never skips narration.
     advance:  ['KeyE', 'Enter', 'NumpadEnter'],
