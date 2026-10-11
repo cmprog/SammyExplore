@@ -56,6 +56,7 @@ index.html            entry point (loads src/main.js as a module)
 lib/littlejs/         vendored engine (read-only)
 src/main.js           engine init, wires up systems
 src/core/             scene manager, event bus, input mapping, debug hook
+src/scenes/           one file per scene (title, playing, paused, ...)
 src/systems/          narrator, interaction, audio, level loader, camera, etc.
 src/entities/         Sammy, cats, interactables
 src/art/              procedural drawing (one file per character/prop/backdrop)
