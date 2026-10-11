@@ -9,6 +9,7 @@ import { installDebugHook } from './core/debugHook.js';
 import { endInputFrame } from './core/input.js';
 import { tickFrame } from './core/clock.js';
 import { BootScene } from './scenes/BootScene.js';
+import { initAudio } from './systems/Audio.js';
 
 const GAME_RESOLUTION = vec2(1920, 1080);
 const BACKGROUND_COLOR = rgb(.07, .07, .14);   // deep night blue
@@ -28,6 +29,7 @@ installDebugHook(scenes);
 
 function gameInit()
 {
+    initAudio();   // after engineInit has created the master gain
     scenes.change('boot');
 }
 
