@@ -6,8 +6,8 @@ player:glideEnd on every exit (release, flap, land, teleport/reset, correction),
 player:land impact range. Prints the measured movement numbers for tuning.js.
 
 Measurement: a test-side listener on the game's event bus logs player events with the player
-state at that moment, and a requestAnimationFrame sampler records __sammy.player every frame.
-Inputs are real Playwright key presses (teleport only sets up tests), except one frame-exact
+state at that moment, and a per-engine-step sampler (wrapped Sammy.update) records __sammy.player every step.
+Inputs are real Playwright key presses (teleport only sets up tests), except one step-exact
 Space press in test_jump_buffer_thin_platform, dispatched in-page because it must hit one step.
 
 Test level geometry (world units, y up): ground top y=4 for x<18; the hill x 7..13 has its top
@@ -38,12 +38,20 @@ RECORDER = """async () => {
                    'player:glideEnd', 'player:land', 'correction:triggered', 'correction:reset'];
     for (const n of names)
         bus.on(n, d => t.log.push({ n, d, p: window.__sammy.player, i: t.samples.length }));
-    const loop = () => {
+    // Per ENGINE STEP, not per rendered frame (headless renders ~27 fps vs a 60 Hz step): wrap
+    // Sammy.prototype.update, which runs exactly once per step while playing. pre hooks run
+    // before the real update (so an input they inject is read by that very step), post after.
+    const m = await import('/lib/littlejs/littlejs.esm.js');
+    const proto = Object.getPrototypeOf(m.engineObjects.find(o => o.constructor.name === 'Sammy'));
+    const orig = proto.update;
+    window.__stepPre = [];
+    proto.update = function (...a) {
+        for (const f of window.__stepPre.slice()) f();
+        const r = orig.apply(this, a);
         const p = window.__sammy.player;
         if (p) t.samples.push(p);
-        requestAnimationFrame(loop);
+        return r;
     };
-    loop();
 }"""
 
 
@@ -197,23 +205,25 @@ def test_jump_buffer(pg):
 
 
 FRAME_EXACT_PRESS = """([top, half]) => new Promise(resolve => {
-    // Watch every frame; when the NEXT physics step leaves Sammy airborne but under one step
-    // above the platform, press Space so the update that reads it is the last one before
-    // touchdown. Dispatched on document, where LittleJS listens, between engine steps.
-    const watch = () => {
+    // Runs as a pre-step hook, i.e. right before each Sammy.update. When THIS step leaves Sammy
+    // airborne but still above the platform and the next one lands, press Space now so the
+    // update that reads it is the last one before touchdown. Dispatched on document, where
+    // LittleJS listens. Engine-step exact, independent of the render frame rate.
+    const hook = () => {
         const p = window.__sammy.player;
         const gap = p.pos.y - half - top;
         const step = -p.vel.y;
         if (!p.grounded && step > 0.3 && gap >= step && gap < 2 * step) {
+            window.__stepPre.splice(window.__stepPre.indexOf(hook), 1);
             document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', key: ' ' }));
             setTimeout(() => document.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space', key: ' ' })), 300);
             resolve({ gap, step });
-            return;
+        } else if (p.grounded && gap < 0.01) {
+            window.__stepPre.splice(window.__stepPre.indexOf(hook), 1);
+            resolve(null);
         }
-        if (p.grounded && gap < 0.01) { resolve(null); return; }
-        requestAnimationFrame(watch);
     };
-    watch();
+    window.__stepPre.push(hook);
 })"""
 
 
