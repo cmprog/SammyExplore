@@ -77,7 +77,7 @@ export class PlayingScene
             if (token !== this.loadToken)
                 return;
             this.unload();
-            this.level = buildLevel(data);
+            this.level = buildLevel(data, { playerPos: () => this.player?.pos ?? null });
             this.player = new Sammy(this.startPoint());
             this.interaction.setTargets(this.level.entities);
             this.camera.attach(this.player, this.level.size);
@@ -186,8 +186,18 @@ export class PlayingScene
         hook.register('player', () => this.player?.debugState() ?? null);
         hook.register('backdrop', () => this.backdrop?.debugState() ?? null);
         hook.register('interaction', () => this.interaction.debugState());
+        hook.register('entities', () => this.level?.entities.map(entity => entity.debugState?.() ?? null) ?? []);
         hook.commands.loadLevel = (levelId, checkpointId = null, reachedCheckpoints = []) =>
             sceneManager.change('playing', { levelId, checkpointId, reachedCheckpoints });
+        // Poke an entity's debug action by id, e.g. entityAction('twyx', 'sit', true) to hold a pose.
+        hook.commands.entityAction = (id, action, ...args) =>
+        {
+            const entity = this.level?.entities.find(other => other.id === id);
+            if (!entity?.debugAction)
+                return false;
+            entity.debugAction(action, ...args);
+            return true;
+        };
         hook.commands.teleport = (x, y) =>
         {
             // World coordinates (y up) of the player's center, the same as __sammy.player.pos.

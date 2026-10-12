@@ -302,7 +302,7 @@ def main():
         install_recorder(pg)
         settle(pg)
         targets = {t["id"] for t in inter(pg)["targets"]}
-        check(targets == {"meadow-sign", "meadow-door", "island-locked", "island-exit"}, f"interactables registered: {targets}")
+        check(targets == {"meadow-sign", "meadow-door", "island-locked", "island-exit", "twyx"}, f"interactables registered: {targets}")
 
         test_prompt_range(pg)
         test_sign(pg)

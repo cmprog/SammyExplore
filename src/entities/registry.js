@@ -4,8 +4,9 @@
 // A factory receives (pos, props, context):
 //   pos     - world-space center of the tile cell the entity was placed on
 //   props   - everything in the entity entry except type/x/y
-//   context - { levelId, levelSize, triggerExit(exitId) }
+//   context - { levelId, levelSize, triggerExit(exitId), playerPos() }
 //             triggerExit fires one of the level's exits (level:complete), e.g. for an exit door
+//             playerPos() is Sammy's center (a Vector2) or null; read-only, e.g. a cat facing him
 // and returns the created object (usually an EngineObject) so the level can destroy it on unload.
 //
 // Collision: Sammy collides with every SOLID engine object (that is how closed doors block).
@@ -18,10 +19,12 @@
 // file is loaded, so a typo fails loudly instead of quietly making a broken door.
 import { Door } from './Door.js';
 import { Sign } from './Sign.js';
+import { Twyx } from './Twyx.js';
 
 const ENTITY_TYPES = {
     door: { create: (pos, props, context) => new Door(pos, props, context), validate: Door.validateEntry },
     sign: { create: (pos, props) => new Sign(pos, props), validate: Sign.validateEntry },
+    twyx: { create: (pos, props, context) => new Twyx(pos, props, context), validate: Twyx.validateEntry },
 };
 
 const types = new Map(Object.entries(ENTITY_TYPES));

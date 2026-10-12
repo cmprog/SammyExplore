@@ -30,8 +30,9 @@ export async function fetchLevelData(id)
 /**
  * Build a live level from validated data. Transactional: if anything throws part way (a bad
  * entity factory, say), everything created so far is destroyed before the error propagates.
+ * @param {{playerPos?:() => Vector2|null}} [host] - what the host scene offers entities (see registry.js)
  */
-export function buildLevel(data)
+export function buildLevel(data, { playerPos = () => null } = {})
 {
     const height = data.tileMap.length;
     const width = data.tileMap[0].length;
@@ -53,6 +54,7 @@ export function buildLevel(data)
             levelId: data.id,
             levelSize: { x: width, y: height },
             triggerExit: exitId => zones.triggerExit(exitId),
+            playerPos,
         };
         const entities = [];
         for (const { type, x, y, ...props } of data.entities)

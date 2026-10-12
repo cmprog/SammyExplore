@@ -219,3 +219,45 @@ export const SIGN = {
     RADIUS: 1.3,
     WIGGLE_TIME: 0.6,          // the board wobbles when read
 };
+
+// --- Twyx the cat (T-011a) --- distances in tiles, times in seconds, angles in radians
+// TwyxAnimator picks the idle moments at random between the MIN/MAX pairs.
+export const TWYX = {
+    RADIUS: 1.4,               // E range, from Twyx's center to Sammy's center
+    NOTICE_RADIUS: 6,          // Twyx turns to face Sammy within this many tiles sideways...
+    NOTICE_HEIGHT: 3,          // ...and this many up or down
+    TURN_SPEED: 6,             // facing swings -1 <-> 1 at this rate per second (a quick squeeze)
+
+    ACTION_EVERY_MIN: 4,       // standing this long before sitting down (or licking a paw)
+    ACTION_EVERY_MAX: 8,
+    LICK_CHANCE: 0.45,         // otherwise it's a plain sit
+    SIT_TIME_MIN: 3,
+    SIT_TIME_MAX: 6,
+    LICK_TIME: 3.2,
+    SIT_SPEED: 2.5,            // sit blend per second (0 standing .. 1 sitting)
+    LICK_SPEED: 4,
+
+    BLINK_EVERY_MIN: 2.2,
+    BLINK_EVERY_MAX: 5.5,
+    BLINK_TIME: 0.2,
+    BREATHE_SPEED: 2.1,
+
+    TAIL_SWAY: 0.12,           // gentle wave all the time...
+    TAIL_SPEED: 2.2,
+    SWISH_EVERY_MIN: 2.5,      // ...and every so often a big swish
+    SWISH_EVERY_MAX: 6,
+    SWISH_TIME: 1.3,
+    SWISH_SWAY: 0.5,
+    SWISH_SPEED: 7,
+
+    PET_TIME: 1.5,             // ears perked and eyes happily squinted this long after E
+    PET_HOP: 0.2,              // squash-and-stretch kick when petted
+    PERK_EASE: 0.25,           // per step
+    SQUASH_SPRING: 0.22,
+    SQUASH_DAMPING: 0.74,
+
+    HEARTS: 3,                 // one big heart and a couple of small ones float up when petted
+    HEART_LIFE: 1.4,
+    HEART_RISE: 1.3,           // tiles per second
+    HEART_SWAY: 0.6,
+};

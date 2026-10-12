@@ -24,7 +24,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `player:glideStart` | none | Sammy | |
 | `player:glideEnd` | none | Sammy | **any** exit from glide (release, flap, land, reset) |
 | `player:land` | `{impact}` | Sammy | impact is fall speed (0..1), so soft landings can sound softer |
-| `interact:<type>` | `{id, ...}` | Interaction | E pressed with that interactable nearest and in range; emitted before its `interact()` runs. The payload is the interactable's `interactPayload()`. Types so far: `interact:door` `{id}`, `interact:sign` `{id, key}` (`key` = the sign's narration key, so a line with that `key` "reads" it). Later e.g. `interact:twyx`. An E press the narrator used to skip/dismiss a line is never an interaction |
+| `interact:<type>` | `{id, ...}` | Interaction | E pressed with that interactable nearest and in range; emitted before its `interact()` runs. The payload is the interactable's `interactPayload()`. Types so far: `interact:door` `{id}`, `interact:sign` `{id, key}` (`key` = the sign's narration key, so a line with that `key` "reads" it), `interact:twyx` `{id}` (Twyx the cat; Audio meows). An E press the narrator used to skip/dismiss a line is never an interaction |
 | `interact:nothing` | none | Interaction | E pressed with nothing in range |
 | `interact:doorLocked` | `{id}` | Door | after `interact:door`, when the door is locked |
 | `door:open` | `{id}` | Door | when the open animation starts (plays the creak) |
