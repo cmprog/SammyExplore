@@ -32,8 +32,12 @@ const SCENERY = [
 
 export class Backdrop extends EngineObject
 {
-    /** @param {string} timeOfDay - a key of BACKDROP_PALETTES (data/palettes.js) */
-    constructor(timeOfDay)
+    /**
+     * @param {string} timeOfDay - a key of BACKDROP_PALETTES (data/palettes.js)
+     * @param {{layout?: object}} [options] - layout: per-key overrides merged into BACKDROP_LAYOUT
+     *   (e.g. the title screen's moon position, TITLE_BACKDROP_LAYOUT)
+     */
+    constructor(timeOfDay, { layout = {} } = {})
     {
         super(vec2(), vec2(), undefined, 0, undefined, RENDER_ORDER.backdrop);
         this.mass = 0;            // scenery, not a physics object
@@ -42,6 +46,7 @@ export class Backdrop extends EngineObject
             console.warn(`backdrop: no palette for timeOfDay "${timeOfDay}", using ${DEFAULT_TIME_OF_DAY}`);
         this.timeOfDay = BACKDROP_PALETTES[timeOfDay] ? timeOfDay : DEFAULT_TIME_OF_DAY;
         this.palette = BACKDROP_PALETTES[this.timeOfDay];
+        this.layout = mergeLayout(BACKDROP_LAYOUT, layout);
         this.textures = [];       // every TextureInfo we made, freed in destroy()
         this.scenery = [];        // { layer, layout } far to near
         this.clouds = [];         // { layout, sprites } per cloud band
@@ -73,7 +78,7 @@ export class Backdrop extends EngineObject
     bake()
     {
         const seeded = offset => new RandomGenerator(BACKDROP_SEED + offset);
-        const layout = BACKDROP_LAYOUT;
+        const layout = this.layout;
         this.sky = this.toLayer(bakeSky(mainCanvasSize.x, layout, this.palette, seeded(1), this.night));
         if (this.night)
         {
@@ -163,21 +168,21 @@ export class Backdrop extends EngineObject
         this.renderScenery(camera);
         if (this.night)
         {
-            const { parallax } = BACKDROP_LAYOUT.fireflies;
+            const { parallax } = this.layout.fireflies;
             drawFireflies(this.fireflies, this.glints, this.palette, camera.x * parallax, BACKDROP_STRIP_WIDTH, camera.y * parallax, time);
         }
     }
 
     renderNightSky()
     {
-        const { moon } = BACKDROP_LAYOUT;
+        const { moon } = this.layout;
         drawTwinkles(this.twinkles, this.glints, this.palette, time);
         drawMoon(this.moon, this.glints, vec2(moon.x, moon.y), moon.size, this.palette, moon.pulseSeconds, time);
     }
 
     renderDaySky(camera)
     {
-        const { sun } = BACKDROP_LAYOUT;
+        const { sun } = this.layout;
         drawSunRays(vec2(sun.x, sun.y), sun.size, this.palette, sun, time);
         for (const { layout, sprites } of this.clouds)
             drawClouds(sprites, camera.x * layout.parallax + time * layout.drift, BACKDROP_STRIP_WIDTH);
@@ -208,4 +213,13 @@ export class Backdrop extends EngineObject
             bakeMs: this.bakeMs,
         };
     }
+}
+
+/** Shallow per-key merge: { moon: { x } } replaces only the moon's x. */
+function mergeLayout(base, overrides)
+{
+    const merged = { ...base };
+    for (const [key, value] of Object.entries(overrides))
+        merged[key] = Array.isArray(value) || typeof value !== 'object' ? value : { ...base[key], ...value };
+    return merged;
 }

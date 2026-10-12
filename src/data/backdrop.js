@@ -33,3 +33,9 @@ export const BACKDROP_LAYOUT = {
     trees: { parallax: .25, top: 300, bottom: 885, groves: 6, perGrove: [1, 3] },
     bushes: { parallax: .45, top: 560, bottom: 1080, count: 22 },
 };
+
+/** Title screen overrides (merged per key into BACKDROP_LAYOUT): the moon moves to the top-right
+ *  corner, clear of the "Sammy Explore" lettering. */
+export const TITLE_BACKDROP_LAYOUT = {
+    moon: { x: 1775, y: 165 },
+};

@@ -89,6 +89,72 @@ export const SAMMY = {
     LAND_STATE_TIME: 0.12,   // squash moment (art hook); movement isn't slowed
 };
 
+// --- Sammy's look (T-005) ---
+// Animation feel for SammyAnimator (src/entities/) and drawSammy (src/art/). Seconds unless noted.
+// Squash is signed: + is stretched tall, - is squashed flat (0.3 = 30% taller, ~15% thinner).
+export const SAMMY_ANIM = {
+    SQUASH_SPRING: 0.22,        // pull back toward 0 per step (higher = snappier wobble)
+    SQUASH_DAMPING: 0.72,       // velocity kept per step (lower = fewer wobbles)
+    SQUASH_LIMIT: 0.42,
+    JUMP_STRETCH: 0.3,
+    FLAP_STRETCH: 0.22,
+    LAND_SQUASH_MIN: 0.1,       // even a soft hop lands with a little squish...
+    LAND_SQUASH_IMPACT: 0.32,   // ...plus this much more at full impact
+    FALL_STRETCH_MAX: 0.12,     // gently stretched while falling fast (not gliding)
+
+    WING_EASE: 0.28,            // fraction of the way to the state's wing pose per step
+    FLAP_STROKE_TIME: 0.26,     // one wing stroke (overrides the state pose while it plays)
+    TILT_EASE: 0.15,            // body lean eases toward its target per step
+    GLIDE_LEAN: 0.2,            // radians, leaning into the direction of travel
+    GLIDE_LEAN_PER_SPEED: 1.0,  // extra lean per tile/step of sideways speed
+    TUFT_LAG: 3.2,              // ear-tuft droop per tile/step of vertical speed (radians)
+    TUFT_EASE: 0.2,
+
+    RUN_TILES_PER_CYCLE: 1.1,   // one left+right waddle per this many tiles run
+    RUN_BOUNCE: 0.06,           // tiles of hop per footfall
+    RUN_SWAY: 0.1,              // radians of side-to-side waddle
+
+    BREATHE_SPEED: 2.4,         // radians per second
+    BLINK_EVERY: 3.4,
+    BLINK_TIME: 0.14,
+    // Idle personality: a curious head tilt, then a look at the camera, repeating.
+    IDLE_CYCLE: 7,
+    IDLE_TILT_AT: 2.2,          // seconds into the cycle
+    IDLE_TILT_TIME: 1.3,
+    IDLE_TILT: 0.2,             // radians
+    IDLE_LOOK_AT: 4.6,
+    IDLE_LOOK_TIME: 1.5,
+};
+
+// Feather burst on a flap, dust puff on a hard landing. Distances in tiles, times in seconds.
+export const SAMMY_FX = {
+    FLAP_FEATHERS: 6,
+    FEATHER_LIFE: 1.1,
+    FEATHER_SPEED: 4.5,         // tiles per second at spawn, mostly sideways and down
+    FEATHER_GRAVITY: 3,         // tiles/s^2; feathers float, so much less than Sammy
+    FEATHER_DRAG: 2.5,          // per second
+    FEATHER_SWAY: 2.2,          // side-to-side flutter while drifting
+    WHOOSH_TIME: 0.32,          // the ring of air pushed down by the wings
+
+    DUST_MIN_IMPACT: 0.3,       // landings softer than this make no dust
+    DUST_PUFFS_MIN: 4,
+    DUST_PUFFS_MAX: 10,         // at full impact
+    DUST_LIFE: 0.55,
+    DUST_SPEED: 4,              // tiles per second at full impact
+    DUST_DRAG: 5,
+    DUST_SIZE: 0.32,            // at full impact
+
+    MAX_PARTICLES: 60,          // per field; the oldest particle is dropped beyond this
+};
+
+// Flap feathers shown above Sammy's head (one per charge).
+export const FLAP_PIPS = {
+    HIDE_WHEN_FULL_AFTER: 1.2,  // grounded with every flap: fade out after this long (null = always show)
+    FADE_SPEED: 4,              // alpha per second
+    POP_TIME: 0.3,              // spent / refilled feather pop animation
+    HEIGHT: 1.28,               // tiles above Sammy's feet (clear of the ear tufts)
+};
+
 // --- Narrator (T-006) ---
 // Narrator text box: reveal speed and how long a line stays up. Reading speed is aimed at a
 // 9-year-old reading on their own, so holds are generous.

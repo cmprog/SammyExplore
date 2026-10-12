@@ -13,9 +13,9 @@ Sammy moves, jumps, glides, and flaps. The narrator talks and reacts. E interact
 | T-002 | Playtest harness: `smoke.py` + scenario runner | playtester | T-001 | done |
 | T-003 | Level system: data-driven tile maps, tile collision, camera follow, spawn and reset points, procedural tile art | game-dev | T-001 | done |
 | T-004 | Sammy controller: run, jump (coyote time + buffering), glide (hold Space while falling), limited flaps with cooldown/recharge, tuning file | game-dev | T-003 | done |
-| T-005 | Sammy art: cute round owl drawn in code, with idle/run/jump/glide/flap poses, blink, squash and stretch, flap charge indicator | game-dev | T-004 | ready |
+| T-005 | Sammy art: cute round owl drawn in code, with idle/run/jump/glide/flap poses, blink, squash and stretch, flap charge indicator | game-dev | T-004 | in-progress |
 | T-006 | Narrator system: event-driven triggers (zones, player actions, idling, "disobeying"), typewriter text box, queue and priority, scripts as data | game-dev | T-001 | done |
-| T-007 | Interaction system: E on interactables, prompt indicator, a test door and a test sign | game-dev | T-003 | ready |
+| T-007 | Interaction system: E on interactables, prompt indicator, a test door and a test sign | game-dev | T-003 | in-progress |
 | T-008 | Screens + autosave: title (New Game/Continue with overwrite warning), pause, level complete; milestone-based autosave | game-dev | T-001 | done |
 | T-009 | Audio: sound-effect catalog (ZzFX), a night music loop (ZzFXM), mute and volume | game-dev | T-001 | done |
 | T-010 | Backdrop: night parallax (sky, moon, stars, silhouettes), with palette support for daytime | game-dev | T-003 | done |

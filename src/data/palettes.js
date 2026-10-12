@@ -56,3 +56,39 @@ export const BACKDROP_PALETTES = {
         mist:           rgb(.86, .94, .96),
     },
 };
+
+// Sammy the owl (T-005): warm browns, a cream belly and face, amber eyes, orange beak and feet.
+// The title screen's original painted owl set this palette; keep the two in the same family.
+export const SAMMY_PALETTE = {
+    outline:     rgb(.16, .10, .20),
+    body:        rgb(.56, .36, .24),
+    bodyShade:   rgb(.43, .26, .18),
+    bodyLight:   rgb(.70, .49, .33),
+    rim:         rgb(.86, .72, .62),     // moonlight on the top edge, so Sammy pops off the night sky
+    wing:        rgb(.47, .29, .19),
+    wingLight:   rgb(.62, .42, .28),
+    wingTip:     rgb(.38, .23, .16),
+    belly:       rgb(.93, .82, .66),
+    bellyMark:   rgb(.62, .44, .30),
+    face:        rgb(.97, .90, .78),
+    brow:        rgb(.43, .26, .18),
+    eyeWhite:    rgb(1, .99, .95),
+    iris:        rgb(.99, .72, .22),
+    pupil:       rgb(.13, .08, .16),
+    shine:       rgb(1, 1, 1),
+    beak:        rgb(.98, .66, .23),
+    beakShade:   rgb(.86, .48, .16),
+    feet:        rgb(.98, .66, .23),
+    cheek:       rgb(1, .52, .60, .45),
+    shadow:      rgb(.02, .02, .08, .35),
+    // Flap feathers above the head
+    pipFull:     rgb(1, .93, .70),
+    pipFullTip:  rgb(.98, .74, .36),
+    pipEmpty:    rgb(.30, .27, .42, .55),
+    pipOutline:  rgb(.16, .10, .20),
+    // Effects
+    feather:     rgb(.70, .49, .33),
+    featherAlt:  rgb(.93, .82, .66),
+    whoosh:      rgb(1, 1, 1, .5),
+    dust:        rgb(.84, .80, .92),
+};

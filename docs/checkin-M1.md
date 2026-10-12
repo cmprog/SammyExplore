@@ -27,6 +27,11 @@ Questions for the stakeholder, collected during the M1 run.
 - Quit to Title: should it confirm "you'll go back to your last checkpoint"?
 - After the final level: Continue currently replays the last level. What should happen?
 - Backdrop: should daytime get live critters (e.g. butterflies) to match the night fireflies? Story props in the background (e.g. an Eagle statue on a far hill)? Different scenery per level?
+- Sammy's look: amber owl eyes (the old placeholder had plain dark pupils). Show her the pose sheet (`tools/playtest/out/poses_sheet.png`)!
+- Flap-charge feathers fade out while Sammy is on the ground with all charges full, and reappear when he jumps. Should they always show instead?
+- Doors: right now they're freestanding doors in a meadow (no wall), so Sammy can hop over a closed one. Is that the gag you want, or should doors sit in walls, hollow trees, and so on?
+- Locked doors: how should they get unlocked later (keys, a cat, the narrator relenting)? Nothing unlocks them yet.
+- Should opened doors stay open after Continue (saved), or reset?
 - Glide discoverability: nothing on screen teaches gliding. Should the narrator hint at it in the sandbox (e.g. grudgingly admitting owls can glide)?
 
 ## Decisions PM made (FYI)

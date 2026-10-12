@@ -333,8 +333,12 @@ def test_glide_ratio(pg):
     pg.keyboard.up("Space")
     wait_grounded(pg)
     glide = [x for x in samples(pg) if x["state"] == "glide"]
-    steady = glide[30:75]
-    if steady:
+    # Skip the first third (the glide brake settling). Samples are per rendered frame, so their
+    # count depends on the headless frame rate (~27 fps here); fixed indices were too tight.
+    steady = glide[len(glide) // 3:]
+    if len(steady) < 5:
+        check(False, f"enough steady glide samples to measure ({len(steady)} of {len(glide)} glide samples; need 5)")
+    else:
         vy = sum(x["vel"]["y"] for x in steady) / len(steady)
         vx = sum(x["vel"]["x"] for x in steady) / len(steady)
         dy = steady[0]["pos"]["y"] - steady[-1]["pos"]["y"]
@@ -344,8 +348,6 @@ def test_glide_ratio(pg):
         numbers["glide tiles across per tile dropped"] = dx / dy if dy else None
         check(-0.06 <= vy <= -0.05, f"glide caps fall speed at ~0.055/step ({vy:.4f})")
         check(dx / dy > 2.2 if dy else False, f"glide covers distance ({dx:.2f} across, {dy:.2f} down)")
-    else:
-        check(False, "glide samples recorded")
 
 
 def test_glide_exits(pg):

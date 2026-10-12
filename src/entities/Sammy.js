@@ -1,5 +1,7 @@
 // Sammy the owl: the player character. Runs, jumps, flaps (limited charges), and glides.
-// All feel numbers live in SAMMY in data/tuning.js; the drawing lives in src/art/.
+// All feel numbers live in SAMMY in data/tuning.js; the drawing lives in src/art/ (drawSammy),
+// fed by SammyAnimator (squash spring, wing poses, flap stroke) and decorated by a ParticleField
+// (flap feathers, landing dust).
 //
 // The engine runs physics BEFORE update() each step, so update() sees where this step's
 // physics left Sammy (groundObject set on landing) and sets the velocity the next step uses.
@@ -10,9 +12,13 @@ import { EngineObject, vec2, clamp, lerp, sign, time, timeDelta } from '../../li
 import { isDown, wasPressed } from '../core/input.js';
 import { emit } from '../core/events.js';
 import { collidesWithTerrain, hasGroundWithin } from '../systems/terrainCollision.js';
-import { drawSammyPlaceholder } from '../art/drawSammyPlaceholder.js';
+import { drawSammy } from '../art/drawSammy.js';
+import { drawFlapPips } from '../art/drawFlapPips.js';
+import { SammyAnimator } from './SammyAnimator.js';
+import { ParticleField } from './ParticleField.js';
+import { spawnFlapBurst, spawnLandDust } from './sammyEffects.js';
 import { RENDER_ORDER } from '../data/renderOrder.js';
-import { SAMMY, WORLD_GRAVITY } from '../data/tuning.js';
+import { SAMMY, SAMMY_ANIM, FLAP_PIPS, WORLD_GRAVITY } from '../data/tuning.js';
 
 const STEPS_PER_SECOND = 1 / timeDelta;
 
@@ -25,6 +31,8 @@ export class Sammy extends EngineObject
         this.renderOrder = RENDER_ORDER.characters;
         this.setCollision(false, false, true);
         this.friction = 1;          // ground friction is ours (RUN_FRICTION), not the engine's
+        this.animator = new SammyAnimator();
+        this.fx = new ParticleField();
         this.resetMotionState();
     }
 
@@ -45,6 +53,13 @@ export class Sammy extends EngineObject
         this.landTimer = 0;
         this.gliding = false;
         this.lastVelocityY = 0;
+        this.animator.reset();
+    }
+
+    /** Bottom center of the hitbox. */
+    get feetPos()
+    {
+        return this.pos.subtract(vec2(0, this.size.y / 2));
     }
 
     collideWithTile(tileData, tilePos)
@@ -69,6 +84,7 @@ export class Sammy extends EngineObject
         this.updateVertical();
         this.state = this.pickState();
         this.lastVelocityY = this.velocity.y;
+        this.animator.update(this, dt);
     }
 
     tickTimers(dt)
@@ -121,6 +137,8 @@ export class Sammy extends EngineObject
         this.flapTimer = 0;
         this.jumpCutReady = false;
         this.landTimer = SAMMY.LAND_STATE_TIME;
+        this.animator.onLand(impact);
+        spawnLandDust(this.fx, this.feetPos, impact);
         emit('player:land', { impact: Math.round(impact * 1000) / 1000 });
     }
 
@@ -184,6 +202,7 @@ export class Sammy extends EngineObject
         this.jumpCutReady = true;
         this.landTimer = 0;
         this.flapCooldown = SAMMY.FLAP_COOLDOWN;
+        this.animator.onJump();
         emit('player:jump');
     }
 
@@ -197,6 +216,8 @@ export class Sammy extends EngineObject
         this.flapCooldown = SAMMY.FLAP_COOLDOWN;
         this.flapTimer = SAMMY.FLAP_STATE_TIME;
         this.jumpCutReady = false;
+        this.animator.onFlap();
+        spawnFlapBurst(this.fx, this.feetPos);
         emit('player:flap', { chargesLeft: this.flapCharges });
     }
 
@@ -301,24 +322,22 @@ export class Sammy extends EngineObject
         this.gravityScale = 1;
         this.resetMotionState();
         this.facing = facing;
+        this.fx.clear();   // no feathers or dust left hanging where Sammy used to be
     }
 
     destroy(immediate)
     {
         if (!this.destroyed)
             this.endGlide();   // listeners (the glide sound) must never be left hanging
+        this.fx.destroy(immediate);
         super.destroy(immediate);
     }
 
     render()
     {
-        drawSammyPlaceholder(this.pos, {
-            size: this.size,
-            facing: this.facing,
-            state: this.state,
-            flapCharges: this.flapCharges,
-            maxFlapCharges: SAMMY.FLAP_CHARGES,
-        }, time);
+        const feet = this.feetPos;
+        drawSammy(feet, this.animator.pose(this), time);
+        drawFlapPips(feet.add(vec2(0, FLAP_PIPS.HEIGHT)), this.animator.pipState(this), time);
     }
 
     debugState()
@@ -334,8 +353,32 @@ export class Sammy extends EngineObject
             airTime: this.airTime,
             facing: this.facing,
             gliding: this.gliding,
+            look: this.lookDebugState(),
         };
     }
+
+    /** The animation side, for screenshots and art playtests. */
+    lookDebugState()
+    {
+        const pose = this.animator.pose(this);
+        const pips = this.animator.pipState(this);
+        return {
+            squash: round(pose.squash),
+            wing: { rot: round(pose.wing.rot), spread: round(pose.wing.spread), length: round(pose.wing.length) },
+            eyes: { open: round(pose.eyes.open), pupil: round(pose.eyes.pupil) },
+            tilt: round(pose.tilt),
+            stroking: pose.flapAge < SAMMY_ANIM.FLAP_STROKE_TIME,
+            flapAge: Number.isFinite(pose.flapAge) ? round(pose.flapAge) : null,
+            stateTime: round(pose.stateTime),
+            pipAlpha: round(pips.alpha),
+            particles: this.fx.count,
+        };
+    }
+}
+
+function round(value)
+{
+    return Math.round(value * 1000) / 1000;
 }
 
 /** Move `value` toward `target` by at most `step`. */
