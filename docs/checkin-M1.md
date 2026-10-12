@@ -45,10 +45,10 @@ Questions for the stakeholder, collected during the M1 run.
 - Doors: right now they're freestanding doors in a meadow (no wall), so Sammy can hop over a closed one. Is that the gag you want, or should doors sit in walls, hollow trees, and so on?
 - Locked doors: how should they get unlocked later (keys, a cat, the narrator relenting)? Nothing unlocks them yet.
 - Should opened doors stay open after Continue (saved), or reset?
-- Glide discoverability: nothing on screen teaches gliding. Should the narrator hint at it in the sandbox (e.g. grudgingly admitting owls can glide)?
 
 ## Decisions PM made (FYI)
-- The engine's debug build allows `+`/`-` speed hotkeys. We'll switch to the release build for play sessions.
+- The game runs the engine's release build by default (no `+`/`-` speed hotkeys). Use `?debug` for development.
+- Glide is taught by the narrator in Chapter One (a hint at the Great Gap, and a stronger hint if you fall in).
 - Worktree isolation workaround (path case), see memory.
 - Level bounds: the left and right map edges and the top of the map are invisible walls. Only the bottom triggers a narrator correction, for falling off the world. Tell me if you'd rather leaving through the sides or the top count as "somewhere silly" too.
 - We hit the session usage limit while running 3 Opus game-dev agents in parallel. All three were resumed from their transcripts and nothing was lost. Options for the future: less parallelism, or Sonnet for some game-dev and reviewer tasks. Your call on cost versus speed.
