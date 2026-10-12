@@ -1,0 +1,58 @@
+// Sky and backdrop colors per time of day, picked by the level's `timeOfDay`.
+// Terrain colors live in tilePalettes.js; the two are tuned together so the playable ground
+// always reads brighter and warmer than the scenery behind it.
+// Layers fade toward the horizon color the farther away they are (atmospheric depth).
+import { rgb } from '../../lib/littlejs/littlejs.esm.js';
+
+export const BACKDROP_PALETTES = {
+    night: {
+        skyTop:         rgb(.04, .04, .14),
+        skyMid:         rgb(.11, .10, .30),
+        skyHorizon:     rgb(.33, .25, .50),
+        star:           rgb(1, .97, .88),
+        starCool:       rgb(.78, .84, 1),
+        moon:           rgb(1, .96, .84),
+        moonShade:      rgb(.90, .84, .74),
+        moonCrater:     rgb(.86, .79, .70),
+        moonCraterRim:  rgb(1, .99, .93),
+        moonHalo:       rgb(.78, .76, 1),
+        ridgeFar:       rgb(.24, .20, .44),
+        ridgeFarRim:    rgb(.36, .31, .58),
+        hills:          rgb(.16, .14, .35),
+        hillsRim:       rgb(.30, .27, .55),
+        trees:          rgb(.10, .10, .26),
+        treesRim:       rgb(.21, .21, .44),
+        treesDetail:    rgb(.13, .13, .31),
+        trunk:          rgb(.08, .07, .20),
+        bushes:         rgb(.06, .10, .20),
+        bushesRim:      rgb(.13, .23, .36),
+        bushesDetail:   rgb(.08, .13, .24),
+        mist:           rgb(.36, .29, .56),
+        firefly:        rgb(1, .96, .55),
+        fireflyGlow:    rgb(.85, 1, .45),
+    },
+    day: {
+        skyTop:         rgb(.30, .58, .93),
+        skyMid:         rgb(.52, .77, .98),
+        skyHorizon:     rgb(.88, .95, .98),
+        sun:            rgb(1, .93, .52),
+        sunCore:        rgb(1, .99, .82),
+        sunRim:         rgb(1, .80, .36),
+        sunHalo:        rgb(1, .92, .62),
+        cloud:          rgb(1, 1, 1),
+        cloudShade:     rgb(.84, .90, .99),
+        cloudOutline:   rgb(.70, .80, .95),
+        ridgeFar:       rgb(.62, .78, .88),
+        ridgeFarRim:    rgb(.78, .89, .95),
+        hills:          rgb(.50, .74, .66),
+        hillsRim:       rgb(.68, .87, .76),
+        trees:          rgb(.30, .58, .46),
+        treesRim:       rgb(.46, .74, .54),
+        treesDetail:    rgb(.36, .65, .50),
+        trunk:          rgb(.42, .34, .32),
+        bushes:         rgb(.24, .50, .38),
+        bushesRim:      rgb(.38, .66, .46),
+        bushesDetail:   rgb(.29, .56, .41),
+        mist:           rgb(.86, .94, .96),
+    },
+};
