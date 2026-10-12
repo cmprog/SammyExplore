@@ -48,7 +48,12 @@ export class Backdrop extends EngineObject
         this.twinkles = [];
         this.fireflies = [];
         const start = performance.now();
-        this.bake();
+        try { this.bake(); }
+        catch (error)
+        {
+            this.destroy();       // free the textures baked so far
+            throw error;
+        }
         this.bakeMs = Math.round(performance.now() - start);
     }
 
@@ -115,20 +120,31 @@ export class Backdrop extends EngineObject
         const layer = this.toLayer(strip);
         if (!layer)
             return null;
-        const texture = layer.tile.textureInfo.glTexture;
-        if (glContext && texture)
-        {
-            // Restore the previous binding: the engine caches which texture it thinks is bound.
-            const bound = glContext.getParameter(glContext.TEXTURE_BINDING_2D);
-            glContext.bindTexture(glContext.TEXTURE_2D, texture);
-            glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MAG_FILTER, glContext.LINEAR);
-            glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MIN_FILTER, glContext.LINEAR);
-            glContext.bindTexture(glContext.TEXTURE_2D, bound);
-        }
+        this.glintTexture = layer.tile.textureInfo;
+        this.smoothGlints();
         const glints = {};
         GLINT_KINDS.forEach((kind, i) =>
             glints[kind] = new TileInfo(vec2(i * GLINT_CELL, 0), vec2(GLINT_CELL), layer.tile.textureInfo, 0, 0));
         return glints;
+    }
+
+    /**
+     * Give the glint texture linear filtering. The engine recreates every GL texture with its
+     * global (nearest) filter after a WebGL context restore, so render() calls this each frame;
+     * it only touches GL when the texture object has changed since it was last smoothed.
+     */
+    smoothGlints()
+    {
+        const texture = this.glintTexture?.glTexture;
+        if (!glContext || !texture || texture === this.smoothedGlTexture)
+            return;
+        // Restore the previous binding: the engine caches which texture it thinks is bound.
+        const bound = glContext.getParameter(glContext.TEXTURE_BINDING_2D);
+        glContext.bindTexture(glContext.TEXTURE_2D, texture);
+        glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MAG_FILTER, glContext.LINEAR);
+        glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MIN_FILTER, glContext.LINEAR);
+        glContext.bindTexture(glContext.TEXTURE_2D, bound);
+        this.smoothedGlTexture = texture;
     }
 
     // --- drawing --------------------------------------------------------------------------------
@@ -137,6 +153,7 @@ export class Backdrop extends EngineObject
     {
         if (!this.sky)
             return;
+        this.smoothGlints();
         // Camera offset from the level's bottom-left view, in screen pixels. Layers only ever move
         // down (camera going up), so their baked bottoms are only exposed if parallax opens a gap.
         const half = getCameraSize().scale(.5);
