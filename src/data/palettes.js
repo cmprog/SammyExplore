@@ -92,3 +92,32 @@ export const SAMMY_PALETTE = {
     whoosh:      rgb(1, 1, 1, .5),
     dust:        rgb(.84, .80, .92),
 };
+
+// Twyx the tuxedo cat (T-011a): black with a white bib, paws and muzzle, green eyes, pink nose.
+// "Black" is a soft charcoal with a cool moonlit rim, so Twyx never vanishes into the night sky;
+// the outline is darker than the fur so the silhouette still reads against the darkest sky.
+export const TWYX_PALETTE = {
+    outline:     rgb(.05, .04, .10),
+    fur:         rgb(.20, .19, .26),
+    furShade:    rgb(.13, .12, .18),
+    furLight:    rgb(.31, .30, .40),
+    rim:         rgb(.60, .63, .86),     // moonlight on the top edge
+    white:       rgb(.98, .97, 1),
+    whiteShade:  rgb(.80, .80, .91),
+    earInner:    rgb(.96, .62, .72),
+    eyeWhite:    rgb(.95, .98, .86),
+    iris:        rgb(.55, .86, .30),
+    irisDark:    rgb(.32, .62, .20),
+    pupil:       rgb(.06, .06, .10),
+    shine:       rgb(1, 1, 1),
+    nose:        rgb(1, .56, .70),
+    tongue:      rgb(1, .48, .62),
+    mouth:       rgb(.30, .22, .30),
+    whisker:     rgb(.92, .92, 1, .75),
+    cheek:       rgb(1, .52, .66, .5),
+    shadow:      rgb(.02, .02, .08, .35),
+    // Pet reaction
+    heart:       rgb(1, .42, .58),
+    heartShine:  rgb(1, .80, .86),
+    note:        rgb(1, .93, .62),
+};

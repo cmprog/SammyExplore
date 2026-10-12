@@ -43,6 +43,8 @@ export default {
         'player:flap':      { count: 5, seconds: 6 },
         'player:flapEmpty': { count: 4, seconds: 3 },
         'interact:nothing': { count: 4, seconds: 5 },
+        // Each pet with a line showing is spent skipping it, so 5 real pets in 8s is keen petting.
+        'interact:twyx':    { count: 5, seconds: 8 },
     },
 
     instructions: [],
@@ -153,6 +155,48 @@ export default {
             cooldown: 20,
             skipIfBusy: true,   // a nag about something you did 9 s ago isn't funny
             text: "Pressing E faster won't make a door appear. I'm not going to. ...Probably.",
+        },
+
+        // Twyx the cat. The narrator has no idea why a cat is in the Eagle's story.
+        // First pet, then one attempt to recast Twyx as a hound, then little remarks now and then
+        // (petting during the cooldown is just purring and hearts). Lines say "Twyx", never he/she.
+        {
+            id: 'twyx.meet',
+            trigger: 'interact:twyx',
+            priority: 42,
+            once: true,
+            text: "A cat?! There is no cat in the Eagle's story. ...The collar says 'Twyx'. Hello, Twyx. You're not in my notes.",
+        },
+        {
+            id: 'twyx.hound',
+            trigger: 'interact:twyx',
+            priority: 41,
+            once: true,
+            text: "Behold, the Eagle's loyal HOUND! Fierce! Woofy! ...Twyx, could you bark? Just once? No. Fine. Cat.",
+        },
+        {
+            id: 'twyx.pet',
+            trigger: 'interact:twyx',
+            cooldown: 8,
+            skipIfBusy: true,
+            texts: [
+                'Twyx purrs. Eagles do not purr. I looked it up.',
+                "The owl pets the cat. I didn't write that. I'm keeping it anyway.",
+                'Twyx looks very pleased. At least SOMEONE in this story is.',
+                "Purrrr. That's Twyx, not me. Narrators don't purr. Mostly.",
+                "I still don't know why there's a cat here. But Twyx is very soft. I'll allow it.",
+            ],
+        },
+        {
+            id: 'twyx.spam',
+            trigger: 'spam:interact:twyx',
+            priority: PRIORITY.nag,
+            cooldown: 20,
+            skipIfBusy: true,   // a nag about something you did 9 s ago isn't funny
+            texts: [
+                "So much petting! Twyx will be the fluffiest cat in any story. Possibly too fluffy.",
+                'Pet, pet, pet. This is an ADVENTURE, not a petting zoo! ...Okay. One more.',
+            ],
         },
 
         // A sign with no line of its own (its key has no keyed line). Keyed lines always win.

@@ -8,6 +8,9 @@
 //
 // Draws with the engine's WebGL primitives in world space. Ellipses get just enough vertices for
 // their size on screen (small in play, smooth when the title draws Sammy big).
+// Filled shapes (ellipse, poly) map their vertices into pooled vectors: the engine copies the
+// points as soon as drawPoly is called, so the same scratch arrays serve every shape of every
+// character each frame instead of allocating a vector per vertex.
 import { vec2, drawPoly, drawLineList, BLACK, cameraScale } from '../../lib/littlejs/littlejs.esm.js';
 
 const PIXELS_PER_SIDE = 5;
@@ -16,6 +19,15 @@ const MAX_SIDES = 48;
 const ORIGIN = vec2();
 // Unit circles per vertex count, computed once: ellipses only scale and transform them.
 const unitCircles = new Map();
+// Scratch vertex arrays by vertex count, reused by every filled shape (see the header).
+const scratch = new Map();
+
+function scratchPoints(count)
+{
+    if (!scratch.has(count))
+        scratch.set(count, Array.from({ length: count }, () => vec2()));
+    return scratch.get(count);
+}
 
 function unitCircle(sides)
 {
@@ -31,7 +43,8 @@ function unitCircle(sides)
 export class ArtFrame
 {
     /**
-     * @param {(x:number, y:number) => Vector2} map - art point to world point
+     * @param {(x:number, y:number, out?:Vector2) => Vector2} map - art point to world point,
+     *   written into `out` when given (else a new vector)
      */
     constructor(map)
     {
@@ -49,10 +62,11 @@ export class ArtFrame
     {
         const c = Math.cos(tilt), s = Math.sin(tilt);
         const pivot = pivotY * stretchY;
-        return new ArtFrame((x, y) =>
+        const ox = origin.x, oy = origin.y;
+        return new ArtFrame((x, y, out = vec2()) =>
         {
             const px = mirror * x * stretchX, py = y * stretchY - pivot;
-            return vec2(origin.x + (px * c - py * s) * scale, origin.y + (px * s + py * c + pivot) * scale);
+            return out.set(ox + (px * c - py * s) * scale, oy + (px * s + py * c + pivot) * scale);
         });
     }
 
@@ -60,11 +74,11 @@ export class ArtFrame
     child(x, y, angle = 0, scaleX = 1, scaleY = scaleX)
     {
         const c = Math.cos(angle), s = Math.sin(angle);
-        return new ArtFrame((px, py) =>
+        return new ArtFrame((px, py, out) =>
         {
             px *= scaleX;
             py *= scaleY;
-            return this.map(x + px * c - py * s, y + px * s + py * c);
+            return this.map(x + px * c - py * s, y + px * s + py * c, out);
         });
     }
 
@@ -79,21 +93,31 @@ export class ArtFrame
         return this.unitLength ??= this.map(1, 0).distance(this.map(0, 0));
     }
 
-    ellipsePoints(x, y, w, h, angle = 0)
+    /** @param {Vector2[]} [out] - vectors to write into (one per vertex); new ones if omitted */
+    ellipsePoints(x, y, w, h, angle = 0, out = null)
     {
         const c = Math.cos(angle), s = Math.sin(angle);
-        const pixels = Math.max(w, h) * this.unit() * cameraScale * Math.PI;
-        const sides = Math.round(Math.min(MAX_SIDES, Math.max(MIN_SIDES, pixels / PIXELS_PER_SIDE)));
-        return unitCircle(sides).map(p =>
+        const sides = this.sidesFor(w, h);
+        const points = out ?? Array.from({ length: sides }, () => vec2());
+        const circle = unitCircle(sides);
+        for (let i = 0; i < sides; i++)
         {
-            const ex = p.x * w / 2, ey = p.y * h / 2;
-            return this.map(x + ex * c - ey * s, y + ex * s + ey * c);
-        });
+            const ex = circle[i].x * w / 2, ey = circle[i].y * h / 2;
+            this.map(x + ex * c - ey * s, y + ex * s + ey * c, points[i]);
+        }
+        return points;
     }
 
     ellipse(x, y, w, h, color, angle = 0)
     {
-        drawPoly(this.ellipsePoints(x, y, w, h, angle), color, 0, BLACK, ORIGIN);
+        drawPoly(this.ellipsePoints(x, y, w, h, angle, scratchPoints(this.sidesFor(w, h))), color, 0, BLACK, ORIGIN);
+    }
+
+    /** Just enough vertices for an ellipse of this size on screen. */
+    sidesFor(w, h)
+    {
+        const pixels = Math.max(w, h) * this.unit() * cameraScale * Math.PI;
+        return Math.round(Math.min(MAX_SIDES, Math.max(MIN_SIDES, pixels / PIXELS_PER_SIDE)));
     }
 
     /** An ellipse with a solid outline of `outline` art units around it. */
@@ -111,7 +135,10 @@ export class ArtFrame
     /** @param {number[][]} points - [[x, y], ...] in art units */
     poly(points, color, lineWidth = 0, lineColor = BLACK)
     {
-        drawPoly(points.map(([x, y]) => this.map(x, y)), color, lineWidth * this.unit(), lineColor, ORIGIN);
+        const out = scratchPoints(points.length);
+        for (let i = 0; i < points.length; i++)
+            this.map(points[i][0], points[i][1], out[i]);
+        drawPoly(out, color, lineWidth * this.unit(), lineColor, ORIGIN);
     }
 
     /** An open polyline; width in art units. */
