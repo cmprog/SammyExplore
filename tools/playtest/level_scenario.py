@@ -62,14 +62,14 @@ def main():
         settle(pg, 1)
 
         # One-way platform: '=' at row 12, cols 35-37 (top at world y 6) is within one jump of the
-        # ground (apex ~2.5 tiles). Jump from underneath: must pass through, then land on top.
+        # ground (full jump apex ~2.57 tiles). Jump from underneath: must pass through, then land on top.
         pg.evaluate("__sammy.commands.teleport(36.5, 5.5)")
         settle(pg, 0.8)
         y_ground = harness.state(pg)["player"]["pos"]["y"]
         reached = y_ground
         for _ in range(6):
-            harness.tap(pg, "Space")
-            time.sleep(0.9)
+            harness.hold(pg, "Space", 0.4)   # held for a full jump: a tap is a short hop (T-004 variable jump)
+            time.sleep(0.6)
             reached = max(reached, harness.state(pg)["player"]["pos"]["y"])
             if harness.state(pg)["player"]["pos"]["y"] > 6.2:
                 break
@@ -79,7 +79,7 @@ def main():
         # Stand on it, then drop: no down-through (S not required); just verify it supports.
         check(harness.state(pg)["player"]["grounded"], "standing on one-way platform")
         # Walk off the platform side and fall back to ground
-        harness.hold(pg, "KeyA", 0.8)
+        harness.hold(pg, "KeyA", 0.3)   # just off the platform's left end; longer runs into the x 28-32 gap
         settle(pg, 1.2)
         # Walking into a platform's side from the ground must not be blocked (one-way).
         pg.evaluate("__sammy.commands.teleport(33, 5)")

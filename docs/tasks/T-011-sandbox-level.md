@@ -9,3 +9,8 @@
 
 ## Event contract
 Use only events listed in `docs/EVENTS.md`. Add any new event to it in the same change.
+
+## Level-design notes (from T-004 and T-010 playtests)
+- Sammy's movement numbers are in the comment in `src/data/tuning.js`. Heights Sammy must reach should be 5 tiles or less; heights he must NOT reach should be 6 or more.
+- With a running jump plus glide Sammy covers about 9.9 tiles, so a "glide gap" must be much wider than 3 tiles (aim for about 7-9) to actually need gliding.
+- The narrator box covers the bottom ~25% of the screen. Don't put important ground-level things where the camera puts them under the box. Consider a camera vertical offset or a framing tweak while narration shows.

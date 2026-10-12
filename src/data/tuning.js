@@ -6,7 +6,7 @@ export const TUNING_VERSION = 1;
 // --- World (T-003) ---
 /** World units per tile is 1; this is screen pixels per tile (1920 px wide = 30 tiles across). */
 export const CAMERA_SCALE = 64;
-/** Downward acceleration per step squared. T-004 may retune this for Sammy's feel. */
+/** Downward acceleration per step squared. Sammy scales it per situation (SAMMY.GRAVITY_*). */
 export const WORLD_GRAVITY = -0.02;
 /** How far below the level's bottom edge the implicit "fell off the world" correction zone starts. */
 export const WORLD_FALL_MARGIN = 2;
@@ -24,11 +24,70 @@ export const CAMERA_LOOK_AHEAD_MIN_SPEED = 0.02;
 /** Frame the target a little below center so there's more sky to look at. */
 export const CAMERA_OFFSET_Y = 1.5;
 
-// --- Temporary test box (T-003 only; T-004 replaces it with Sammy) ---
-export const TEMP_BOX_SIZE = 0.8;
-export const TEMP_BOX_SPEED = 0.14;
-export const TEMP_BOX_ACCEL = 0.2;
-export const TEMP_BOX_JUMP = 0.32;
+// --- Sammy (T-004) ---
+// Speeds are tiles per step (x60 = tiles per second), accelerations tiles per step squared,
+// times in seconds. Gravity is WORLD_GRAVITY times the GRAVITY_* scale for Sammy's situation.
+//
+// Resulting movement, for level design (T-011). Heights are of Sammy's feet above the takeoff
+// ground. Measured in game by tools/playtest/sammy_scenario.py (real key presses) unless
+// marked "sim" (a step-exact simulation of the same numbers):
+//   Full jump (Space held) ......... apex 2.57 tiles, ~0.32 s up
+//   Short hop (Space tapped) ....... ~1.1-1.6 tiles (depends how quickly Space is released)
+//   One flap at the apex ........... +~1.0 tile
+//   Jump + all 3 flaps ............. 5.66 at frame-perfect apex timing (sim; flaps add +3.1)
+//                                    5.2-5.3 flapping by eye near each apex (measured)
+//                                    ~4.9 mashing Space (measured)
+//                                    5.9 hard ceiling at any timing (sim): a ledge 6+ tiles up is unreachable
+//   Run speed ...................... 8.4 tiles/s
+//   Running full jump .............. ~4.9 tiles across, landing at takeoff height (sim)
+//   Glide .......................... falls 3.3 tiles/s, up to 9 tiles/s sideways:
+//                                    2.7 tiles across per tile of drop
+//   Running jump + glide ........... ~9.9 tiles across, landing at takeoff height (sim)
+//   Air refill ..................... +1 flap after 3 s airborne; all 3 come back on landing
+//   Coyote / buffer ................ 0.1 s each (6 steps)
+// Plan "must reach" heights at <= 5 tiles and "must not reach" at >= 6.
+export const SAMMY = {
+    HITBOX: { x: 0.8, y: 0.9 },
+
+    // Ground
+    RUN_SPEED: 0.14,
+    RUN_ACCEL: 0.022,        // reach full speed in ~0.1 s
+    RUN_FRICTION: 0.03,      // stop in ~0.08 s when you let go
+    // Air (not gliding)
+    AIR_MAX_SPEED: 0.14,
+    AIR_ACCEL: 0.012,
+    AIR_DRAG: 0.004,         // keeps a little drift after letting go
+    MAX_FALL_SPEED: 0.38,
+
+    // Gravity scales: lighter on the way up than down so Sammy hangs at the top a moment.
+    GRAVITY_RISE: 0.8,
+    GRAVITY_FALL: 0.9,
+    GRAVITY_GLIDE: 0.5,      // used only while gliding slower than GLIDE_FALL_SPEED
+
+    // Jump
+    JUMP_VELOCITY: 0.295,
+    JUMP_CUT: 0.45,          // upward speed kept when Space is released early
+    COYOTE_TIME: 0.1,        // can still jump this long after walking off a ledge
+    JUMP_BUFFER: 0.1,        // a press this long before landing still jumps
+
+    // Flap: upward speed = max(current, max(current, 0) * FLAP_KEEP + FLAP_VELOCITY).
+    // FLAP_KEEP lets a flap during the rise still pop; the cooldown stops mashing from stacking it.
+    FLAP_VELOCITY: 0.19,
+    FLAP_KEEP: 0.2,
+    FLAP_CHARGES: 3,
+    FLAP_COOLDOWN: 0.15,     // after a jump or flap; a press during it fires when it ends
+    FLAP_AIR_REFILL: 3,      // seconds airborne per charge regained
+    FLAP_STATE_TIME: 0.2,    // how long the 'flap' state shows (art hook)
+
+    // Glide (hold Space while falling)
+    GLIDE_FALL_SPEED: 0.055,
+    GLIDE_BRAKE: 0.2,        // fraction of extra fall speed removed per step when a glide starts fast
+    GLIDE_MAX_SPEED: 0.15,
+    GLIDE_ACCEL: 0.016,      // a bit more air control than a plain fall
+
+    // Land
+    LAND_STATE_TIME: 0.12,   // squash moment (art hook); movement isn't slowed
+};
 
 // --- Narrator (T-006) ---
 // Narrator text box: reveal speed and how long a line stays up. Reading speed is aimed at a

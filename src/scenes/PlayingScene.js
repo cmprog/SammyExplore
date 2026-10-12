@@ -7,7 +7,7 @@ import {
 import { on, emit } from '../core/events.js';
 import { fetchLevelData, buildLevel } from '../systems/LevelLoader.js';
 import { Camera } from '../systems/Camera.js';
-import { TempBox } from '../entities/TempBox.js';
+import { Sammy } from '../entities/Sammy.js';
 import { WORLD_GRAVITY } from '../data/tuning.js';
 
 export const DEFAULT_LEVEL_ID = 'test';
@@ -62,7 +62,7 @@ export class PlayingScene
                 return;
             this.unload();
             this.level = buildLevel(data);
-            this.player = new TempBox(this.level.zones.spawnPoint);
+            this.player = new Sammy(this.level.zones.spawnPoint);
             this.camera.attach(this.player, this.level.size);
         }
         catch (error)

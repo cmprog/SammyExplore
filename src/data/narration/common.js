@@ -111,6 +111,7 @@ export default {
             trigger: 'spam:player:flap',
             priority: PRIORITY.nag,
             cooldown: 20,
+            skipIfBusy: true,   // a nag about something you did 9 s ago isn't funny
             texts: [
                 'Flap flap flap flap. Eagles SOAR, you know. Majestically. With far fewer flaps.',
                 'The Eagle glided gracefully. The owl... flapped like a startled pillow.',
@@ -123,6 +124,7 @@ export default {
             trigger: 'spam:player:flapEmpty',
             priority: PRIORITY.nag,
             cooldown: 15,
+            skipIfBusy: true,   // a nag about something you did 9 s ago isn't funny
             texts: [
                 "You're out of flaps. Flapping harder doesn't make more. I checked the rules.",
                 "That's not flying, that's waving. Land somewhere and your flaps come back.",
@@ -148,6 +150,7 @@ export default {
             trigger: 'spam:interact:nothing',
             priority: PRIORITY.nag,
             cooldown: 20,
+            skipIfBusy: true,   // a nag about something you did 9 s ago isn't funny
             text: "Pressing E faster won't make a door appear. I'm not going to. ...Probably.",
         },
     ],

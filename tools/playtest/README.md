@@ -4,6 +4,7 @@ Run from the repo root with the project venv:
 
     .venv/Scripts/python tools/playtest/smoke.py
     .venv/Scripts/python tools/playtest/input_scenario.py
+    .venv/Scripts/python tools/playtest/sammy_scenario.py     # T-004 movement; prints measured jump/flap/glide numbers
 
 Screenshots land in `tools/playtest/out/` (gitignored). A non-zero exit means a console error,
 page error, or missing `window.__sammy`.
