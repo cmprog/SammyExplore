@@ -40,6 +40,33 @@ export class Zones
         this.checkpointId = null;
     }
 
+    /** Resume at a checkpoint reached in an earlier session: it becomes the respawn point, and it
+     *  and every id in `reached` won't fire (or autosave) again this load, so walking back past an
+     *  earlier checkpoint can't move the respawn backwards. Returns false if `id` doesn't exist. */
+    restoreCheckpoint(id, reached = [])
+    {
+        for (const z of this.zones)
+            if (z.type === 'checkpoint' && (z.id === id || reached.includes(z.id)))
+                z.fired = true;
+        const zone = this.zones.find(z => z.type === 'checkpoint' && z.id === id);
+        if (!zone)
+            return false;
+        this.checkpointId = zone.id;
+        this.respawnPoint = standingPoint(zone);
+        return true;
+    }
+
+    /** After a correction finishes: forget which correction zones the body is inside, so one it is
+     *  still in fires again. A correction:triggered that arrives while another correction runs is
+     *  ignored by the narrator, and an edge-triggered zone would otherwise never fire again
+     *  (e.g. falling off the world a second time mid-correction meant falling forever). */
+    rearmCorrections()
+    {
+        for (const zone of this.zones)
+            if (zone.type === 'correction')
+                zone.inside = false;
+    }
+
     /** Check the tracked body (an axis-aligned box) against every zone. */
     update(pos, size)
     {
@@ -98,6 +125,7 @@ export class Zones
                 pos: plain(zone.pos),
                 size: plain(zone.size),
                 inside: zone.inside,
+                fired: zone.fired,
                 props: zone.props,
             })),
         };

@@ -113,3 +113,18 @@ export const CORRECTION = {
     HOLD: 0.35,
     SCRIBBLE_OUT: 0.8,
 };
+
+// --- Screens and save (T-008) --- seconds unless noted
+export const SCREENS = {
+    MENU_HIGHLIGHT_SPEED: 12,      // how fast a menu item eases into / out of its highlight (per second)
+    SCREEN_FADE_IN: 0.35,          // title / overlays fade in
+    PAUSE_DIM: 0.55,               // how dark the frozen world gets behind the pause menu (0..1)
+    VOLUME_STEP: 0.1,              // one press of left/right on the volume slider
+    SAVE_ICON_TIME: 2.2,           // the "saved" feather stays up this long
+    LEVEL_COMPLETE_MIN_TIME: 1.2,  // can't skip the celebration before this (the exit press isn't a skip)
+    CONFETTI_COUNT: 90,
+    CONFETTI_GRAVITY: 520,         // px/s^2, screen space
+    TO_BE_CONTINUED_MIN_TIME: 1.0,
+    TO_BE_CONTINUED_AUTO_TIME: 6,  // back to the title on its own after this
+    TITLE_NOTICE_TIME: 6,          // how long a title-screen notice (e.g. a level failed to load) stays up
+};

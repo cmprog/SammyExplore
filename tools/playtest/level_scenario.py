@@ -120,7 +120,9 @@ def main():
         harness.hold(pg, "KeyD", 0.8)
         check(len(ev(pg, "checkpoint:reached")) == 1, "checkpoint does not re-fire")
         harness.shot(pg, "level_checkpoint")
-        # fall again: respawn should be at checkpoint now
+        # fall again: respawn should be at checkpoint now. Sammy (T-004) walks fast enough that the
+        # holds above can carry him into the second gap, so let any correction finish first.
+        wait_correction_done(pg)
         pg.evaluate("__sammy.commands.teleport(20, 6)")
         time.sleep(1)
         wait_correction_done(pg)

@@ -10,3 +10,10 @@
 
 ## Event contract
 Use only events listed in `docs/EVENTS.md`. Add any new event to it in the same change.
+
+## Integration notes (added by PM)
+- Replace `src/art/drawSammyPlaceholder.js` in Sammy's render with `drawSammy`. Keep the hitbox from `tuning.js`; the art may overhang it slightly.
+- Swap the title screen's placeholder owl in `src/art/titleArt.js` (`drawTitleSammy`) for `drawSammy`. The title currently draws in Canvas2D screen space, so add a small adapter or a screen-space option.
+- Also swap `drawTitleBackdrop` to use the real backdrop (T-010, `src/systems/Backdrop.js` / `src/art/drawBackdrop.js`), so the title matches the game.
+- The playtest found the flap charge pips too small to read. Make the flap indicator clearly readable at 720p.
+- Flap should *feel* like a whoosh: wing-stroke pose plus feather particles. Hard landings get a dust puff with an impact scale (`player:land {impact}`).

@@ -22,6 +22,9 @@ Create `tools/playtest/<name>.py`:
         return 1 if s.errors else 0
     sys.exit(main())
 
+The game boots to the title screen; `session()` jumps straight into the `test` level by default
+(`session(start_level=None)` stays on the title, `start_level="other"` picks a level).
+
 Helpers in `harness.py`: `session()`, `hold(page, key, seconds)`, `tap(page, key)`, `state(page)`,
 `shot(page, name)`, `wait_scene(page, name)`. Keys are KeyboardEvent codes (`KeyD`, `Space`).
 LittleJS "DEBUG build loaded" is a warning and is ignored.

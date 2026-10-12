@@ -138,7 +138,9 @@ export const SOUND_EVENTS = {
 export const GLIDE_START_EVENTS = ['player:glideStart'];
 // Anything that means "not gliding any more" (or the world changed underneath).
 // player:glideEnd is the contract; the rest are a safety net in case it is ever missed.
+// scene:change is handled by Audio itself: a full change stops the loop, while an overlay
+// (push) only pauses it and closing the overlay (pop) resumes it, so a held glide carries on.
 export const GLIDE_STOP_EVENTS = [
     'player:glideEnd', 'player:land', 'player:flap', 'player:jump',
-    'correction:triggered', 'level:complete', 'scene:change',
+    'correction:triggered', 'level:complete',
 ];

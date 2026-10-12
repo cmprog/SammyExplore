@@ -6,10 +6,15 @@ import {
 } from '../lib/littlejs/littlejs.esm.js';
 import { SceneManager } from './core/SceneManager.js';
 import { installDebugHook } from './core/debugHook.js';
-import { endInputFrame } from './core/input.js';
+import { endInputFrame, wasPressed } from './core/input.js';
+import { on } from './core/events.js';
 import { tickFrame } from './core/clock.js';
-import { BootScene } from './scenes/BootScene.js';
+import { TitleScene } from './scenes/TitleScene.js';
 import { PlayingScene } from './scenes/PlayingScene.js';
+import { PauseScene } from './scenes/PauseScene.js';
+import { LevelCompleteScene } from './scenes/LevelCompleteScene.js';
+import { SaveSystem } from './systems/SaveSystem.js';
+import { TITLE_TEXT } from './data/screens.js';
 import { initAudio } from './systems/Audio.js';
 import { Narrator } from './systems/Narrator.js';
 
@@ -28,26 +33,51 @@ setDebugWatermark(false);
 // One narrator for the whole game; whichever scene hosts gameplay drives it (see Narrator.js).
 const narrator = new Narrator();
 
+const saveSystem = new SaveSystem();
+
 const scenes = new SceneManager();
-scenes.register('boot', new BootScene());
+scenes.register('title', new TitleScene(scenes, saveSystem));
 const playingScene = new PlayingScene(narrator);
 scenes.register('playing', playingScene);
+// Overlays: pushed over 'playing' so the level keeps its state (see SceneManager.js).
+scenes.register('pause', new PauseScene(scenes));
+scenes.register('levelComplete', new LevelCompleteScene(scenes));
+on('level:complete', payload =>
+{
+    if (scenes.currentName === 'playing')
+        scenes.push('levelComplete', payload);
+});
+// A level that won't load (e.g. a save or nextLevel naming a missing level) must not strand
+// the player on an error screen.
+on('level:loadFailed', () =>
+{
+    if (scenes.stackNames.includes('playing'))
+        scenes.change('title', { notice: TITLE_TEXT.loadFailed });
+});
+
 const debugHook = installDebugHook(scenes);
 playingScene.installDebug(debugHook, scenes);
 debugHook.register('narrator', () => narrator.debugState());
 debugHook.commands.say = lineId => narrator.say(lineId, { now: true });
+debugHook.register('sceneStack', () => scenes.stackNames);
+debugHook.register('menu', () => scenes.current?.menuDebugState?.() ?? null);
+debugHook.register('save', () => saveSystem.current());
+debugHook.register('saveStatus', () => saveSystem.debugState());
+debugHook.commands.clearSave = () => saveSystem.clear();
 
 function gameInit()
 {
     initAudio();   // after engineInit has created the master gain
-    // Until the title screen exists (T-008), start straight in the test level.
-    scenes.change('playing', { levelId: 'test' });
+    scenes.change('title');
 }
 
 // gameUpdatePost runs every update step, even while the engine is paused,
 // so per-step bookkeeping (input suppression, our frame counter) lives there.
 function gameUpdatePost()
 {
+    // Esc during gameplay opens the pause overlay; the pause scene itself handles closing it.
+    if (scenes.currentName === 'playing' && wasPressed('pause'))
+        scenes.push('pause');
     scenes.updatePost();
     endInputFrame();
     tickFrame();
@@ -58,5 +88,9 @@ engineInit(
     () => scenes.update(),
     gameUpdatePost,
     () => scenes.render(),
-    () => scenes.renderPost(),
+    () =>
+    {
+        scenes.renderPost();
+        saveSystem.renderPost();   // the "saved" feather sits above every scene
+    },
 );
