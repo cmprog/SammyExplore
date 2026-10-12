@@ -128,3 +128,28 @@ export const SCREENS = {
     TO_BE_CONTINUED_AUTO_TIME: 6,  // back to the title on its own after this
     TITLE_NOTICE_TIME: 6,          // how long a title-screen notice (e.g. a level failed to load) stays up
 };
+
+// --- Interaction (T-007) --- distances in tiles, times in seconds
+export const INTERACTION = {
+    PROMPT_FADE_IN: 0.16,     // the E bubble pops in...
+    PROMPT_FADE_OUT: 0.12,    // ...and out a little faster, so swapping targets feels snappy
+    PROMPT_LIFT: 0.2,         // gap between an interactable's top and the bubble's tail
+    PROMPT_BOB: 0.07,         // bob height
+    PROMPT_BOB_SPEED: 3.2,    // radians per second
+};
+
+// Doors: Sammy is "in range" when the distance from Sammy's center to the door's center is
+// under RADIUS. 1.4 covers standing right beside the door (~1.0) with a little slack.
+export const DOOR = {
+    RADIUS: 1.4,
+    SIZE: { x: 0.8, y: 1.9 },  // the slab: what blocks Sammy while closed (the frame is art only)
+    OPEN_TIME: 0.5,            // swing animation; matches the creak in sounds.doorOpen
+    PASSABLE_AT: 0.6,          // fraction of the swing after which Sammy can walk through
+    EXIT_DELAY: 0.25,          // an exit door finishes opening, then the level completes after this
+    RATTLE_TIME: 0.4,          // a locked door shakes this long
+};
+
+export const SIGN = {
+    RADIUS: 1.3,
+    WIGGLE_TIME: 0.6,          // the board wobbles when read
+};

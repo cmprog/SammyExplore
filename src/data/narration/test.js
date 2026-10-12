@@ -46,6 +46,27 @@ export default {
             priority: 100,
             text: 'Off the pillar, please. That spot is for the Eagle statue. You are not the Eagle statue.',
         },
+        // The meadow sign. The first read is a "misread" (the narrator fixes the owl into an eagle);
+        // after that the narrator refuses to read it again.
+        {
+            id: 'test.sign.read',
+            trigger: 'interact:sign',
+            key: 'test.sign',
+            priority: 41,
+            once: true,
+            text: "It says: 'Welcome, brave Eagle!' ...Fine, it says 'Welcome, Owl.' Clearly a typo.",
+        },
+        {
+            id: 'test.sign.again',
+            trigger: 'interact:sign',
+            key: 'test.sign',
+            priority: 40,
+            cooldown: 3,
+            texts: [
+                "I'm not reading it again. It still says owl. I checked.",
+                'No. You read it. I believe in you. Mostly.',
+            ],
+        },
         {
             id: 'test.goRight.followed',
             trigger: 'followed:goRight',

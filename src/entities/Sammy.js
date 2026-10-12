@@ -23,7 +23,8 @@ export class Sammy extends EngineObject
     {
         super(feetPos.add(vec2(0, SAMMY.HITBOX.y / 2)), vec2(SAMMY.HITBOX.x, SAMMY.HITBOX.y));
         this.renderOrder = RENDER_ORDER.characters;
-        this.setCollision(false, false, true);
+        // Collides with solid objects (closed doors) as well as tiles; Sammy isn't solid itself.
+        this.setCollision(true, false, true);
         this.friction = 1;          // ground friction is ours (RUN_FRICTION), not the engine's
         this.resetMotionState();
     }

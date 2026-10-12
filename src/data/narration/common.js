@@ -155,6 +155,18 @@ export default {
             text: "Pressing E faster won't make a door appear. I'm not going to. ...Probably.",
         },
 
+        // A locked door. A door's id can be used as a line key for a door-specific remark.
+        {
+            id: 'door.locked',
+            trigger: 'interact:doorLocked',
+            cooldown: 3,
+            texts: [
+                "Locked. Eagles don't need doors, you know. They just fly over things.",
+                "It's locked. I'd have written a key, but I didn't think owls could carry one.",
+                'Rattle all you like. That door is not in this chapter.',
+            ],
+        },
+
         // Level complete: the narrator's remark while the celebration plays (T-008). Draft lines.
         {
             id: 'levelComplete.common',

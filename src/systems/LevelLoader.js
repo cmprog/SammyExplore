@@ -7,7 +7,7 @@ import { vec2 } from '../../lib/littlejs/littlejs.esm.js';
 import { TILE_TYPES } from '../data/tileTypes.js';
 import { TILE_PALETTES } from '../data/tilePalettes.js';
 import { WORLD_FALL_MARGIN } from '../data/tuning.js';
-import { spawnEntity } from '../entities/registry.js';
+import { spawnEntity, validateEntity } from '../entities/registry.js';
 import { Terrain } from './Terrain.js';
 import { Zones, ZONE_TYPES, FALL_ZONE_ID } from './Zones.js';
 import { Level } from './Level.js';
@@ -46,9 +46,14 @@ export function buildLevel(data)
         created.push(terrain);
 
         const worldZones = data.zones.map((zone, index) => toWorldZone(zone, index, height, data.nextLevel));
+        worldZones.push(...entityExits(data.entities, height, data.nextLevel));
         const zones = new Zones(data.id, worldZones, size, WORLD_FALL_MARGIN);
 
-        const context = { levelId: data.id, levelSize: { x: width, y: height } };
+        const context = {
+            levelId: data.id,
+            levelSize: { x: width, y: height },
+            triggerExit: exitId => zones.triggerExit(exitId),
+        };
         const entities = [];
         for (const { type, x, y, ...props } of data.entities)
         {
@@ -66,6 +71,22 @@ export function buildLevel(data)
         created.forEach(object => object.destroy?.());
         throw new Error(`level "${data.id}" could not be built: ${error.message}`);
     }
+}
+
+/** An entity with an `exitId` (an exit door) gets a manual exit zone: the same exit path as a
+ *  walk-in exit zone (level:complete, nextLevel, autosave), fired by the entity instead of by
+ *  walking in. Its rect covers the entity's cell and the one above, for the debug view. */
+function entityExits(entities, height, nextLevel)
+{
+    return entities
+        .filter(entity => entity.exitId !== undefined)
+        .map(({ id, x, y, exitId, nextLevel: ownNextLevel }) =>
+        {
+            const exit = { type: 'exit', id: exitId, rect: { x, y: y - 1, w: 1, h: 2 }, door: id };
+            if (ownNextLevel)
+                exit.nextLevel = ownNextLevel;
+            return { ...toWorldZone(exit, 0, height, nextLevel), manual: true };
+        });
 }
 
 function toWorldZone({ type, id, rect, ...props }, index, height, nextLevel)
@@ -95,7 +116,8 @@ function validateLevel(data, id)
         fail(`id is "${data.id}" but the file is named "${id}.js"`);
     if (!TILE_PALETTES[data.timeOfDay])
         fail(`timeOfDay must be one of ${Object.keys(TILE_PALETTES).join(', ')}`);
-    for (const target of [data.nextLevel, ...(data.zones ?? []).map(zone => zone.nextLevel)])
+    const leadsTo = [...(data.zones ?? []), ...(Array.isArray(data.entities) ? data.entities : [])];
+    for (const target of [data.nextLevel, ...leadsTo.map(entry => entry.nextLevel)])
         if (target !== undefined && (typeof target !== 'string' || !LEVEL_ID_PATTERN.test(target)))
             fail(`nextLevel ${JSON.stringify(target)} is not a valid level id`);
     validateMap(data, fail);
@@ -123,20 +145,27 @@ function validateMap({ tileMap, legend }, fail)
     });
 }
 
-function validateEntities({ entities, tileMap }, fail)
+function validateEntities(data, fail)
 {
+    const { entities, tileMap } = data;
     if (!Array.isArray(entities))
         fail('entities must be an array (use [] for none)');
     entities.forEach((entity, index) =>
     {
-        if (typeof entity.type !== 'string')
+        if (!entity || typeof entity.type !== 'string')
             fail(`entity ${index} has no type`);
         if (!inBounds(entity.x, entity.y, tileMap))
             fail(`entity ${index} (${entity.type}) is outside the map`);
+        validateEntity(entity, fail, data);   // type-specific props (see entities/registry.js)
     });
+    // Ids name entities in events and narration keys, so two of the same would be ambiguous.
+    const ids = entities.map(entity => entity.id).filter(id => id !== undefined);
+    const duplicate = ids.find((entityId, i) => ids.indexOf(entityId) !== i);
+    if (duplicate !== undefined)
+        fail(`entity id "${duplicate}" is used twice`);
 }
 
-function validateZones({ zones }, fail)
+function validateZones({ zones, entities }, fail)
 {
     if (!Array.isArray(zones))
         fail('zones must be an array');
@@ -157,10 +186,14 @@ function validateZones({ zones }, fail)
     });
     if (!zones.some(zone => zone.type === 'spawn'))
         fail('needs a spawn zone');
-    const ids = zones.map(zone => zone.id).filter(Boolean);
+    // Exit doors' exitIds share the namespace: they are exit ids (save keys) too.
+    const exitIds = entities.map(entity => entity.exitId).filter(Boolean);
+    if (exitIds.includes(FALL_ZONE_ID))
+        fail(`an exitId uses the reserved id "${FALL_ZONE_ID}"`);
+    const ids = [...zones.map(zone => zone.id).filter(Boolean), ...exitIds];
     const duplicate = ids.find((zoneId, i) => ids.indexOf(zoneId) !== i);
     if (duplicate)
-        fail(`zone id "${duplicate}" is used twice`);
+        fail(`zone/exit id "${duplicate}" is used twice`);
 }
 
 function inBounds(x, y, tileMap)

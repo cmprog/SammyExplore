@@ -3,7 +3,8 @@
 // enter({ levelId, checkpointId, reachedCheckpoints }) starts at that checkpoint instead of the
 // spawn (Continue); reachedCheckpoints are already used up. A level that fails to load emits
 // level:loadFailed (main.js falls back to the title).
-// Hosts the narrator (see the wiring notes at the top of systems/Narrator.js).
+// Hosts the narrator (see the wiring notes at the top of systems/Narrator.js) and the
+// interaction system, which reads E only after the narrator has had its chance to use it.
 import {
     vec2, rgb, setGravity, mainCanvasSize, drawTextScreen,
 } from '../../lib/littlejs/littlejs.esm.js';
@@ -12,6 +13,7 @@ import { fetchLevelData, buildLevel } from '../systems/LevelLoader.js';
 import { Camera } from '../systems/Camera.js';
 import { Sammy } from '../entities/Sammy.js';
 import { Backdrop } from '../systems/Backdrop.js';
+import { Interaction } from '../systems/Interaction.js';
 import { WORLD_GRAVITY } from '../data/tuning.js';
 
 export const DEFAULT_LEVEL_ID = 'test';
@@ -25,6 +27,7 @@ export class PlayingScene
         this.level = null;
         this.player = null;
         this.camera = new Camera();
+        this.interaction = new Interaction();
         this.backdrop = null;
         this.levelId = null;
         this.loading = false;
@@ -76,6 +79,7 @@ export class PlayingScene
             this.unload();
             this.level = buildLevel(data);
             this.player = new Sammy(this.startPoint());
+            this.interaction.setTargets(this.level.entities);
             this.camera.attach(this.player, this.level.size);
         }
         catch (error)
@@ -111,6 +115,7 @@ export class PlayingScene
         this.backdrop?.destroy();
         this.backdrop = null;
         this.camera.detach();
+        this.interaction.clear();
         this.player?.destroy();
         this.player = null;
         this.level?.destroy();
@@ -131,11 +136,13 @@ export class PlayingScene
         this.camera.snap();   // under the page, so the world is already settled when it lifts
     }
 
-    // Runs before engine objects update, so the narrator claims its E/Enter press before the
-    // player (and later the interaction system) read input.
+    // Runs before engine objects update. The narrator goes first so it claims its E/Enter press
+    // before the interaction system (and the player) read input.
     update()
     {
         this.narrator.update();
+        // Under an overlay nothing can be started (and the bubble fades away).
+        this.interaction.update(this.overlaid ? null : this.player?.pos ?? null);
     }
 
     // An overlay is on top (pause, level complete). The level may keep running underneath
@@ -157,6 +164,7 @@ export class PlayingScene
     {
         if (this.loadError)
             drawTextScreen(this.loadError, mainCanvasSize.scale(.5), 40, ERROR_COLOR);
+        this.interaction.renderPost();   // under the narrator's text box
         this.narrator.renderPost();
     }
 
@@ -176,6 +184,7 @@ export class PlayingScene
         hook.register('camera', () => this.camera.debugState());
         hook.register('player', () => this.player?.debugState() ?? null);
         hook.register('backdrop', () => this.backdrop?.debugState() ?? null);
+        hook.register('interaction', () => this.interaction.debugState());
         hook.commands.loadLevel = (levelId, checkpointId = null, reachedCheckpoints = []) =>
             sceneManager.change('playing', { levelId, checkpointId, reachedCheckpoints });
         hook.commands.teleport = (x, y) =>
