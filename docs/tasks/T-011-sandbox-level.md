@@ -1,5 +1,9 @@
 # T-011 M1 sandbox level and Twyx
 
+Split into two parts, done in order:
+- **T-011a Twyx:** the entity, art, idle animations, interaction, and Twyx narrator lines in `common.js`. Shown in the `test` level.
+- **T-011b Sandbox:** the `sandbox` level, `narration/sandbox.js`, the New Game flow pointing at the sandbox, and the full playthrough scenario.
+
 ## Acceptance criteria
 - `src/entities/Twyx.js` + `src/art/drawTwyx.js`: **Twyx is a tuxedo cat**: black body, white chest/bib, white paws, white muzzle, green or yellow eyes, pink nose. Cute and round, in the same style as Sammy. Idle animations: tail swish, blink, occasional sit or lick. Interacting (E) plays a meow and a narrator line. The narrator is confused about why a cat is in an eagle story.
 - `src/data/levels/sandbox.js`: a night level, a few screens wide, that exercises everything: running and jumping platforms, a gap that needs gliding, a tall section that needs flapping, a sign, a locked door and an unlocked door, Twyx, at least two checkpoints, one or two **correction setups** (somewhere silly Sammy can end up, which the narrator "fixes"), and an exit.
