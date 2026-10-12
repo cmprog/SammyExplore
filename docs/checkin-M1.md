@@ -28,6 +28,7 @@ Questions for the stakeholder, collected during the M1 run.
 - After the final level: Continue currently replays the last level. What should happen?
 - Backdrop: should daytime get live critters (e.g. butterflies) to match the night fireflies? Story props in the background (e.g. an Eagle statue on a far hill)? Different scenery per level?
 - Sammy's look: amber owl eyes (the old placeholder had plain dark pupils). Show her the pose sheet (`tools/playtest/out/poses_sheet.png`)!
+- Twyx: green eyes; the narrator learns the name from Twyx's collar; lines avoid he/she because Twyx's gender isn't decided. Is Twyx a boy or a girl, or should it stay neutral? Show her the Twyx sheet.
 - Flap-charge feathers fade out while Sammy is on the ground with all charges full, and reappear when he jumps. Should they always show instead?
 - Doors: right now they're freestanding doors in a meadow (no wall), so Sammy can hop over a closed one. Is that the gag you want, or should doors sit in walls, hollow trees, and so on?
 - Locked doors: how should they get unlocked later (keys, a cat, the narrator relenting)? Nothing unlocks them yet.

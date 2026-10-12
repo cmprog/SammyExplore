@@ -23,6 +23,10 @@ export const CAMERA_LOOK_AHEAD_LERP = 0.025;
 export const CAMERA_LOOK_AHEAD_MIN_SPEED = 0.02;
 /** Frame the target a little below center so there's more sky to look at. */
 export const CAMERA_OFFSET_Y = 1.5;
+/** Added to CAMERA_OFFSET_Y while the narrator's text box is up: the camera eases down so what
+ *  lies below Sammy (a landing spot, the ground) shows above the box instead of under it.
+ *  The level-bottom clamp still applies, so on low ground nothing moves. */
+export const CAMERA_NARRATION_OFFSET_Y = -2.5;
 
 // --- Sammy (T-004) ---
 // Speeds are tiles per step (x60 = tiles per second), accelerations tiles per step squared,
@@ -43,6 +47,11 @@ export const CAMERA_OFFSET_Y = 1.5;
 //   Glide .......................... falls 3.3 tiles/s, up to 9 tiles/s sideways:
 //                                    2.7 tiles across per tile of drop
 //   Running jump + glide ........... ~9.9 tiles across, landing at takeoff height (sim)
+//   Running jump + 3 flaps, no glide  ~14.3 across at takeoff height with perfect timing (sim),
+//                                    ~9.5 mashing; 5 tiles lower: ~16.5 (measured 16.4)
+//   Running jump + glide, 5 lower .. ~23.5 across (sim; measured ~24)
+//   So flaps carry Sammy further than a glide at equal heights: a gap only REQUIRES gliding when
+//   the far side is lower (the sandbox's Great Gap: 19 across, 5 down).
 //   Air refill ..................... +1 flap after 3 s airborne; all 3 come back on landing
 //   Coyote / buffer ................ 0.1 s each (6 steps)
 // Plan "must reach" heights at <= 5 tiles and "must not reach" at >= 6.

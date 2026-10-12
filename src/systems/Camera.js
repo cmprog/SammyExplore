@@ -1,11 +1,12 @@
 // Smooth-follow camera with look-ahead, clamped so it never shows past the level edges.
 // Call update() once per step after objects have moved (the playing scene does it in updatePost).
+// The host sets `narrating` while the narrator's text box is up, to frame the view a little lower.
 import {
     vec2, lerp, clamp, setCameraPos, setCameraScale, cameraPos, cameraScale, getCameraSize,
 } from '../../lib/littlejs/littlejs.esm.js';
 import {
     CAMERA_SCALE, CAMERA_FOLLOW_LERP_X, CAMERA_FOLLOW_LERP_Y, CAMERA_LOOK_AHEAD,
-    CAMERA_LOOK_AHEAD_LERP, CAMERA_LOOK_AHEAD_MIN_SPEED, CAMERA_OFFSET_Y,
+    CAMERA_LOOK_AHEAD_LERP, CAMERA_LOOK_AHEAD_MIN_SPEED, CAMERA_OFFSET_Y, CAMERA_NARRATION_OFFSET_Y,
 } from '../data/tuning.js';
 
 export class Camera
@@ -16,6 +17,7 @@ export class Camera
         this.bounds = null;      // level size in world units; bottom-left is (0, 0)
         this.facing = 1;
         this.lookAhead = 0;
+        this.narrating = false;  // eased like any other move, by the follow lerp
     }
 
     /** Follow a new target inside new bounds and jump straight there (no swoop on level load). */
@@ -58,7 +60,8 @@ export class Camera
 
     desiredPos()
     {
-        return vec2(this.target.pos.x + this.lookAhead, this.target.pos.y + CAMERA_OFFSET_Y);
+        const offsetY = CAMERA_OFFSET_Y + (this.narrating ? CAMERA_NARRATION_OFFSET_Y : 0);
+        return vec2(this.target.pos.x + this.lookAhead, this.target.pos.y + offsetY);
     }
 
     clampToBounds(pos)
@@ -72,6 +75,6 @@ export class Camera
 
     debugState()
     {
-        return { pos: { x: cameraPos.x, y: cameraPos.y }, scale: cameraScale, lookAhead: this.lookAhead };
+        return { pos: { x: cameraPos.x, y: cameraPos.y }, scale: cameraScale, lookAhead: this.lookAhead, narrating: this.narrating };
     }
 }

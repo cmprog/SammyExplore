@@ -157,6 +157,7 @@ export class PlayingScene
             return;
         if (!this.overlaid)
             this.level.zones.update(this.player.pos, this.player.size);
+        this.camera.narrating = this.narrator.showing;
         this.camera.update();
     }
 

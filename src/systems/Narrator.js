@@ -292,6 +292,12 @@ export class Narrator
         }
     }
 
+    /** A line is on screen (the host frames the camera around the text box). */
+    get showing()
+    {
+        return !!this.textBox.line;
+    }
+
     /** Plain data for window.__sammy.narrator. */
     debugState()
     {

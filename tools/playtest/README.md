@@ -8,6 +8,7 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/sammy_poses.py        # T-005 art: zoomed close-up of every pose -> out/poses/, out/poses_sheet.png
     .venv/Scripts/python tools/playtest/interaction_scenario.py   # T-007 E prompt, sign, doors (real E presses)
     .venv/Scripts/python tools/playtest/twyx_scenario.py      # T-011a Twyx: facing, petting, narrator lines; pose sheet -> out/twyx/, out/twyx_sheet.png
+    .venv/Scripts/python tools/playtest/sandbox_playthrough.py   # T-011b full sandbox run, title -> To be continued (~2 min); out/sandbox_NN_*.png
 
 Screenshots land in `tools/playtest/out/` (gitignored). A non-zero exit means a console error,
 page error, or missing `window.__sammy`.

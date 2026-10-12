@@ -11,6 +11,7 @@ import time
 import harness
 
 fails = []
+FIRST_LEVEL_ID = "sandbox"   # src/data/progression.js: where New Game starts
 
 
 def check(ok, msg):
@@ -112,8 +113,17 @@ def title_checks(pg):
     click(pg, "newGame")
     wait_level(pg)
     save = stored_save(pg)
-    check(save is not None and save["levelId"] == "test" and save["checkpointId"] is None and save["schemaVersion"] == 1,
+    check(save is not None and save["levelId"] == FIRST_LEVEL_ID and save["checkpointId"] is None and save["schemaVersion"] == 1,
           f"New Game (click) -> playing, fresh save at level start ({save})")
+    check(st(pg)["level"]["id"] == FIRST_LEVEL_ID, f"New Game starts {FIRST_LEVEL_ID}")
+    use_test_level(pg)
+
+
+def use_test_level(pg):
+    """The rest of these checks use the small dev level's geometry (checkpoint 'middle', exit 'end')."""
+    pg.evaluate("window.__sammy.commands.loadLevel('test')")
+    pg.wait_for_function("window.__sammy.level && window.__sammy.level.id === 'test' && window.__sammy.level.loading === false",
+                         timeout=10000)
 
 
 def checkpoint_autosave(pg):
@@ -260,7 +270,10 @@ def overwrite_confirm(pg):
     wait_level(pg)
     new = stored_save(pg)
     check(new["checkpointId"] is None and new["updatedAt"] != old["updatedAt"], f"Yes replaces the save ({new})")
-    check(abs(st(pg)["player"]["pos"]["x"] - 2.5) < 0.3, "Yes starts at the level spawn")
+    s = st(pg)
+    check(s["level"]["id"] == FIRST_LEVEL_ID and abs(s["player"]["pos"]["x"] - s["level"]["spawn"]["x"]) < 0.3,
+          "Yes starts at the first level's spawn")
+    use_test_level(pg)
 
 
 def level_complete(pg):
