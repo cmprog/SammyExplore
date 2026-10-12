@@ -164,7 +164,8 @@ export class PlayingScene
     {
         if (this.loadError)
             drawTextScreen(this.loadError, mainCanvasSize.scale(.5), 40, ERROR_COLOR);
-        this.interaction.renderPost();   // under the narrator's text box
+        if (!this.overlaid)
+            this.interaction.renderPost();   // under the narrator's text box; not under pause
         this.narrator.renderPost();
     }
 

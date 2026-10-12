@@ -40,6 +40,9 @@ export class Zones
         this.spawnPoint = standingPoint(spawn);
         this.respawnPoint = this.spawnPoint.copy();
         this.checkpointId = null;
+        // Exactly one level:complete per load, whichever exit (zone or door) gets there first,
+        // even if the zones are frozen under the level complete overlay.
+        this.completed = false;
     }
 
     /** Resume at a checkpoint reached in an earlier session: it becomes the respawn point, and it
@@ -88,9 +91,12 @@ export class Zones
     }
 
     /** Fire the exit with this id (e.g. an exit door finished opening). Once per load, like
-     *  walking into an exit zone. Returns false if there is no such exit. */
+     *  walking into an exit zone. Returns false if there is no such exit or the level is
+     *  already complete. */
     triggerExit(id)
     {
+        if (this.completed)
+            return false;
         const zone = this.zones.find(z => z.type === 'exit' && z.id === id);
         if (!zone)
         {
@@ -121,9 +127,10 @@ export class Zones
                 emit('narration:zone', { ...zone.props, id: zone.id, levelId });
                 return;
             case 'exit':
-                if (zone.fired)
+                if (zone.fired || this.completed)
                     return;
                 zone.fired = true;
+                this.completed = true;
                 emit('level:complete', { ...zone.props, id: zone.id, levelId });
                 return;
             // 'spawn' only marks a position.
@@ -137,6 +144,7 @@ export class Zones
             spawn: plain(this.spawnPoint),
             respawn: plain(this.respawnPoint),
             checkpointId: this.checkpointId,
+            completed: this.completed,
             zones: this.zones.map(zone => ({
                 type: zone.type,
                 id: zone.id,

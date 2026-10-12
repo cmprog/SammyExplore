@@ -37,6 +37,25 @@ export class Interaction
         this.targets = entities.filter(entity => entity?.interactType);
     }
 
+    /** Make something interactable that arrived after the level loaded (e.g. a rescued cat). */
+    add(target)
+    {
+        if (target?.interactType && !this.targets.includes(target))
+            this.targets.push(target);
+    }
+
+    remove(target)
+    {
+        this.targets = this.targets.filter(other => other !== target);
+        if (this.nearest === target)
+            this.nearest = null;
+        if (this.shown === target)
+        {
+            this.shown = null;
+            this.appear = 0;
+        }
+    }
+
     clear()
     {
         this.targets = [];

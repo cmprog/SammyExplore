@@ -184,6 +184,16 @@ function validateZones({ zones, entities }, fail)
         if (zone.id === FALL_ZONE_ID)
             fail(`zone ${index} uses the reserved id "${FALL_ZONE_ID}"`);
     });
+    // A respawn point inside a closed door would push Sammy out sideways (or trap him).
+    const doors = entities.filter(entity => entity.type === 'door');
+    zones.forEach((zone, index) =>
+    {
+        if (zone.type !== 'spawn' && zone.type !== 'checkpoint')
+            return;
+        const door = doors.find(d => rectHitsColumn(zone.rect, d.x, d.y - 1, d.y));
+        if (door)
+            fail(`${zone.type} zone ${zone.id ?? index} overlaps door "${door.id}"`);
+    });
     if (!zones.some(zone => zone.type === 'spawn'))
         fail('needs a spawn zone');
     // Exit doors' exitIds share the namespace: they are exit ids (save keys) too.
@@ -194,6 +204,12 @@ function validateZones({ zones, entities }, fail)
     const duplicate = ids.find((zoneId, i) => ids.indexOf(zoneId) !== i);
     if (duplicate)
         fail(`zone/exit id "${duplicate}" is used twice`);
+}
+
+/** Does a tile-space rect {x, y, w, h} overlap the cells of column x, rows top..bottom? */
+function rectHitsColumn(rect, x, top, bottom)
+{
+    return rect.x < x + 1 && rect.x + rect.w > x && rect.y < bottom + 1 && rect.y + rect.h > top;
 }
 
 function inBounds(x, y, tileMap)

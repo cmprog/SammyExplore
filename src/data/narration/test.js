@@ -61,7 +61,7 @@ export default {
             trigger: 'interact:sign',
             key: 'test.sign',
             priority: 40,
-            cooldown: 3,
+            // No cooldown: while it cooled down, sign.fallback (common) would answer instead.
             texts: [
                 "I'm not reading it again. It still says owl. I checked.",
                 'No. You read it. I believe in you. Mostly.',

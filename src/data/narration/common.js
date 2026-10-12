@@ -155,6 +155,18 @@ export default {
             text: "Pressing E faster won't make a door appear. I'm not going to. ...Probably.",
         },
 
+        // A sign with no line of its own (its key has no keyed line). Keyed lines always win.
+        {
+            id: 'sign.fallback',
+            trigger: 'interact:sign',
+            cooldown: 3,
+            texts: [
+                "Let me see... *squints* It's very small writing. I think it says 'Eagles welcome'. Probably.",
+                "It says... um. 'This way to the Eagle.' Yes. That's definitely what it says.",
+                "I can't read it. Somebody wrote it in owl. Very messy handwriting, owls.",
+            ],
+        },
+
         // A locked door. A door's id can be used as a line key for a door-specific remark.
         {
             id: 'door.locked',

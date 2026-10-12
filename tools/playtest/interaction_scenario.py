@@ -54,8 +54,10 @@ def install_recorder(pg):
     # The bus's ring buffer drops old events; record the ones we care about from the start.
     pg.evaluate("""async names => {
         const bus = await import('/src/core/events.js');
+        const fresh = !window.__rec;
         window.__rec = [];
-        for (const n of names) bus.on(n, d => window.__rec.push({n, d}));
+        if (fresh)   // subscribe once; a later call just starts a new recording
+            for (const n of names) bus.on(n, d => window.__rec.push({n, d}));
     }""", WATCHED)
 
 
@@ -246,6 +248,50 @@ def test_exit_door(pg):
     harness.shot(pg, "interact_exit_complete")
     save = st(pg)["save"]
     check(save is not None and save["levelId"] == "test", f"exit door autosaved: {save}")
+    check(st(pg)["level"]["completed"], "zones report the level completed")
+
+
+def test_sign_fallback(pg):
+    settle(pg)
+    pg.evaluate("__sammy.commands.emit('interact:sign', {id: 'nameless', key: 'no.such.sign'})")
+    check(wait_until(pg, lambda: (st(pg)["narrator"]["current"] or {}).get("id") == "sign.fallback"),
+          "a sign without its own line gets the common fallback (sign.fallback)")
+    settle(pg)
+
+
+def test_door_top_counts_as_ground(pg):
+    # Sammy 0.3 above the locked door's top (island top 11 + door 1.9), nothing but the door
+    # below: the landing probe must see it, so a press now is a buffered jump, not a flap.
+    found = pg.evaluate("""async () => {
+        const e = await import('/lib/littlejs/littlejs.esm.js');
+        const t = await import('/src/systems/terrainCollision.js');
+        window.__sammy.commands.teleport(26.5, 12.9 + 0.45 + 0.3);
+        const sammy = e.engineObjects.find(o => o.resetTo);
+        sammy.velocity = e.vec2(0, -0.1);
+        return [t.hasGroundWithin(sammy, 0.5), t.hasGroundWithin(sammy, 0.1)];
+    }""")
+    check(found == [True, False], f"closed door top is ground for the landing probe, within reach only: {found}")
+    time.sleep(0.8)
+    p = player(pg)
+    check(p["grounded"] and abs(p["pos"]["y"] - 13.35) < 0.05, f"Sammy can stand on a closed door: {p['pos']}")
+
+
+def test_single_completion(pg):
+    """Exit door opening, then Sammy walks into the 'end' exit zone first: the zone completes the
+    level, and the door finishing under the overlay must not complete it a second time."""
+    pg.evaluate("__sammy.commands.loadLevel('test')")
+    time.sleep(0.5)
+    pg.wait_for_function("window.__sammy.scene === 'playing' && window.__sammy.level && window.__sammy.level.loading === false")
+    install_recorder(pg)
+    settle(pg)
+    stand(pg, 28.6, ISLAND)
+    settle(pg)
+    start = press_e(pg)   # door swing + exit delay is 0.75 s
+    pg.evaluate("__sammy.commands.teleport(47, 5.5)")
+    harness.wait_scene(pg, "levelComplete")
+    time.sleep(1.5)
+    done = since(pg, start, "level:complete")
+    check(len(done) == 1 and done[0]["d"]["id"] == "end", f"exactly one level:complete per load: {done}")
 
 
 def main():
@@ -265,7 +311,10 @@ def main():
         test_locked_door(pg)
         test_prompt_hidden_when_locked(pg)
         test_unlocked_door(pg)
+        test_sign_fallback(pg)
+        test_door_top_counts_as_ground(pg)
         test_exit_door(pg)
+        test_single_completion(pg)
 
     print("console errors:", s.errors)
     fails.extend(s.errors)

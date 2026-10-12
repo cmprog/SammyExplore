@@ -8,6 +8,11 @@
 //             triggerExit fires one of the level's exits (level:complete), e.g. for an exit door
 // and returns the created object (usually an EngineObject) so the level can destroy it on unload.
 //
+// Collision: Sammy collides with every SOLID engine object (that is how closed doors block).
+// An entity Sammy should walk through (signs, cats, pickups) must pass isSolid=false, e.g.
+// setCollision(false, false, false). A solid one may return false from collideWithObject() to
+// let Sammy through (an open door).
+//
 // A validator receives (entity, fail, level): the raw level-data entry, a fail(message) that
 // throws a readable error, and the whole level data (for tile checks). It runs when the level
 // file is loaded, so a typo fails loudly instead of quietly making a broken door.
