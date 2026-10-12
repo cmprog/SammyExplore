@@ -1,7 +1,7 @@
 // Shared tile-collision rule for anything that walks on terrain (Sammy now,
 // cats later). Objects opt in by overriding EngineObject.collideWithTile:
 //     collideWithTile(tileData, tilePos) { return collidesWithTerrain(this, tileData, tilePos); }
-import { vec2, tileCollisionTest } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, tileCollisionTest, engineObjectsCollect, engineObjectsCollide } from '../../lib/littlejs/littlejs.esm.js';
 import { TILE_TYPES } from '../data/tileTypes.js';
 
 /** Collision values of tile types marked oneWay in data/tileTypes.js. */
@@ -32,7 +32,8 @@ export function collidesWithTerrain(object, tileData, tilePos)
 /**
  * Is there something to stand on within `distance` below the object's feet? Used to tell a
  * press just before landing (a buffered jump) from a press in mid-air (a flap).
- * A one-way platform counts only if the feet are already above its top.
+ * A one-way platform counts only if the feet are already above its top. Solid objects (a
+ * closed door) count too, if the feet are above their top and they would block the object.
  */
 export function hasGroundWithin(object, distance)
 {
@@ -40,6 +41,20 @@ export function hasGroundWithin(object, distance)
     // drop to it is shorter than the object is tall.
     const bottom = object.pos.y - object.size.y / 2;
     const probe = vec2(object.pos.x, bottom - distance / 2);
-    return !!tileCollisionTest(probe, vec2(object.size.x, distance), (tileData, tilePos) =>
-        ONE_WAY_COLLISION.has(tileData) ? bottom >= tilePos.y + 1 : tileData > 0);
+    const probeSize = vec2(object.size.x, distance);
+    if (tileCollisionTest(probe, probeSize, (tileData, tilePos) =>
+        ONE_WAY_COLLISION.has(tileData) ? bottom >= tilePos.y + 1 : tileData > 0))
+        return true;
+    return solidObjectBelow(object, probe, probeSize, bottom);
+}
+
+function solidObjectBelow(object, probe, probeSize, bottom)
+{
+    if (!object.collideSolidObjects)
+        return false;
+    const epsilon = .01;   // physics leaves a resting object a hair above the top
+    return engineObjectsCollect(probe, probeSize, engineObjectsCollide).some(other =>
+        other !== object && other.isSolid && !other.destroyed
+        && bottom >= other.pos.y + other.size.y / 2 - epsilon
+        && other.collideWithObject(object));
 }

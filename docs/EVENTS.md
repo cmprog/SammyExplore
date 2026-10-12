@@ -10,7 +10,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `scene:change` | `{from, to, kind}` | SceneManager | `kind`: `change` (whole stack replaced), `push` (overlay opened, e.g. `pause`), `pop` (overlay closed). `from`/`to` are the top scene before/after |
 | `level:start` | `{levelId, name, timeOfDay, size}` | playing scene | after the level is built; `size` = `{x, y}` in tiles |
 | `level:loadFailed` | `{levelId, message}` | playing scene | the level could not be fetched or built; main.js returns to the title with a gentle notice |
-| `level:complete` | `{...zoneProps, id, levelId, nextLevel?}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load. `nextLevel` = the exit's own `nextLevel`, else the level data's; absent on the last level. Autosaved by SaveSystem; opens the level complete overlay |
+| `level:complete` | `{...zoneProps, id, levelId, nextLevel?, door?}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load. `nextLevel` = the exit's own `nextLevel`, else the level data's; absent on the last level. Autosaved by SaveSystem; opens the level complete overlay. An exit door (a door with `exitId`) fires the same exit path when it finishes opening: `id` = its `exitId`, `door` = the door's id |
 | `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load. Autosaved by SaveSystem. Not re-sent for a checkpoint restored by Continue |
 | `correction:triggered` | `{...zoneProps, id, levelId}` | LevelLoader | Sammy is somewhere silly. `id` = zone id (`world-bottom` for falling off the world); optional `lineId`, `reason` |
 | `correction:reset` | `{zoneId}` | Narrator | midpoint of the rewrite effect. The playing scene moves the player to `level.respawn`. Also sent immediately (no visuals) if the narrator is disposed/reloaded mid-correction and the reset hadn't gone out yet |
@@ -24,9 +24,9 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `player:glideStart` | none | Sammy | |
 | `player:glideEnd` | none | Sammy | **any** exit from glide (release, flap, land, reset) |
 | `player:land` | `{impact}` | Sammy | impact is fall speed (0..1), so soft landings can sound softer |
-| `interact:<type>` | `{id}` | Interaction | e.g. `interact:door`, `interact:sign`, `interact:twyx` |
+| `interact:<type>` | `{id, ...}` | Interaction | E pressed with that interactable nearest and in range; emitted before its `interact()` runs. The payload is the interactable's `interactPayload()`. Types so far: `interact:door` `{id}`, `interact:sign` `{id, key}` (`key` = the sign's narration key, so a line with that `key` "reads" it). Later e.g. `interact:twyx`. An E press the narrator used to skip/dismiss a line is never an interaction |
 | `interact:nothing` | none | Interaction | E pressed with nothing in range |
-| `interact:doorLocked` | `{id}` | Door | |
+| `interact:doorLocked` | `{id}` | Door | after `interact:door`, when the door is locked |
 | `door:open` | `{id}` | Door | when the open animation starts (plays the creak) |
 | `menu:move` | none | menu scenes (Menu.js) | selection changed |
 | `menu:select` | none | menu scenes (Menu.js), level complete | item activated, slider adjusted, or celebration continued |
