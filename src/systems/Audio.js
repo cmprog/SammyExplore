@@ -6,7 +6,7 @@
 // then start the music. Sounds requested before that are skipped, not queued.
 import {
     Sound, ZzFXMusic, audioContext, audioIsRunning, setSoundVolume, clamp, lerp,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { on, emit } from '../core/events.js';
 import {
     SOUNDS, SOUND_EVENTS, GLIDE_START_EVENTS, GLIDE_STOP_EVENTS, AUDIO_DEFAULTS, AUDIO_TUNING,

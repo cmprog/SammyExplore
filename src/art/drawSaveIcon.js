@@ -1,6 +1,6 @@
 // The "saved" notice: a little feather that flutters in the top-right corner with a label.
 // Pure drawing of (state, time); screen space.
-import { mainCanvasSize, smoothStep, clamp } from '../../lib/littlejs/littlejs.esm.js';
+import { mainCanvasSize, smoothStep, clamp } from 'littlejs';
 import { drawScreenCanvas } from './screenCanvas.js';
 import { drawFeather } from './drawFeather.js';
 import { UI_FONT } from './drawMenu.js';

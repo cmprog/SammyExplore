@@ -1,5 +1,5 @@
 // Recipes for Twyx's particle bursts, spawned into a ParticleField. Numbers in TWYX.
-import { vec2, rand } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, rand } from 'littlejs';
 import { drawHeart } from '../art/drawTwyxFx.js';
 import { TWYX } from '../data/tuning.js';
 

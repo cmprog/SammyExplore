@@ -3,7 +3,7 @@
 //
 // Level data coordinates are tile column/row from the top-left of tileMap (how the map reads);
 // the world is y-up with the bottom-left of the map at (0, 0), so rows are flipped here.
-import { vec2 } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2 } from 'littlejs';
 import { TILE_TYPES } from '../data/tileTypes.js';
 import { TILE_PALETTES } from '../data/tilePalettes.js';
 import { WORLD_FALL_MARGIN } from '../data/tuning.js';

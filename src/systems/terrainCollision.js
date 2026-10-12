@@ -1,7 +1,7 @@
 // Shared tile-collision rule for anything that walks on terrain (Sammy now,
 // cats later). Objects opt in by overriding EngineObject.collideWithTile:
 //     collideWithTile(tileData, tilePos) { return collidesWithTerrain(this, tileData, tilePos); }
-import { vec2, tileCollisionTest, engineObjectsCollect, engineObjectsCollide } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, tileCollisionTest, engineObjectsCollect, engineObjectsCollide } from 'littlejs';
 import { TILE_TYPES } from '../data/tileTypes.js';
 
 /** Collision values of tile types marked oneWay in data/tileTypes.js. */

@@ -2,7 +2,7 @@
 
 Status values: `draft` (waiting on stakeholder answers), `ready`, `in-progress`, `review`, `done`.
 
-## Milestone 1: Core mechanics (approved 2026-10-11)
+## Milestone 1: Core mechanics (approved 2026-10-11, built 2026-10-12, awaiting stakeholder review)
 
 Goal: all the core systems work in a sandbox level, so later milestones are mostly content.
 Sammy moves, jumps, glides, and flaps. The narrator talks and reacts. E interacts. Menus and screens work. Sound plays.
@@ -19,9 +19,9 @@ Sammy moves, jumps, glides, and flaps. The narrator talks and reacts. E interact
 | T-008 | Screens + autosave: title (New Game/Continue with overwrite warning), pause, level complete; milestone-based autosave | game-dev | T-001 | done |
 | T-009 | Audio: sound-effect catalog (ZzFX), a night music loop (ZzFXM), mute and volume | game-dev | T-001 | done |
 | T-010 | Backdrop: night parallax (sky, moon, stars, silhouettes), with palette support for daytime | game-dev | T-003 | done |
-| T-011 | M1 sandbox level + Twyx (tuxedo cat), real narrator lines | game-dev | all | in-progress |
+| T-011 | M1 sandbox level + Twyx (tuxedo cat), real narrator lines | game-dev | all | done |
 
-**M1 wrap-up:** switch to the engine's release build (`littlejs.esm.min.js`, same version, debug off) for play sessions. The debug build lets `+`/`-` change game speed. Keep the debug build for development, e.g. through an import map or a `?debug` flag.
+**M1 wrap-up:** done in T-012 (release build by default, `?debug` for development).
 
 Parallel tracks once T-001 is done: {T-003 → T-004 → T-005, T-007, T-010} and {T-006}, {T-008}, {T-009}.
 

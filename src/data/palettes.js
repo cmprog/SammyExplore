@@ -2,7 +2,7 @@
 // Terrain colors live in tilePalettes.js; the two are tuned together so the playable ground
 // always reads brighter and warmer than the scenery behind it.
 // Layers fade toward the horizon color the farther away they are (atmospheric depth).
-import { rgb } from '../../lib/littlejs/littlejs.esm.js';
+import { rgb } from 'littlejs';
 
 export const BACKDROP_PALETTES = {
     night: {

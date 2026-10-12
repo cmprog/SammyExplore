@@ -1,13 +1,14 @@
 // The in-level scene: loads a level by id, puts the player at the spawn, runs zones and the camera.
 // enter({ levelId }) loads; re-entering (e.g. __sammy.commands.loadLevel) tears down and reloads.
 // enter({ levelId, checkpointId, reachedCheckpoints }) starts at that checkpoint instead of the
-// spawn (Continue); reachedCheckpoints are already used up. A level that fails to load emits
+// spawn (Continue); reachedCheckpoints are already used up. newStory: true (New Game) makes the
+// narrator forget every line it has said this session, so the story is told fresh. A level that fails to load emits
 // level:loadFailed (main.js falls back to the title).
 // Hosts the narrator (see the wiring notes at the top of systems/Narrator.js) and the
 // interaction system, which reads E only after the narrator has had its chance to use it.
 import {
     vec2, rgb, setGravity, mainCanvasSize, drawTextScreen,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { on, emit } from '../core/events.js';
 import { fetchLevelData, buildLevel } from '../systems/LevelLoader.js';
 import { Camera } from '../systems/Camera.js';
@@ -39,15 +40,17 @@ export class PlayingScene
         this.overlaid = false;   // an overlay scene is on top (see pause())
     }
 
-    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null, reachedCheckpoints = [] } = {})
+    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null, reachedCheckpoints = [], newStory = false } = {})
     {
         this.startCheckpointId = checkpointId;
         this.reachedCheckpoints = reachedCheckpoints;
         this.overlaid = false;
         setGravity(vec2(0, WORLD_GRAVITY));
+        if (newStory)
+            this.narrator.forgetSeen();
         // Before load(): the narrator must be listening when the level emits level:start.
         this.narrator.loadScript(levelId);
-        this.narrator.setPlayerPositionProvider(() => this.player?.pos ?? null);
+        this.narrator.setPlayerPositionProvider(() => this.playerPos());
         // The narrator runs the rewrite effect; it asks for the move while the page is covered.
         this.unsubscribers.push(on('correction:reset', () => this.resetPlayer()));
         this.unsubscribers.push(on('correction:done', () => this.level?.zones.rearmCorrections()));
@@ -77,7 +80,7 @@ export class PlayingScene
             if (token !== this.loadToken)
                 return;
             this.unload();
-            this.level = buildLevel(data, { playerPos: () => this.player?.pos ?? null });
+            this.level = buildLevel(data, { playerPos: () => this.playerPos() });
             this.player = new Sammy(this.startPoint());
             this.interaction.setTargets(this.level.entities);
             this.camera.attach(this.player, this.level.size);
@@ -98,7 +101,15 @@ export class PlayingScene
                 this.loading = false;
         }
         const { id, name, timeOfDay, size } = this.level;
-        emit('level:start', { levelId: id, name, timeOfDay, size: { x: size.x, y: size.y } });
+        // checkpointId: where a Continue picked the story up (null on a fresh start).
+        const checkpointId = this.level.zones.checkpointId ?? null;
+        emit('level:start', { levelId: id, name, timeOfDay, size: { x: size.x, y: size.y }, checkpointId });
+    }
+
+    /** A copy of the player's position (or null), so no other system can move Sammy by accident. */
+    playerPos()
+    {
+        return this.player?.pos.copy() ?? null;
     }
 
     /** The spawn, or the saved checkpoint when continuing a story. */
@@ -157,7 +168,7 @@ export class PlayingScene
             return;
         if (!this.overlaid)
             this.level.zones.update(this.player.pos, this.player.size);
-        this.camera.narrating = this.narrator.showing;
+        this.camera.setNarrating(this.narrator.showing);
         this.camera.update();
     }
 

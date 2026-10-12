@@ -1,12 +1,15 @@
 // Smooth-follow camera with look-ahead, clamped so it never shows past the level edges.
 // Call update() once per step after objects have moved (the playing scene does it in updatePost).
-// The host sets `narrating` while the narrator's text box is up, to frame the view a little lower.
+// The host calls setNarrating() every step with whether the narrator's text box is up, to frame
+// the view a little lower. The lower framing outlasts the box a moment, so back-to-back lines
+// don't make the view bob up and down between them.
 import {
-    vec2, lerp, clamp, setCameraPos, setCameraScale, cameraPos, cameraScale, getCameraSize,
-} from '../../lib/littlejs/littlejs.esm.js';
+    vec2, lerp, clamp, timeDelta, setCameraPos, setCameraScale, cameraPos, cameraScale, getCameraSize,
+} from 'littlejs';
 import {
     CAMERA_SCALE, CAMERA_FOLLOW_LERP_X, CAMERA_FOLLOW_LERP_Y, CAMERA_LOOK_AHEAD,
     CAMERA_LOOK_AHEAD_LERP, CAMERA_LOOK_AHEAD_MIN_SPEED, CAMERA_OFFSET_Y, CAMERA_NARRATION_OFFSET_Y,
+    CAMERA_NARRATION_HOLD,
 } from '../data/tuning.js';
 
 export class Camera
@@ -18,6 +21,17 @@ export class Camera
         this.facing = 1;
         this.lookAhead = 0;
         this.narrating = false;  // eased like any other move, by the follow lerp
+        this.narrationHold = 0;  // seconds the lower framing stays after the box closes
+    }
+
+    /** showing: the narrator's text box is up this step. */
+    setNarrating(showing)
+    {
+        if (showing)
+            this.narrationHold = CAMERA_NARRATION_HOLD;
+        else
+            this.narrationHold = Math.max(0, this.narrationHold - timeDelta);
+        this.narrating = showing || this.narrationHold > 0;
     }
 
     /** Follow a new target inside new bounds and jump straight there (no swoop on level load). */
@@ -28,6 +42,8 @@ export class Camera
         this.bounds = bounds.copy();
         this.facing = 1;
         this.lookAhead = 0;
+        this.narrating = false;
+        this.narrationHold = 0;
         this.snap();
     }
 
@@ -75,6 +91,6 @@ export class Camera
 
     debugState()
     {
-        return { pos: { x: cameraPos.x, y: cameraPos.y }, scale: cameraScale, lookAhead: this.lookAhead, narrating: this.narrating };
+        return { pos: { x: cameraPos.x, y: cameraPos.y }, scale: cameraScale, lookAhead: this.lookAhead, narrating: this.narrating, narrationHold: this.narrationHold };
     }
 }

@@ -16,8 +16,8 @@
 //   - The far side: checkpoint, then a wall with two doors. The upper one (reached by a step and
 //     a plank ledge) is locked; the lower one opens into a tunnel through the wall.
 //   - A last pit, steps up to a dais, and the glowing exit door.
-// Every pit drops off the world (the narrator's world-bottom correction) back to the last
-// checkpoint; every dip can be jumped out of, so nothing can strand Sammy.
+// Every pit drops off the world (the narrator's world-bottom correction; the Great Gap has its
+// own correction zone with a glide hint) back to the last checkpoint; every dip can be jumped out of, so nothing can strand Sammy.
 //
 // Coordinates in level data (entities and zone rects) are tile columns and rows counted from
 // the top-left of tileMap (26 rows, so row = 25 - world cell y). Entities stand on the tile
@@ -77,6 +77,9 @@ export default {
         { type: 'checkpoint', id: 'clifftop', rect: { x: 90, y: 9, w: 2, h: 3 } },
         { type: 'correction', id: 'eagles-perch', lineId: 'sandbox.perch', rect: { x: 95, y: 6, w: 3, h: 2 } },
         { type: 'narration', id: 'great-gap', key: 'sandbox.leap', rect: { x: 101, y: 8, w: 1, h: 4 } },
+        // The bottom of the Great Gap (its 19 open columns, the last 2 rows): a fall here gets the
+        // glide hint. It sits above the world-bottom zone, so it always fires first.
+        { type: 'correction', id: 'great-gap-fall', lineId: 'sandbox.gap.fall', rect: { x: 107, y: 24, w: 19, h: 2 } },
         // Tall and wide, so a long glide that sails past the landing spot still counts.
         { type: 'checkpoint', id: 'far-side', rect: { x: 126, y: 9, w: 7, h: 8 } },
         { type: 'narration', id: 'two-doors', key: 'sandbox.doors', rect: { x: 135, y: 12, w: 1, h: 5 } },

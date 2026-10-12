@@ -8,7 +8,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | Event | Payload | Owner | Notes |
 |---|---|---|---|
 | `scene:change` | `{from, to, kind}` | SceneManager | `kind`: `change` (whole stack replaced), `push` (overlay opened, e.g. `pause`), `pop` (overlay closed). `from`/`to` are the top scene before/after |
-| `level:start` | `{levelId, name, timeOfDay, size}` | playing scene | after the level is built; `size` = `{x, y}` in tiles |
+| `level:start` | `{levelId, name, timeOfDay, size, checkpointId}` | playing scene | after the level is built; `size` = `{x, y}` in tiles. `checkpointId` = the checkpoint a Continue resumed at, `null` on a fresh start (so intros can stay quiet on Continue) |
 | `level:loadFailed` | `{levelId, message}` | playing scene | the level could not be fetched or built; main.js returns to the title with a gentle notice |
 | `level:complete` | `{...zoneProps, id, levelId, nextLevel?, door?}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load. `nextLevel` = the exit's own `nextLevel`, else the level data's; absent on the last level. Autosaved by SaveSystem; opens the level complete overlay. An exit door (a door with `exitId`) fires the same exit path when it finishes opening: `id` = its `exitId`, `door` = the door's id |
 | `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load. Autosaved by SaveSystem. Not re-sent for a checkpoint restored by Continue |
@@ -18,6 +18,8 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `narration:zone` | `{key, id, levelId}` | LevelLoader | |
 | `narrator:blip` | `{lineId}` | Narrator | typewriter tick; emitted quietly (kept out of the debug event ring) |
 | `narrator:line` | `{id, text}` | Narrator | a line started showing |
+| `narrator:revealed` | `{id}` | Narrator | the showing line is fully revealed (typed out, or skipped to the end). The level complete overlay waits for it before offering to continue |
+| `narrator:skip` | none | any (level complete overlay) | finish revealing the showing line now (no-op if nothing is typing). For screens that take the confirm press while a line is still typing |
 | `player:jump` | none | Sammy | |
 | `player:flap` | `{chargesLeft}` | Sammy | |
 | `player:flapEmpty` | none | Sammy | tried to flap with 0 charges |

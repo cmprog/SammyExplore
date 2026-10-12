@@ -5,7 +5,8 @@
 // the player or level directly; it talks through events.
 //
 // HOW A HOST SCENE WIRES IT (one Narrator instance for the whole game, created in main.js):
-//   enter(params)   narrator.loadScript(levelId)      // common.js + narration/<levelId>.js
+//   enter(params)   narrator.forgetSeen()             // only for a New Game: every line is new again
+//                   narrator.loadScript(levelId)      // common.js + narration/<levelId>.js
 //                   narrator.setPlayerPositionProvider(() => player ? { x, y } : null)
 //   update()        narrator.update()                 // once per engine update step, BEFORE the
 //                                                     // player and interaction systems: the
@@ -19,15 +20,16 @@
 // To restart narration (new level, or retry), just call loadScript() again.
 //
 // Events consumed: any event a line's trigger names (level:start, player:*, interact:*,
-//   narration:zone, checkpoint:reached, ...), plus correction:triggered (always).
+//   narration:zone, checkpoint:reached, ...), plus correction:triggered and narrator:skip (always).
 // Events emitted:
 //   narrator:line  {id, text}     a line started showing
+//   narrator:revealed {id}        the showing line is fully revealed (typed out or skipped)
 //   narrator:blip  {lineId}       typewriter blip, once per word (for the audio system); quiet,
 //                                 so it is not recorded in the recent-events buffer
 //   correction:reset {zoneId}     page is fully scribbled: move Sammy to the last checkpoint now
 //   correction:done  {zoneId}     the rewrite finished; gameplay input is unlocked again
 // During a correction, gameplay actions are locked via input.lockGameplay('correction').
-import { timeDelta } from '../../lib/littlejs/littlejs.esm.js';
+import { timeDelta } from 'littlejs';
 import { on, emit, recentEvents } from '../core/events.js';
 import { wasPressed, consumePress, actionsDown } from '../core/input.js';
 import { NARRATOR } from '../data/tuning.js';
@@ -42,6 +44,7 @@ import { InstructionWatcher } from './narration/InstructionWatcher.js';
 import { CorrectionSequence } from './narration/CorrectionSequence.js';
 
 const CORRECTION_EVENT = 'correction:triggered';
+const SKIP_EVENT = 'narrator:skip';
 
 export class Narrator
 {
@@ -78,6 +81,12 @@ export class Narrator
         this.subscribe();
     }
 
+    /** Forget which lines were said (New Game), so `once` lines and unseen variants play again. */
+    forgetSeen()
+    {
+        this.book.forgetSeen();
+    }
+
     /** provider() returns {x, y} (world units) or null. Called only when a condition needs it. */
     setPlayerPositionProvider(provider)
     {
@@ -106,9 +115,10 @@ export class Narrator
     {
         this.unsubscribe();
         for (const name of this.book.eventNames())
-            if (name !== CORRECTION_EVENT)
+            if (name !== CORRECTION_EVENT && name !== SKIP_EVENT)
                 this.unsubscribers.push(on(name, payload => this.onEvent(name, payload)));
         this.unsubscribers.push(on(CORRECTION_EVENT, payload => this.startCorrection(payload)));
+        this.unsubscribers.push(on(SKIP_EVENT, () => this.textBox.finishReveal()));
     }
 
     unsubscribe()
@@ -129,7 +139,7 @@ export class Narrator
     {
         const line = this.book.pick(name, payload, this.conditionContext(payload), this.clock, this.textBox.busy);
         if (line)
-            this.enqueue(this.book.instance(line, this.clock));
+            this.enqueue(this.book.instance(line, this.clock, payload));
     }
 
     /** Say a specific line by id. now: interrupt whatever is showing. */
@@ -171,9 +181,12 @@ export class Narrator
         if (current && instance.priority > current.priority)
             return this.play(instance);
         this.queue.push(instance);
-        // Stable sort: interrupted lines waiting to resume first, then highest priority, then oldest.
-        this.queue.sort((a, b) => (b.requeued - a.requeued) || (b.priority - a.priority));
-        this.queue.length = Math.min(this.queue.length, NARRATOR.QUEUE_MAX);
+        // Stable sort: interrupted lines waiting to resume first, then lines that must not be lost
+        // (noStale: they teach a move), then highest priority, then oldest. Truncation never
+        // drops those first two kinds.
+        this.queue.sort((a, b) => (b.requeued - a.requeued) || (b.noStale - a.noStale) || (b.priority - a.priority));
+        const keep = Math.max(NARRATOR.QUEUE_MAX, this.queue.filter(isPinned).length);
+        this.queue.length = Math.min(this.queue.length, keep);
     }
 
     play(instance)
@@ -197,17 +210,22 @@ export class Narrator
 
     playNextQueued()
     {
-        // Interrupted lines don't go stale: they matter more than a passing reaction.
-        this.queue = this.queue.filter(queued => queued.requeued || this.clock - queued.queuedAt <= NARRATOR.QUEUE_STALE);
-        const next = this.queue.shift();
-        if (next)
-            this.play(next);
+        // Interrupted and noStale lines don't go stale: they matter more than a passing reaction.
+        this.queue = this.queue.filter(queued => isPinned(queued) || this.clock - queued.queuedAt <= NARRATOR.QUEUE_STALE);
+        // The world may have moved on while a line waited: its condition must still hold now.
+        while (this.queue.length)
+        {
+            const next = this.queue.shift();
+            if (this.book.stillWanted(next, this.conditionContext(next.payload)))
+                return this.play(next);
+        }
     }
 
     onRevealed(line)
     {
         this.book.markSeen(line);
         this.armInstruction(line);
+        emit('narrator:revealed', { id: line.id });
     }
 
     armInstruction(line)
@@ -318,4 +336,9 @@ export class Narrator
             idleSeconds: Math.round(this.idle.seconds * 10) / 10,
         };
     }
+}
+
+function isPinned(instance)
+{
+    return instance.requeued || instance.noStale;
 }

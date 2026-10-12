@@ -3,7 +3,7 @@
 //
 // Everything here draws with the WebGL primitives, which sit under the 2D canvas that the title
 // text and menus use, so call it from the scene's renderPost *outside* drawScreenCanvas.
-import { screenToWorld, vec2, rgb, cameraScale } from '../../lib/littlejs/littlejs.esm.js';
+import { screenToWorld, vec2, rgb, cameraScale } from 'littlejs';
 import { ArtFrame } from './ArtFrame.js';
 import { drawSammy } from './drawSammy.js';
 

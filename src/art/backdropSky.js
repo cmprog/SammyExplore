@@ -2,7 +2,7 @@
 // halo), the moon itself, and one small sprite per cloud. Also the little descriptors for what is
 // animated live (twinkling stars, fireflies). Pure functions of (layout, palette, rng).
 // Heights are bake coordinates: y up from the screen bottom (see backdropStrip.js).
-import { vec2, rgb, drawCircle, drawCircleGradient, drawPoly, BLACK } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, rgb, drawCircle, drawCircleGradient, drawPoly, BLACK } from 'littlejs';
 import { createStrip, stripCircle, stripEllipse, stripGlow, stripGradient } from './backdropStrip.js';
 
 const SCREEN_HEIGHT = 1080;

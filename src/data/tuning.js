@@ -27,6 +27,9 @@ export const CAMERA_OFFSET_Y = 1.5;
  *  lies below Sammy (a landing spot, the ground) shows above the box instead of under it.
  *  The level-bottom clamp still applies, so on low ground nothing moves. */
 export const CAMERA_NARRATION_OFFSET_Y = -2.5;
+/** Seconds the narration framing holds after the text box closes, so the short breath between
+ *  two lines doesn't bob the camera up and back down. */
+export const CAMERA_NARRATION_HOLD = 1;
 
 // --- Sammy (T-004) ---
 // Speeds are tiles per step (x60 = tiles per second), accelerations tiles per step squared,
@@ -197,6 +200,7 @@ export const SCREENS = {
     VOLUME_STEP: 0.1,              // one press of left/right on the volume slider
     SAVE_ICON_TIME: 2.2,           // the "saved" feather stays up this long
     LEVEL_COMPLETE_MIN_TIME: 1.2,  // can't skip the celebration before this (the exit press isn't a skip)
+    LEVEL_COMPLETE_LINE_WAIT: 5,   // the continue prompt waits for the narrator's line to be fully shown, at most this long
     CONFETTI_COUNT: 90,
     CONFETTI_GRAVITY: 520,         // px/s^2, screen space
     TO_BE_CONTINUED_MIN_TIME: 1.0,

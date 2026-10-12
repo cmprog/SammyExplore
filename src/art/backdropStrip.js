@@ -5,7 +5,7 @@
 // the camera at the level's bottom-left). So y = 1080 - screenY no matter where the strip is cut;
 // art code can place a ridge "at screen y 600" without caring about the strip's own bounds.
 // Strips repeat horizontally; shapes near either end are also drawn shifted by one strip width.
-import { vec2, drawCircle, drawCircleGradient, drawEllipse, drawPoly, BLACK } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, drawCircle, drawCircleGradient, drawEllipse, drawPoly, BLACK } from 'littlejs';
 
 const SCREEN_HEIGHT = 1080;
 const FAR_BELOW = -1e4;

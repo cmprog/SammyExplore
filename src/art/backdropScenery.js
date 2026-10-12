@@ -6,7 +6,7 @@
 // { solidBelowY, bottomColor }: the bake y under which every column is solid, and the color the
 // strip ends with at its bottom edge (so the renderer can extend it with a plain band).
 // Heights are bake coordinates: y up from the screen bottom (see backdropStrip.js).
-import { vec2 } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2 } from 'littlejs';
 import {
     stripCircle, stripEllipse, stripPoly, stripRect, stripGradient, stripRidge, periodicRidge, ridgeLow,
 } from './backdropStrip.js';

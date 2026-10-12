@@ -8,7 +8,7 @@
 // into it (baking); without one it draws with WebGL to the screen.
 // A tile occupies the world cell [x, x+1] x [y, y+1] (y up). Corners only round where both
 // touching sides are open, so connected ground reads as one soft blob, not a grid of squares.
-import { vec2, drawPoly, drawEllipse, drawRect, drawCircle } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, drawPoly, drawEllipse, drawRect, drawCircle } from 'littlejs';
 
 const OUTLINE = 0.06;          // soft outline thickness, world units
 const CORNER_RADIUS = 0.3;

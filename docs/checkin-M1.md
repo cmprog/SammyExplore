@@ -13,7 +13,19 @@ Questions for the stakeholder, collected during the M1 run.
 
   Things to feel out: does flapping early in a jump feel laggy (0.15s cooldown)? Is the glide too floaty or not floaty enough?
 
+- Read the Chapter One narration drafts (`src/data/narration/sandbox.js`, `common.js`). Keep, cut, or rewrite any you like.
+
+- Watch for a faint "E" bubble hanging in the sky while gliding over the Great Gap. Headless tests showed it as a stale-frame artifact (game state says it's hidden), but we need a real-screen check.
+
+## Playtester's kid's-eye notes (for discussion)
+- Best moments: gliding the Great Gap ("I'm not crying"), petting Twyx over and over, and going left into the room the narrator "never wrote".
+- Weak spots: a dead stretch of plain walking before the first hill (a kid who doesn't jump bumps into it); mashing Space at the gap burns all the flaps and plops her in; the first full-screen scribble could read as a glitch; typing lines are slow if you don't know Enter/E skips.
+
 ## Requirements questions
+- The Great Gap is 19 tiles wide and drops 5 tiles; you can't see the far side until you're gliding (a leap of faith). Flaps alone can't cross it, and the narrator hints to hold Space. Is this the right difficulty?
+- Checkpoints are invisible (the narrator says "bookmark" and the save feather shows). Do you want a visible checkpoint prop, e.g. a bookmark ribbon?
+- "Chapter One" isn't shown anywhere on screen. Should there be a chapter title card at level start?
+- The locked "Eagle's private room" door: should it ever open in a later chapter?
 - Music: one track for everywhere, or different music per level or scene? Should it get quieter while paused?
 - Narrator memory: should "already said that" lines be remembered across play sessions (saved), or start fresh each time she plays?
 - Narrator text box: should it show a small "E to skip" hint? (PM leaning yes.)

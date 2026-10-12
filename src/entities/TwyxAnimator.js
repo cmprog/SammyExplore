@@ -2,7 +2,7 @@
 // near), the idle routine (stand, sit down, lick a paw), blinks, tail swishes, the pet reaction
 // and a squash-and-stretch spring. Twyx calls update() once per step and onPet() on E; pose()
 // hands drawTwyx plain data, so the drawing stays a pure function of (pos, pose, time).
-import { clamp, rand, randBool } from '../../lib/littlejs/littlejs.esm.js';
+import { clamp, rand, randBool } from 'littlejs';
 import { TWYX as T } from '../data/tuning.js';
 
 export const TWYX_ACTIONS = ['stand', 'sit', 'lick'];

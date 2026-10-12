@@ -1,5 +1,5 @@
 // Recipes for Sammy's particle bursts, spawned into a ParticleField. Numbers in SAMMY_FX.
-import { vec2, rand } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, rand } from 'littlejs';
 import { drawLooseFeather, drawWhoosh, drawDust } from '../art/drawSammyFx.js';
 import { SAMMY_FX as FX } from '../data/tuning.js';
 

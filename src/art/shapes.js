@@ -1,6 +1,6 @@
 // Point lists for rounded shapes, for drawPoly / drawLineList. All relative to a local origin,
 // y up (world space). Pure helpers shared by prop art.
-import { vec2 } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2 } from 'littlejs';
 
 /** A door-style arch: flat bottom at y = 0, straight sides, semicircular top. Total height h.
  *  Starts bottom-left and goes clockwise (up the left side, over, down the right). */

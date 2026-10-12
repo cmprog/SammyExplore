@@ -1,7 +1,7 @@
 // window.__sammy: read-only game state for playtests and the console, plus debug commands.
 // Systems add their own state with register() so this file never needs to know about them.
 // Getters should return plain data: the playtest harness reads the hook via JSON.stringify.
-import { engineVersion } from '../../lib/littlejs/littlejs.esm.js';
+import { engineVersion } from 'littlejs';
 import { recentEvents, emit } from './events.js';
 import { actionsDown, gameplayLockReasons } from './input.js';
 import { GAME_VERSION } from '../data/version.js';

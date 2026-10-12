@@ -3,7 +3,7 @@
 // enter({ notice }) shows a short message, e.g. when a level failed to load.
 import {
     mainCanvasSize, timeReal, setCursor, smoothStep, clamp, setCameraPos, setCameraScale, getCameraSize,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { wasPressed, mouse } from '../core/input.js';
 import { Menu } from '../systems/Menu.js';
 import { drawScreenCanvas } from '../art/screenCanvas.js';
@@ -120,7 +120,7 @@ export class TitleScene
     startNewGame()
     {
         this.save.newGame(FIRST_LEVEL_ID);
-        this.scenes.change('playing', { levelId: FIRST_LEVEL_ID });
+        this.scenes.change('playing', { levelId: FIRST_LEVEL_ID, newStory: true });
     }
 
     renderPost()

@@ -3,7 +3,7 @@
 // doesn't spam the bus. Checkpoints and exits additionally fire only once per level load.
 // A zone marked `manual` (an exit door's exit) is never entered by walking: only triggerExit()
 // fires it, through the same path as walking into an exit zone.
-import { vec2 } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2 } from 'littlejs';
 import { emit } from '../core/events.js';
 
 export const ZONE_TYPES = ['spawn', 'checkpoint', 'correction', 'narration', 'exit'];

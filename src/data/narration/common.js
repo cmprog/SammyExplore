@@ -15,7 +15,10 @@
 //       once?,              never repeat (for the whole session)
 //       cooldown?,          seconds before this line can play again
 //       skipIfBusy?,        drop it (don't queue or interrupt) if another line is showing
-//       condition?(ctx),    extra gate; ctx = { playerPos, events, payload } (playerPos may be null)
+//       noStale?,           never dropped from the queue for being old (or by the queue limit):
+//                             for lines that teach a move or point the way
+//       condition?(ctx),    extra gate; ctx = { playerPos, events, payload } (playerPos may be null).
+//                             Checked when the line is picked AND again when a queued line plays
 //       instruction?,       once this line is fully shown, instructions[instruction] is armed
 //   }]
 //   A line with no trigger is say-only: played by id, e.g. a correction zone's `lineId`.
@@ -30,6 +33,7 @@
 const PRIORITY = {
     correction: 100,
     celebrate: 60,   // level complete: worth cutting off whatever was still being said
+    resume: 50,      // same as a level intro; ties go to the level's own line
     nag: 30,
     idle: 20,
     shrug: 5,     // below the default: never interrupts anything
@@ -220,6 +224,19 @@ export default {
                 "Locked. Eagles don't need doors, you know. They just fly over things.",
                 "It's locked. I'd have written a key, but I didn't think owls could carry one.",
                 'Rattle all you like. That door is not in this chapter.',
+            ],
+        },
+
+        // Continue: the story picks up at a bookmark (level:start with a checkpointId).
+        {
+            id: 'resume.common',
+            trigger: 'level:start',
+            priority: PRIORITY.resume,
+            condition: ctx => !!ctx.payload?.checkpointId,
+            texts: [
+                "Ahem. Where were we? Ah yes, the mighty Eagle... Oh. It's the owl again. Carry on, then.",
+                'Now, where did I put my bookmark? Ah, here it is. The story continues! Still no Eagle, I see.',
+                "Welcome back! I kept your place. I also kept hoping an Eagle would turn up. It didn't.",
             ],
         },
 

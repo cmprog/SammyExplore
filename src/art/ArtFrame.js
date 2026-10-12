@@ -11,7 +11,7 @@
 // Filled shapes (ellipse, poly) map their vertices into pooled vectors: the engine copies the
 // points as soon as drawPoly is called, so the same scratch arrays serve every shape of every
 // character each frame instead of allocating a vector per vertex.
-import { vec2, drawPoly, drawLineList, BLACK, cameraScale } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, drawPoly, drawLineList, BLACK, cameraScale } from 'littlejs';
 
 const PIXELS_PER_SIDE = 5;
 const MIN_SIDES = 10;

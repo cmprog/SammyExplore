@@ -8,7 +8,7 @@
 //
 // Events (see docs/EVENTS.md): player:jump, player:flap {chargesLeft}, player:flapEmpty,
 // player:glideStart, player:glideEnd (on any exit from glide), player:land {impact 0..1}.
-import { EngineObject, vec2, clamp, lerp, sign, time, timeDelta } from '../../lib/littlejs/littlejs.esm.js';
+import { EngineObject, vec2, clamp, lerp, sign, time, timeDelta } from 'littlejs';
 import { isDown, wasPressed } from '../core/input.js';
 import { emit } from '../core/events.js';
 import { collidesWithTerrain, hasGroundWithin } from '../systems/terrainCollision.js';

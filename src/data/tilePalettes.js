@@ -1,6 +1,6 @@
 // Terrain colors per time of day, picked by the level's `timeOfDay`.
 // Kept separate from the backdrop palettes (T-010) so the tile art can be tuned on its own.
-import { rgb } from '../../lib/littlejs/littlejs.esm.js';
+import { rgb } from 'littlejs';
 
 export const TILE_PALETTES = {
     night: {

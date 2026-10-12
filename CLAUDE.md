@@ -30,7 +30,7 @@ Weekend-prototype scope, but the game **will keep growing**, so don't design any
   `lib/littlejs/littlejs.d.ts` is the API reference; grep it before you assume a function exists or guess its signature.
   The ESM build already includes the plugins we may use: ZzFX/ZzFXMusic, Tween, UI system, LightSystem, PostProcess, drawUtilities.
 - Plain ES modules with no build step and no npm runtime dependencies.
-- Run locally: `python -m http.server 8000` from the repo root, then open http://localhost:8000.
+- Run locally: `python -m http.server 8000` from the repo root, then open http://localhost:8000 (release build) or http://localhost:8000/?debug (debug build with the engine overlay, which the playtest harness uses).
 
 ## Controls (stakeholder-defined)
 

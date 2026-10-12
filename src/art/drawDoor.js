@@ -4,7 +4,7 @@
 // Pure drawing: drawDoor(feetPos, state, time).
 import {
     vec2, rgb, drawPoly, drawLineList, drawLine, drawCircle, drawEllipse, drawCircleGradient,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { archPoints, roundedRectPoints } from './shapes.js';
 
 const OUTLINE = rgb(.16, .09, .07);

@@ -4,7 +4,7 @@
 // turns to face Sammy when he's near, and is an interactable: E emits interact:twyx {id} (Audio
 // meows, the narrator remarks) and Twyx reacts with perked ears, a happy squint and hearts.
 // Not solid: Sammy walks past (and in front of) Twyx.
-import { EngineObject, vec2, lerp, time, timeDelta, isOnScreen } from '../../lib/littlejs/littlejs.esm.js';
+import { EngineObject, vec2, lerp, time, timeDelta, isOnScreen } from 'littlejs';
 import { drawTwyx } from '../art/drawTwyx.js';
 import { TwyxAnimator } from './TwyxAnimator.js';
 import { ParticleField } from './ParticleField.js';

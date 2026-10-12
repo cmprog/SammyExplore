@@ -3,7 +3,7 @@ import {
     engineInit, vec2, rgb,
     setCanvasFixedSize, setCanvasClearColor, setShowSplashScreen,
     setInputWASDEmulateDirection, setDebugKey, setDebugWatermark,
-} from '../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { SceneManager } from './core/SceneManager.js';
 import { installDebugHook } from './core/debugHook.js';
 import { endInputFrame, wasPressed } from './core/input.js';

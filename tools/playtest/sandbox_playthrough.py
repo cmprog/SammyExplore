@@ -12,7 +12,10 @@ Beats (each with a screenshot in tools/playtest/out/sandbox_NN_*.png):
   (hill, pit, planks) -> cliff (jump + flaps, twice) -> clifftop checkpoint -> perch sign ->
   Eagle's Perch (correction) -> Great Gap hint -> a flaps-only attempt that falls short (the gap
   correction and its glide hint) -> the glide across -> far-side checkpoint -> locked door (up on
-  the ledge) -> tunnel door -> last pit -> exit door -> level complete -> To be continued -> title.
+  the ledge) -> tunnel door -> last pit -> exit door -> level complete (the continue prompt waits
+  for the narrator's last line; Space while it types finishes it) -> To be continued -> title
+  -> New Game again (the whole story is told fresh) -> a Continue-style load at a checkpoint (the
+  resume line, not the intro).
 
     .venv/Scripts/python tools/playtest/sandbox_playthrough.py
 """
@@ -53,7 +56,7 @@ PILOT = """async () => {
         'correction:reset', 'correction:done', 'narration:zone', 'narrator:line', 'player:jump',
         'player:flap', 'player:flapEmpty', 'player:glideStart', 'player:glideEnd', 'player:land',
         'interact:sign', 'interact:twyx', 'interact:door', 'interact:doorLocked', 'interact:nothing',
-        'door:open', 'scene:change'];
+        'door:open', 'scene:change', 'narrator:revealed', 'narrator:skip'];
     for (const n of names)
         bus.on(n, d => {
             const p = window.__pilotSammy;
@@ -445,7 +448,9 @@ def beat_gap(pg):
     corr = [e["d"]["id"] for e in events(pg, "correction:triggered", m)]
     check(len(flaps) == 3 and not events(pg, "player:glideStart", m),
           f"attempt 1 used all 3 flaps and no glide ({len(flaps)} flaps)")
-    check(corr == ["world-bottom"] and reached < GAP_FAR, f"flaps alone fall short: below the far side's ground at x={reached:.1f}, it starts at {GAP_FAR:.0f} ({corr})")
+    # The gap's own correction zone sits above world-bottom, so it fires first (world-bottom may
+    # follow while the page is being rewritten; the narrator ignores that one).
+    check(corr[:1] == ["great-gap-fall"] and reached < GAP_FAR, f"flaps alone fall short: below the far side's ground at x={reached:.1f}, it starts at {GAP_FAR:.0f} ({corr})")
     check("sandbox.gap.fall" in line_ids(pg, m), "falling into the gap gets the glide hint")
     check(abs(player(pg)["pos"]["x"] - 91) < 0.2, "back at the clifftop checkpoint")
     settle(pg)
@@ -459,6 +464,9 @@ def beat_gap(pg):
         hold(pg, "Space")
         until(pg, "p.gliding", 3)
         until(pg, f"p.pos.x > {GAP_EDGE + 6}", 4)
+        # Assert state, not pixels: headless screenshots can show a stale E bubble (README).
+        prompt = st(pg)["interaction"]["prompt"]
+        check(prompt["visible"] is False, f"no E prompt while gliding over the gap ({prompt})")
         shot(pg, "gap_glide_1")
         until(pg, f"p.pos.x > {GAP_EDGE + 13}", 4)
         shot(pg, "gap_glide_2")
@@ -531,7 +539,22 @@ def beat_finish(pg):
     pg.wait_for_function(
         "() => { const c = window.__sammy.narrator.current; return c && c.id === 'sandbox.complete'; }",
         timeout=5000)
-    time.sleep(1.0)
+    menu = st(pg)["menu"]
+    typing = not narrator(pg)["current"]["revealed"]
+    check(not typing or (menu["waitingForLine"] and not menu["canContinue"]),
+          f"no continue prompt while the last line is still typing ({menu})")
+    if typing:
+        # A press while it types finishes the line instead of moving on.
+        time.sleep(0.3)
+        harness.tap(pg, "Space")
+        time.sleep(0.2)
+        n = narrator(pg)
+        check(n["current"] and n["current"]["id"] == "sandbox.complete" and n["current"]["revealed"]
+              and st(pg)["menu"]["screen"] == "celebrate", "Space while the line types reveals it all, and stays on the celebration")
+        check(any(e["n"] == "narrator:revealed" and e["d"]["id"] == "sandbox.complete" for e in log(pg)[m:]),
+              "narrator:revealed sent for the last line")
+    pg.wait_for_function("window.__sammy.menu && window.__sammy.menu.canContinue === true", timeout=6000)
+    shot(pg, "level_complete_prompt")
     harness.tap(pg, "Space")
     time.sleep(0.8)
     shot(pg, "to_be_continued")
@@ -546,6 +569,40 @@ def beat_finish(pg):
           f"level complete autosaved (no next level, so the save stays on the sandbox) ({save})")
 
 
+def beat_new_game_again(pg):
+    """A second New Game in the same session tells the story fresh; a Continue skips the intro."""
+    m = mark(pg)
+    harness.tap(pg, "KeyW")       # Continue is selected when there is a save; up to New Game
+    time.sleep(0.2)
+    harness.tap(pg, "Enter")
+    time.sleep(0.3)
+    check(st(pg)["menu"]["screen"] == "confirmOverwrite", "New Game over the save asks first")
+    harness.tap(pg, "KeyA")       # to Yes
+    time.sleep(0.2)
+    harness.tap(pg, "Enter")
+    harness.wait_scene(pg, "playing", 5)
+    pg.wait_for_function("window.__sammy.level && window.__sammy.level.loading === false", timeout=10000)
+    wait_line(pg, "sandbox.intro", "new_game_again_intro")
+    starts = events(pg, "level:start", m)
+    check(starts and starts[-1]["d"]["checkpointId"] is None, f"New Game: level:start has checkpointId null ({starts[-1:]})")
+    seen = narrator(pg)["seenIds"]
+    check(seen == ["sandbox.intro"], f"New Game forgot the old run's lines; only the intro is seen ({seen})")
+    settle(pg)
+
+    # Continue-style load at the clifftop (the params Continue passes), with the narrator's memory
+    # wiped too, so only the intro's own condition can keep it quiet.
+    m = mark(pg)
+    pg.evaluate("window.__sammy.commands.changeScene('playing', {levelId: 'sandbox', checkpointId: 'clifftop', "
+                "reachedCheckpoints: ['meadow', 'clifftop'], newStory: true})")
+    pg.wait_for_function("window.__sammy.level && window.__sammy.level.loading === false && "
+                         "window.__sammy.level.checkpointId === 'clifftop'", timeout=10000)
+    wait_line(pg, "resume.common", "continue_resume_line")
+    starts = events(pg, "level:start", m)
+    check(starts and starts[-1]["d"]["checkpointId"] == "clifftop", f"Continue: level:start carries the checkpoint ({starts[-1:]})")
+    settle(pg)
+    check("sandbox.intro" not in line_ids(pg, m), "Continue doesn't replay the intro")
+
+
 def summary(pg):
     all_log = log(pg)
     names = [e["n"] for e in all_log]
@@ -555,7 +612,8 @@ def summary(pg):
     cps = [e["d"]["id"] for e in all_log if e["n"] == "checkpoint:reached"]
     check(cps == ["meadow", "clifftop", "far-side"], f"all three checkpoints, in order ({cps})")
     corr = sorted({e["d"]["id"] for e in all_log if e["n"] == "correction:triggered"})
-    check(corr == ["eagles-perch", "nook", "world-bottom"], f"corrections seen: {corr}")
+    check({"eagles-perch", "nook", "great-gap-fall"} <= set(corr) and set(corr) <= {"eagles-perch", "nook", "great-gap-fall", "world-bottom"},
+          f"corrections seen: {corr}")
     for name in ("player:flap", "player:glideStart", "interact:sign", "interact:twyx", "interact:doorLocked",
                  "door:open", "level:complete"):
         check(name in names, f"{name} happened")
@@ -568,7 +626,7 @@ def main():
         pg.evaluate(PILOT)
         started = time.time()
         beats = (beat_title, beat_intro_and_nook, beat_sign_and_twyx, beat_meadow_checkpoint, beat_hops,
-                 beat_cliff, beat_perch, beat_gap, beat_doors, beat_finish)
+                 beat_cliff, beat_perch, beat_gap, beat_doors, beat_finish, beat_new_game_again)
         for beat in beats:
             print(f"-- {beat.__name__}")
             try:

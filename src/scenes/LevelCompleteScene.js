@@ -1,9 +1,12 @@
 // Level complete overlay, pushed over the playing scene when level:complete fires.
 // The level keeps running underneath (updatesBelow) so the narrator can make its remark
 // (any narration line triggered by level:complete) while confetti falls; gameplay input is locked.
+// The continue prompt waits until that remark is fully shown (or SCREENS.LEVEL_COMPLETE_LINE_WAIT
+// passes), so the last line of the chapter is never cut off; a press while it is still typing
+// finishes it instead (narrator:skip).
 // Then: on to the level data's `nextLevel`, or a "To be continued..." card and back to the title.
-import { mainCanvasSize, timeReal, rand, randInt, smoothStep, clamp } from '../../lib/littlejs/littlejs.esm.js';
-import { emit } from '../core/events.js';
+import { mainCanvasSize, timeReal, rand, randInt, smoothStep, clamp } from 'littlejs';
+import { on, emit } from '../core/events.js';
 import { wasPressed, mouse, lockGameplay, unlockGameplay } from '../core/input.js';
 import { drawScreenCanvas } from '../art/screenCanvas.js';
 import { drawConfetti, drawBanner, drawPrompt, drawToBeContinued, CONFETTI_COLORS } from '../art/drawCelebration.js';
@@ -26,6 +29,24 @@ export class LevelCompleteScene
         this.nextLevel = null;
         this.confetti = [];
         this.lastTime = 0;
+        // The narrator's latest line, tracked all the time rather than only while this scene is
+        // up: the narrator can start its level complete line in the same step as level:complete,
+        // before this scene's enter() runs. For the whole game, so never unsubscribed.
+        this.lastLine = null;   // { id, revealed, startedAt (timeReal) }
+        on('narrator:line', ({ id }) => { this.lastLine = { id, revealed: false, startedAt: timeReal }; });
+        on('narrator:revealed', ({ id }) =>
+        {
+            if (this.lastLine?.id === id)
+                this.lastLine.revealed = true;
+        });
+    }
+
+    /** The narrator's line is still typing out. Gives up after LEVEL_COMPLETE_LINE_WAIT, so a
+     *  line that never finishes (cleared, or a stale one) can't strand the player. */
+    get waitingForLine()
+    {
+        const line = this.lastLine;
+        return !!line && !line.revealed && timeReal - line.startedAt < SCREENS.LEVEL_COMPLETE_LINE_WAIT;
     }
 
     /** params: the level:complete payload ({id, levelId, nextLevel?, ...}). */
@@ -53,7 +74,9 @@ export class LevelCompleteScene
         this.confetti.forEach(piece => movePiece(piece, dt));
 
         const pressed = wasPressed('confirm') || mouse.wasPressed(0);
-        if (this.phase === 'celebrate' && pressed && this.phaseTime >= SCREENS.LEVEL_COMPLETE_MIN_TIME)
+        if (this.phase === 'celebrate' && pressed && this.waitingForLine)
+            emit('narrator:skip');   // finish the line first; the next press continues
+        else if (this.phase === 'celebrate' && pressed && this.canContinue())
         {
             emit('menu:select');
             if (this.nextLevel)
@@ -69,6 +92,11 @@ export class LevelCompleteScene
         }
     }
 
+    canContinue()
+    {
+        return this.phaseTime >= SCREENS.LEVEL_COMPLETE_MIN_TIME && !this.waitingForLine;
+    }
+
     renderPost()
     {
         const time = timeReal;
@@ -78,7 +106,7 @@ export class LevelCompleteScene
             if (this.phase === 'celebrate')
             {
                 drawBanner(ctx, LEVEL_COMPLETE_TEXT.banner, BANNER_POS, smoothStep(clamp(this.phaseTime / .6, 0, 1)), time);
-                if (this.phaseTime >= SCREENS.LEVEL_COMPLETE_MIN_TIME)
+                if (this.canContinue())
                     drawPrompt(ctx, LEVEL_COMPLETE_TEXT.prompt, PROMPT_POS, time);
             }
             else
@@ -89,7 +117,13 @@ export class LevelCompleteScene
     /** For window.__sammy.menu. */
     menuDebugState()
     {
-        return { screen: this.phase, nextLevel: this.nextLevel, seconds: Math.round(this.phaseTime * 10) / 10 };
+        return {
+            screen: this.phase,
+            nextLevel: this.nextLevel,
+            seconds: Math.round(this.phaseTime * 10) / 10,
+            waitingForLine: this.waitingForLine,
+            canContinue: this.phase === 'celebrate' && this.canContinue(),
+        };
     }
 }
 

@@ -14,7 +14,7 @@
 // Wiring (PlayingScene): update() runs AFTER narrator.update() in the same step, because the
 // narrator consumes the E press it uses to skip or dismiss a line; a consumed press is never an
 // interaction. The prompt hides while gameplay input is locked (corrections, level complete).
-import { vec2, timeDelta, time, cameraScale, worldToScreen } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, timeDelta, time, cameraScale, worldToScreen } from 'littlejs';
 import { emit } from '../core/events.js';
 import { wasPressed, gameplayLockReasons } from '../core/input.js';
 import { drawScreenCanvas } from '../art/screenCanvas.js';

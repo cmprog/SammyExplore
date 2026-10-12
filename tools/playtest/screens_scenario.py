@@ -294,6 +294,16 @@ def level_complete(pg):
     time.sleep(0.4)
     check(count_events(pg, "correction:triggered") == corrections and st(pg)["narrator"]["correction"] is None,
           "zones frozen under the celebration (no correction)")
+    # T-012: the continue prompt waits for the remark. A press while it types finishes it instead.
+    s = st(pg)
+    if s["narrator"]["current"] and not s["narrator"]["current"]["revealed"]:
+        check(s["menu"]["waitingForLine"] and not s["menu"]["canContinue"], f"no continue while the remark types ({s['menu']})")
+        press(pg, "Space", 0.3)
+        s = st(pg)
+        check(s["menu"]["screen"] == "celebrate" and s["narrator"]["current"]["revealed"],
+              "Space while the remark types reveals it and stays on the celebration")
+    ok = wait_for(pg, lambda: st(pg)["menu"]["canContinue"] is True)
+    check(ok, "the continue prompt appears once the remark is fully shown")
     press(pg, "Space", 0.8)
     check(st(pg)["menu"]["screen"] == "toBeContinued", "no nextLevel -> To be continued")
     time.sleep(0.8)
@@ -310,7 +320,7 @@ def next_level_path(pg):
     time.sleep(0.3)
     pg.evaluate("window.__sammy.commands.emit('level:complete', {id: 'end', levelId: 'test', nextLevel: 'test'})")
     harness.wait_scene(pg, "levelComplete")
-    time.sleep(1.4)
+    wait_for(pg, lambda: st(pg)["menu"]["canContinue"] is True)
     pg.mouse.down()
     time.sleep(0.08)
     pg.mouse.up()

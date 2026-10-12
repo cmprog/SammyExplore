@@ -6,6 +6,22 @@
     <title>Sammy Explore</title>
     <!-- empty icon: no asset files, and avoids a favicon.ico 404 console error -->
     <link rel="icon" href="data:,">
+    <!-- Every module imports the engine as the bare specifier 'littlejs'; this import map picks the
+         file. Play sessions get the release build (debug off: no debug overlay, no +/- speed keys).
+         Add ?debug to the URL for the debug build while developing (the playtests do).
+         A classic inline script so the map is in place before the module script below loads. -->
+    <script>
+        (() =>
+        {
+            const debug = new URLSearchParams(location.search).has('debug');
+            const map = document.createElement('script');
+            map.type = 'importmap';
+            map.textContent = JSON.stringify({ imports: {
+                littlejs: debug ? './lib/littlejs/littlejs.esm.js' : './lib/littlejs/littlejs.esm.min.js',
+            } });
+            document.currentScript.after(map);
+        })();
+    </script>
 </head>
 <body>
     <script type="module" src="src/main.js"></script>

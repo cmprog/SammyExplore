@@ -3,7 +3,7 @@
 //   key - narration key: E emits interact:sign {id, key}, and the narrator "reads" the sign with
 //         whichever line has trigger 'interact:sign' and that key (or refuses to, or misreads it).
 // Not solid: Sammy walks past it.
-import { EngineObject, vec2, time, timeDelta, isOnScreen } from '../../lib/littlejs/littlejs.esm.js';
+import { EngineObject, vec2, time, timeDelta, isOnScreen } from 'littlejs';
 import { drawSign, SIGN_TOP } from '../art/drawSign.js';
 import { RENDER_ORDER } from '../data/renderOrder.js';
 import { SIGN } from '../data/tuning.js';

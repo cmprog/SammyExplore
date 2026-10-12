@@ -1,7 +1,7 @@
 // A wooden signpost: a stubby post in a grass tuft, a rounded two-plank board with nails and
 // some painted "writing" squiggles (the narrator reads it, so the art never needs real words).
 // Wobbles when read. Pure drawing: drawSign(feetPos, state, time).
-import { vec2, rgb, drawPoly, drawLineList, drawLine, drawCircle, drawEllipse } from '../../lib/littlejs/littlejs.esm.js';
+import { vec2, rgb, drawPoly, drawLineList, drawLine, drawCircle, drawEllipse } from 'littlejs';
 import { roundedRectPoints } from './shapes.js';
 
 const OUTLINE = rgb(.16, .09, .07);

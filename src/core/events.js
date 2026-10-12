@@ -3,7 +3,7 @@
 //
 // Payloads must be plain data (numbers, strings, arrays, plain objects), not entities or
 // vectors with methods: they are copied on emit and serialized to JSON by the test hook.
-import { time } from '../../lib/littlejs/littlejs.esm.js';
+import { time } from 'littlejs';
 import { currentFrame } from './clock.js';
 
 const RECENT_EVENT_LIMIT = 50;

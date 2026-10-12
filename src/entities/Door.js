@@ -8,7 +8,7 @@
 //
 // Interactable (see systems/Interaction.js). Events: door:open {id} when the swing starts,
 // interact:doorLocked {id} on a locked door. The Interaction system emits interact:door itself.
-import { EngineObject, vec2, time, timeDelta, isOnScreen } from '../../lib/littlejs/littlejs.esm.js';
+import { EngineObject, vec2, time, timeDelta, isOnScreen } from 'littlejs';
 import { emit } from '../core/events.js';
 import { drawDoor } from '../art/drawDoor.js';
 import { RENDER_ORDER } from '../data/renderOrder.js';

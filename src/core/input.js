@@ -6,7 +6,7 @@
 import {
     keyIsDown, keyWasPressed, keyWasReleased,
     mouseIsDown, mouseWasPressed, mouseWasReleased, mousePosScreen, mouseInWindow,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { ACTION_KEYS, GAMEPLAY_ACTIONS, MENU_ACTIONS } from '../data/controls.js';
 
 // Keys masked until physically released, so a press that belonged to the previous

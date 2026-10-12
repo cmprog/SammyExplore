@@ -5,7 +5,7 @@
 import {
     vec2, drawRect, drawCircle, drawPoly, drawTile,
     mainCanvasSize, BLACK, WHITE,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 
 const TAU = Math.PI * 2;
 /** Engine screen positions are pixel indices (it adds half a pixel to reach the center), so a

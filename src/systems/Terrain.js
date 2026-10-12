@@ -5,7 +5,7 @@
 import {
     TileCollisionLayer, CanvasLayer, vec2, time,
     cameraPos, cameraScale, setCameraPos, setCameraScale, getCameraSize, mainCanvasSize,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { TILE_TYPES } from '../data/tileTypes.js';
 import { RENDER_ORDER } from '../data/renderOrder.js';
 import { CAMERA_SCALE } from '../data/tuning.js';

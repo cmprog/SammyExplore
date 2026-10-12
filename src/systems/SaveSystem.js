@@ -14,7 +14,7 @@
 // | newer (from a later game version) | blocked (storage could not be read).
 //
 // Events consumed: checkpoint:reached {id, levelId}, level:complete {id, levelId, nextLevel?}
-import { timeReal } from '../../lib/littlejs/littlejs.esm.js';
+import { timeReal } from 'littlejs';
 import { on } from '../core/events.js';
 import { SAVE_SCHEMA_VERSION } from '../data/version.js';
 import { SCREENS } from '../data/tuning.js';

@@ -1,7 +1,7 @@
 // The correction "rewrite": a storybook page drops over the world, a quill scribbles it out
 // row by row, then a pink eraser rubs the scribbles away again.
 // state: { phase: 'in'|'hold'|'out', progress 0..1, seed } from CorrectionSequence.visualState().
-import { mainCanvasSize, smoothStep, clamp, RandomGenerator } from '../../lib/littlejs/littlejs.esm.js';
+import { mainCanvasSize, smoothStep, clamp, RandomGenerator } from 'littlejs';
 import { drawScreenCanvas } from './screenCanvas.js';
 
 const ROWS = 7;

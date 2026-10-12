@@ -3,7 +3,7 @@
 // logic here runs in updatePost, which the engine still calls while paused.
 //
 // Sound settings change only through the audio:* bus events; Audio owns sammyexplore.settings.
-import { mainCanvasSize, timeReal, setPaused, setCursor, smoothStep, clamp } from '../../lib/littlejs/littlejs.esm.js';
+import { mainCanvasSize, timeReal, setPaused, setCursor, smoothStep, clamp } from 'littlejs';
 import { on, emit } from '../core/events.js';
 import { wasPressed, mouse } from '../core/input.js';
 import { Menu } from '../systems/Menu.js';

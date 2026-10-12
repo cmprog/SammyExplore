@@ -2,7 +2,7 @@
 // poses (or playing a flap stroke), body lean, ear-tuft lag, run phase, and flap-pip pops.
 // Sammy calls the on*() hooks from its moves and update() once per step; pose() hands
 // drawSammy plain data, so the drawing stays a pure function of (pos, pose, time).
-import { clamp, lerp, sign } from '../../lib/littlejs/littlejs.esm.js';
+import { clamp, lerp, sign } from 'littlejs';
 import { SAMMY_POSES, FLAP_STROKE } from '../data/sammyPoses.js';
 import { SAMMY, SAMMY_ANIM as A, FLAP_PIPS } from '../data/tuning.js';
 

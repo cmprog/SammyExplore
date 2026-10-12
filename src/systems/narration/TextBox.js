@@ -63,6 +63,16 @@ export class TextBox
         return true;
     }
 
+    /** Show the rest of the line at once (no blip), however new it is. Returns true if there was
+     *  anything left to reveal. */
+    finishReveal()
+    {
+        if (!this.line || this.leaving || this.revealed)
+            return false;
+        this.reveal(this.line.text.length, false);
+        return true;
+    }
+
     reveal(chars, withBlip = true)
     {
         const text = this.line.text;

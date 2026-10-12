@@ -35,8 +35,11 @@ class Session:
 
 
 @contextmanager
-def session(wait_hook=True, timeout=10, start_level="test"):
+def session(wait_hook=True, timeout=10, start_level="test", debug=True):
     """Yields a Session with the game loaded. Check session.errors at the end.
+
+    debug=True (the default) loads index.html?debug, the LittleJS debug build, as development does.
+    debug=False loads the release build that players get (see release_smoke.py).
 
     The game boots to the title screen. start_level (default "test") skips straight into that level
     via __sammy.commands.loadLevel, so gameplay scenarios don't have to click through the menu.
@@ -50,7 +53,7 @@ def session(wait_hook=True, timeout=10, start_level="test"):
             s = Session(page, url)
             page.on("console", lambda m: s.errors.append(f"console: {m.text}") if m.type == "error" else None)
             page.on("pageerror", lambda e: s.errors.append(f"pageerror: {e}"))
-            page.goto(url + "/index.html")
+            page.goto(url + "/index.html" + ("?debug" if debug else ""))
             if wait_hook:
                 try:
                     page.wait_for_function("window.__sammy !== undefined", timeout=timeout * 1000)

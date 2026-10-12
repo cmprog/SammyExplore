@@ -1,6 +1,6 @@
 // The loaded narration lines and the rules for choosing one: key match, once, cooldown,
 // condition, priority, and which `texts` variant to use. Knows nothing about display.
-import { randInt } from '../../../lib/littlejs/littlejs.esm.js';
+import { randInt } from 'littlejs';
 import { NARRATOR } from '../../data/tuning.js';
 
 const BUILT_IN_PREFIXES = ['idle:', 'spam:', 'ignored:', 'followed:'];
@@ -19,6 +19,15 @@ export class LineBook
         this.seenVariants = new Map();   // line id -> Set of variant indexes shown
         this.lastVariant = new Map();
         this.lastPlayedAt = new Map();
+    }
+
+    /** New Game: forget every line said this session, so the story's lines play again. */
+    forgetSeen()
+    {
+        this.seenIds.clear();
+        this.seenVariants.clear();
+        this.lastVariant.clear();
+        this.lastPlayedAt.clear();
     }
 
     /** scripts in precedence order: level script first, then common. */
@@ -122,6 +131,11 @@ export class LineBook
         const last = this.lastPlayedAt.get(line.id);
         if (line.cooldown && last !== undefined && now - last < line.cooldown)
             return false;
+        return this.conditionHolds(line, ctx);
+    }
+
+    conditionHolds(line, ctx)
+    {
         if (!line.condition)
             return true;
         try { return !!line.condition(ctx); }
@@ -132,8 +146,21 @@ export class LineBook
         }
     }
 
+    /** Is a queued instance still worth playing? Its line's `once` and `condition` are checked
+     *  again, since the world may have moved on while it waited (cooldown is not: it was queued
+     *  already). The condition sees the payload of the event that queued it. */
+    stillWanted(instance, ctx)
+    {
+        const line = this.byId.get(instance.id);
+        if (!line)
+            return false;
+        if (line.once && this.seenIds.has(line.id))
+            return false;
+        return this.conditionHolds(line, ctx);
+    }
+
     /** A playable instance of a line: its chosen text plus what we need to record it later. */
-    instance(line, now)
+    instance(line, now, payload = null)
     {
         const variant = line.texts ? this.chooseVariant(line) : -1;
         return {
@@ -143,8 +170,10 @@ export class LineBook
             trigger: line.trigger ?? null,
             priority: priorityOf(line),
             once: !!line.once,
+            noStale: !!line.noStale,
             instruction: line.instruction ?? null,
             queuedAt: now,
+            payload,   // the event that queued it, for re-checking `condition` at play time
             requeued: false,
         };
     }

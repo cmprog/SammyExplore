@@ -7,7 +7,7 @@
 // facing left. Body shapes are data (data/twyxPoses.js), colors are TWYX_PALETTE.
 // Black fur on a night sky: the fur is a soft charcoal with a moonlit rim along the top edge and
 // a darker outline all round, so the silhouette reads against the darkest part of the sky.
-import { lerp } from '../../lib/littlejs/littlejs.esm.js';
+import { lerp } from 'littlejs';
 import { ArtFrame } from './ArtFrame.js';
 import { TWYX_PALETTE as P } from '../data/palettes.js';
 import { TWYX_SHAPES, TWYX_FACE_TURN as TURN } from '../data/twyxPoses.js';

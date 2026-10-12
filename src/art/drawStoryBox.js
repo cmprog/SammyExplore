@@ -1,7 +1,7 @@
 // The narrator's text box: a parchment storybook panel at the bottom of the screen with an
 // inked frame, corner flourishes, a ribbon name tag, and typewriter text.
 // Pure drawing: everything comes from the arguments.
-import { drawTextScreen, mainContext, mainCanvasSize, vec2, rgb, smoothStep } from '../../lib/littlejs/littlejs.esm.js';
+import { drawTextScreen, mainContext, mainCanvasSize, vec2, rgb, smoothStep } from 'littlejs';
 import { drawScreenCanvas } from './screenCanvas.js';
 
 const FONT = 'Georgia, "Palatino Linotype", "Book Antiqua", serif';

@@ -4,7 +4,7 @@
 //
 // A particle is plain data: { draw, pos, vel, life, age, gravity, drag, sway?, spin?, ... }.
 // `draw(pos, particle, time)` gets the particle with `progress` (0..1) and `alpha` filled in.
-import { EngineObject, vec2, time, timeDelta } from '../../lib/littlejs/littlejs.esm.js';
+import { EngineObject, vec2, time, timeDelta } from 'littlejs';
 import { RENDER_ORDER } from '../data/renderOrder.js';
 import { SAMMY_FX } from '../data/tuning.js';
 

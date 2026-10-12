@@ -10,7 +10,7 @@
 import {
     EngineObject, TextureInfo, TileInfo, RandomGenerator, vec2, time,
     cameraPos, cameraScale, getCameraSize, mainCanvasSize, glContext,
-} from '../../lib/littlejs/littlejs.esm.js';
+} from 'littlejs';
 import { RENDER_ORDER } from '../data/renderOrder.js';
 import { BACKDROP_PALETTES } from '../data/palettes.js';
 import { BACKDROP_LAYOUT, BACKDROP_STRIP_WIDTH, BACKDROP_SEED } from '../data/backdrop.js';

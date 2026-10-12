@@ -4,6 +4,8 @@
 //
 // Keys: zone keys (narration zones), sign keys, and entity/zone ids (checkpoints, doors,
 // the exit) from the level file. Correction zones name their line with `lineId`.
+// `noStale` marks lines that teach a move or point the way: they wait in the queue as long as
+// it takes instead of being dropped as old news.
 
 const PRIORITY = {
     zone: 40,        // remarks on reaching a place
@@ -17,12 +19,6 @@ const PRIORITY = {
 // How far (world units) Sammy must travel from where the intro finished for it to count.
 const FOLLOW_DISTANCE = 8;
 const IGNORE_DISTANCE = 4;
-
-// The Great Gap, in world x: falling off the world here gets a glide hint instead of a
-// generic "rewrite". Matches the ravine columns in the level file.
-const GAP_LEFT = 106.5;
-const GAP_RIGHT = 126.5;
-const inGreatGap = ctx => !!ctx.playerPos && ctx.playerPos.x > GAP_LEFT && ctx.playerPos.x < GAP_RIGHT;
 
 export default {
     id: 'sandbox',
@@ -49,6 +45,8 @@ export default {
             trigger: 'level:start',
             priority: PRIORITY.intro,
             once: true,
+            // Only on a fresh start: Continue gets the common resume line instead.
+            condition: ctx => !ctx.payload?.checkpointId,
             text: 'Once upon a time, a mighty Eagle set off to the RIGHT, toward adventure. Sharp of eye! Noble of beak!',
             instruction: 'goRight',
         },
@@ -104,6 +102,7 @@ export default {
             key: 'sandbox.twyx',
             priority: PRIORITY.zone,
             once: true,
+            noStale: true,
             text: "Behold, the Eagle's noble steed! ...That's a cat. Why is there a cat? Press E to say hello, I suppose.",
         },
         {
@@ -122,6 +121,7 @@ export default {
             key: 'sandbox.hops',
             priority: PRIORITY.zone,
             once: true,
+            noStale: true,
             text: 'Gaps and planks ahead! The Eagle hopped across them gracefully. Owls may hop too. Less gracefully.',
         },
         {
@@ -130,6 +130,7 @@ export default {
             key: 'sandbox.cliff',
             priority: PRIORITY.zone,
             once: true,
+            noStale: true,
             text: "A towering cliff! The Eagle would simply fly up. Owls... tap Space in the air to flap, I'm told.",
         },
         {
@@ -178,15 +179,14 @@ export default {
             key: 'sandbox.leap',
             priority: PRIORITY.zone,
             once: true,
+            noStale: true,
             text: 'The Great Gap! Here the Eagle soared across, majestically. You could hold Space to glide. Less majestically.',
         },
         {
-            // Falling off the world in the gap: a glide hint instead of a generic rewrite.
+            // Say-only: the correction zone at the bottom of the Great Gap names it, so a fall
+            // there gets a glide hint instead of a generic rewrite.
             id: 'sandbox.gap.fall',
-            trigger: 'correction:triggered',
-            key: 'world-bottom',
             priority: PRIORITY.correction,
-            condition: inGreatGap,
             texts: [
                 'That was more of a plop than a soar. Hold Space while falling to glide. Again!',
                 'Eagles glide across. Owls, apparently, drop like a muffin. Hold Space this time. Rewinding!',
@@ -245,6 +245,7 @@ export default {
             key: 'sandbox.end',
             priority: PRIORITY.zone,
             once: true,
+            noStale: true,
             text: 'And there it glows: the end of Chapter One! Press E on the door. The Eagle would do it with style.',
         },
         {
