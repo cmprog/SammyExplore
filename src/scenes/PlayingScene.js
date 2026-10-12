@@ -1,6 +1,8 @@
 // The in-level scene: loads a level by id, puts the player at the spawn, runs zones and the camera.
 // enter({ levelId }) loads; re-entering (e.g. __sammy.commands.loadLevel) tears down and reloads.
-// enter({ levelId, checkpointId }) starts at that checkpoint instead of the spawn (Continue).
+// enter({ levelId, checkpointId, reachedCheckpoints }) starts at that checkpoint instead of the
+// spawn (Continue); reachedCheckpoints are already used up. A level that fails to load emits
+// level:loadFailed (main.js falls back to the title).
 // Hosts the narrator (see the wiring notes at the top of systems/Narrator.js).
 import {
     vec2, rgb, setGravity, mainCanvasSize, drawTextScreen,
@@ -27,11 +29,16 @@ export class PlayingScene
         this.loadError = null;
         this.loadToken = 0;
         this.unsubscribers = [];
+        this.startCheckpointId = null;
+        this.reachedCheckpoints = [];
+        this.overlaid = false;   // an overlay scene is on top (see pause())
     }
 
-    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null } = {})
+    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null, reachedCheckpoints = [] } = {})
     {
         this.startCheckpointId = checkpointId;
+        this.reachedCheckpoints = reachedCheckpoints;
+        this.overlaid = false;
         setGravity(vec2(0, WORLD_GRAVITY));
         // Before load(): the narrator must be listening when the level emits level:start.
         this.narrator.loadScript(levelId);
@@ -74,6 +81,7 @@ export class PlayingScene
             this.unload();            // never leave a half-loaded level behind
             this.loadError = error.message;
             console.error(error.message);
+            emit('level:loadFailed', { levelId, message: error.message });
             return;
         }
         finally
@@ -89,7 +97,7 @@ export class PlayingScene
     startPoint()
     {
         const zones = this.level.zones;
-        if (this.startCheckpointId && !zones.restoreCheckpoint(this.startCheckpointId))
+        if (this.startCheckpointId && !zones.restoreCheckpoint(this.startCheckpointId, this.reachedCheckpoints))
             console.warn(`level "${this.level.id}" has no checkpoint "${this.startCheckpointId}"; starting at the spawn`);
         return zones.respawnPoint;
     }
@@ -118,12 +126,18 @@ export class PlayingScene
         this.narrator.update();
     }
 
+    // An overlay is on top (pause, level complete). The level may keep running underneath
+    // (level complete), but zones stay frozen so nothing fires under the confetti.
+    pause()  { this.overlaid = true; }
+    resume() { this.overlaid = false; }
+
     // Zones and camera run after physics so they see this step's final positions.
     updatePost()
     {
         if (!this.level || !this.player)
             return;
-        this.level.zones.update(this.player.pos, this.player.size);
+        if (!this.overlaid)
+            this.level.zones.update(this.player.pos, this.player.size);
         this.camera.update();
     }
 
@@ -149,7 +163,8 @@ export class PlayingScene
         hook.register('level', () => this.levelDebugState());
         hook.register('camera', () => this.camera.debugState());
         hook.register('player', () => this.player?.debugState() ?? null);
-        hook.commands.loadLevel = (levelId, checkpointId = null) => sceneManager.change('playing', { levelId, checkpointId });
+        hook.commands.loadLevel = (levelId, checkpointId = null, reachedCheckpoints = []) =>
+            sceneManager.change('playing', { levelId, checkpointId, reachedCheckpoints });
         hook.commands.teleport = (x, y) =>
         {
             // World coordinates (y up) of the player's center, the same as __sammy.player.pos.

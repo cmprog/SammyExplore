@@ -7,6 +7,8 @@ export const TITLE_TEXT = {
     confirmOverwrite: 'This will start a brand-new story. Your old one will be... forgotten. Sure?',
     yes: 'Yes',
     no: 'No',
+    // Shown on the title when a level couldn't be loaded (e.g. a save pointing at a missing level).
+    loadFailed: "Oh dear, that page of the story has gone missing! Back to the cover we go.",
 };
 
 export const PAUSE_TEXT = {

@@ -67,4 +67,5 @@ export const SCREENS = {
     CONFETTI_GRAVITY: 520,         // px/s^2, screen space
     TO_BE_CONTINUED_MIN_TIME: 1.0,
     TO_BE_CONTINUED_AUTO_TIME: 6,  // back to the title on its own after this
+    TITLE_NOTICE_TIME: 6,          // how long a title-screen notice (e.g. a level failed to load) stays up
 };

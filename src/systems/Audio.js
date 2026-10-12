@@ -44,6 +44,7 @@ export function initAudio()
         on(eventName, startGlide);
     for (const eventName of GLIDE_STOP_EVENTS)
         on(eventName, stopGlide);
+    on('scene:change', onSceneChange);
 
     // Contract payloads are bare values; {volume} / {muted} objects are accepted too.
     on('audio:setVolume', data => setVolume(isObject(data) ? data.volume : data));
@@ -191,6 +192,7 @@ function startGlide()
     soundCount++;
     if (!canPlay() || glideInstances.some(instance => instance.isPlaying()))
         return;
+    stopGlide();   // drop a loop left paused by an overlay
     const entry = library.get('glide');
     glideInstances = playLayers(entry, settings.sfxVolume, entry.loop);
     for (const instance of glideInstances)
@@ -202,6 +204,16 @@ function stopGlide()
     for (const instance of glideInstances)
         fadeOutAndStop(instance, AUDIO_TUNING.GLIDE_FADE_OUT);
     glideInstances = [];
+}
+
+function onSceneChange({ kind } = {})
+{
+    if (kind === 'push')
+        glideInstances.forEach(instance => instance.pause());
+    else if (kind === 'pop')
+        glideInstances.forEach(instance => instance.resume());
+    else
+        stopGlide();
 }
 
 // SoundInstance.stop(fade) restarts its ramp from full volume, which pops if we're still

@@ -14,7 +14,7 @@
 // the engine skips gameUpdate while paused). That way a scene never gets exit() called halfway
 // through its own update. The last request before the boundary wins.
 import { emit } from './events.js';
-import { suppressUntilReleased } from './input.js';
+import { suppressUntilReleased, suppressMenuKeysUntilReleased } from './input.js';
 
 // A scene whose enter() keeps requesting another change would otherwise loop forever.
 const MAX_TRANSITIONS_PER_STEP = 8;
@@ -117,8 +117,9 @@ export class SceneManager
             if (this.stack.length < 2)
                 return;
             this.stack.pop().scene.exit?.();
-            // Same as below: Esc/Enter/Space that closed the overlay must not reach the scene underneath.
-            suppressUntilReleased();
+            // Only Esc/Enter: a held Space or direction (e.g. a glide) carries back into the level.
+            // Their press edges were already used by the overlay, so nothing re-triggers.
+            suppressMenuKeysUntilReleased();
             this.current.resume?.();
         }
         else
@@ -129,8 +130,12 @@ export class SceneManager
             else
                 this.current?.pause?.();
             this.stack.push({ name: request.name, scene: this.scenes.get(request.name) });
-            // The key that triggered the change (e.g. Space on a menu) must not carry into the new scene.
-            suppressUntilReleased();
+            // The key that triggered the change (e.g. Space on a menu) must not carry into the new
+            // scene. Overlays mask only menu keys, so held gameplay keys survive a pause round trip.
+            if (request.kind === 'change')
+                suppressUntilReleased();
+            else
+                suppressMenuKeysUntilReleased();
             this.current.enter?.(request.params);
         }
         emit('scene:change', { from, to: this.currentName, kind: request.kind });

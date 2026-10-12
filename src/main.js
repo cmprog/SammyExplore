@@ -14,6 +14,7 @@ import { PlayingScene } from './scenes/PlayingScene.js';
 import { PauseScene } from './scenes/PauseScene.js';
 import { LevelCompleteScene } from './scenes/LevelCompleteScene.js';
 import { SaveSystem } from './systems/SaveSystem.js';
+import { TITLE_TEXT } from './data/screens.js';
 import { initAudio } from './systems/Audio.js';
 import { Narrator } from './systems/Narrator.js';
 
@@ -45,6 +46,13 @@ on('level:complete', payload =>
 {
     if (scenes.currentName === 'playing')
         scenes.push('levelComplete', payload);
+});
+// A level that won't load (e.g. a save or nextLevel naming a missing level) must not strand
+// the player on an error screen.
+on('level:loadFailed', () =>
+{
+    if (scenes.stackNames.includes('playing'))
+        scenes.change('title', { notice: TITLE_TEXT.loadFailed });
 });
 
 const debugHook = installDebugHook(scenes);

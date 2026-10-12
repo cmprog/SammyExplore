@@ -1,5 +1,6 @@
 // Title screen: New Game / Continue over a night sky with Sammy perched on a branch.
-// New Game over an existing save asks first; only Yes replaces the save.
+// New Game over any stored save data (even unusable data) asks first; only Yes replaces it.
+// enter({ notice }) shows a short message, e.g. when a level failed to load.
 import { mainCanvasSize, timeReal, setCursor, smoothStep, clamp } from '../../lib/littlejs/littlejs.esm.js';
 import { wasPressed, mouse } from '../core/input.js';
 import { Menu } from '../systems/Menu.js';
@@ -16,6 +17,7 @@ const LAYOUT = {
     title: { x: 960, y: 215, size: 170 },
     sammy: { x: 560, y: 860, scale: 1.15 },
     menu: { x: 1300, y: 590, gap: 150, w: 540, h: 112 },
+    notice: { x: 960, y: 975, w: 1240, h: 150 },
     confirm: { x: 960, y: 540, w: 1120, h: 540, textY: 430, buttonsY: 665, buttonGap: 400, w2: 300, h2: 104 },
 };
 
@@ -38,10 +40,12 @@ export class TitleScene
         this.confirmAppear = 0;
         this.enteredAt = 0;
         this.lastTime = 0;
+        this.notice = null;
     }
 
-    enter()
+    enter({ notice = null } = {})
     {
+        this.notice = notice;
         this.enteredAt = this.lastTime = timeReal;
         this.confirming = false;
         this.confirmAppear = 0;
@@ -70,15 +74,15 @@ export class TitleScene
         const action = this.menu.update(dt);
         if (action?.id === 'newGame')
         {
-            if (!this.save.hasSave())
+            if (!this.save.hasStoredData())
                 return this.startNewGame();
             this.confirming = true;
             this.confirmMenu.reset('no');   // the safe answer is the default
         }
         else if (action?.id === 'continue')
         {
-            const { levelId, checkpointId } = this.save.current();
-            this.scenes.change('playing', { levelId, checkpointId });
+            const { levelId, checkpointId, reachedCheckpoints } = this.save.current();
+            this.scenes.change('playing', { levelId, checkpointId, reachedCheckpoints });
         }
     }
 
@@ -110,6 +114,7 @@ export class TitleScene
             drawTitleSammy(ctx, LAYOUT.sammy, { scale: LAYOUT.sammy.scale }, time);
             drawTitleText(ctx, TITLE_TEXT.title, LAYOUT.title, { size: LAYOUT.title.size, appear: clamp((time - this.enteredAt) / 1.2, 0, 1) }, time);
             this.drawMenu(ctx, this.menu, time);
+            this.drawNotice(ctx, time);
             if (this.confirmAppear > 0)
                 this.drawConfirm(ctx, smoothStep(this.confirmAppear), time);
             if (mouse.inWindow)
@@ -147,9 +152,27 @@ export class TitleScene
         ctx.restore();
     }
 
+    drawNotice(ctx, time)
+    {
+        const age = time - this.enteredAt;
+        if (!this.notice || age > SCREENS.TITLE_NOTICE_TIME)
+            return;
+        const fade = clamp(Math.min(age / .4, (SCREENS.TITLE_NOTICE_TIME - age) / .6), 0, 1);
+        ctx.save();
+        ctx.globalAlpha = fade;
+        drawPanel(ctx, LAYOUT.notice);
+        drawLabel(ctx, this.notice, LAYOUT.notice, { size: 40, maxWidth: LAYOUT.notice.w - 100 });
+        ctx.restore();
+    }
+
     /** For window.__sammy.menu. */
     menuDebugState()
     {
-        return { screen: this.confirming ? 'confirmOverwrite' : 'title', ...(this.confirming ? this.confirmMenu : this.menu).debugState() };
+        const notice = this.notice && timeReal - this.enteredAt <= SCREENS.TITLE_NOTICE_TIME ? this.notice : null;
+        return {
+            screen: this.confirming ? 'confirmOverwrite' : 'title',
+            notice,
+            ...(this.confirming ? this.confirmMenu : this.menu).debugState(),
+        };
     }
 }

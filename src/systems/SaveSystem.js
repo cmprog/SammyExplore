@@ -3,9 +3,15 @@
 // blocked (private mode, quota) the game still works and Continue still works this session.
 //
 // Shape (SAVE_SCHEMA_VERSION 1):
-//   { schemaVersion, levelId, checkpointId, flags: {}, catsRescued: [], updatedAt }
-//   checkpointId null = start of the level. updatedAt is an ISO timestamp.
+//   { schemaVersion, levelId, checkpointId, reachedCheckpoints: [], flags: {}, catsRescued: [], updatedAt }
+//   checkpointId null = start of the level. reachedCheckpoints = every checkpoint id reached in
+//   levelId so far (they stay used up on Continue). updatedAt is an ISO timestamp.
 // Audio settings are NOT here: Audio owns sammyexplore.settings.
+//
+// Two separate questions: is there a usable save (Continue), and is there anything stored at
+// all (New Game must ask before replacing it, even if it's corrupt or from a newer version).
+// `status` says what was found at startup: none | ok | corrupt (not JSON) | invalid (wrong shape)
+// | newer (from a later game version) | blocked (storage could not be read).
 //
 // Events consumed: checkpoint:reached {id, levelId}, level:complete {id, levelId, nextLevel?}
 import { timeReal } from '../../lib/littlejs/littlejs.esm.js';
@@ -25,17 +31,26 @@ export class SaveSystem
     constructor()
     {
         this.storageOk = true;
+        this.status = 'none';
+        this.rawExists = false;     // something is stored under SAVE_KEY, usable or not
         this.data = this.read();
-        this.savedAt = -Infinity;    // timeReal of the last save, for the icon
+        this.savedAt = -Infinity;   // timeReal of the last save, for the icon
         this.unsubscribers = [
-            on('checkpoint:reached', ({ id, levelId }) => this.write({ levelId, checkpointId: id })),
+            on('checkpoint:reached', payload => this.onCheckpoint(payload)),
             on('level:complete', payload => this.onLevelComplete(payload)),
         ];
     }
 
+    /** A save Continue can use. */
     hasSave()
     {
         return !!this.data;
+    }
+
+    /** Anything New Game would replace: a usable save, or stored data we couldn't use. */
+    hasStoredData()
+    {
+        return this.hasSave() || this.rawExists;
     }
 
     /** Plain copy of the current save, or null. */
@@ -54,8 +69,20 @@ export class SaveSystem
     clear()
     {
         this.data = null;
-        try { localStorage.removeItem(SAVE_KEY); }
+        try
+        {
+            localStorage.removeItem(SAVE_KEY);
+            this.rawExists = false;
+            this.status = 'none';
+        }
         catch (error) { this.storageFailed('clear', error); }
+    }
+
+    onCheckpoint({ id, levelId })
+    {
+        const earlier = this.data?.levelId === levelId ? this.data.reachedCheckpoints : [];
+        const reachedCheckpoints = earlier.includes(id) ? earlier : [...earlier, id];
+        this.write({ levelId, checkpointId: id, reachedCheckpoints });
     }
 
     onLevelComplete({ levelId, nextLevel })
@@ -63,7 +90,7 @@ export class SaveSystem
         // Continue picks up at the start of the next level. After the last level there is nowhere
         // further yet, so Continue replays the finished level from its start.
         const flags = { ...this.data?.flags, [`levelComplete.${levelId}`]: true };
-        this.write({ levelId: nextLevel ?? levelId, checkpointId: null, flags });
+        this.write({ levelId: nextLevel ?? levelId, checkpointId: null, reachedCheckpoints: [], flags });
     }
 
     write(changes)
@@ -80,22 +107,38 @@ export class SaveSystem
         {
             localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
             this.storageOk = true;
+            this.rawExists = true;
+            this.status = 'ok';
         }
         catch (error) { this.storageFailed('write', error); }
     }
 
     read()
     {
-        try
-        {
-            const text = localStorage.getItem(SAVE_KEY);
-            return text ? migrate(JSON.parse(text)) : null;
-        }
+        let text;
+        try { text = localStorage.getItem(SAVE_KEY); }
         catch (error)
         {
             this.storageFailed('read', error);
+            this.status = 'blocked';
             return null;
         }
+        if (text === null)
+            return null;
+        this.rawExists = true;
+        let parsed;
+        try { parsed = JSON.parse(text); }
+        catch
+        {
+            this.status = 'corrupt';
+            console.warn(`save: ${SAVE_KEY} is not valid JSON; ignoring it (New Game will ask before replacing it)`);
+            return null;
+        }
+        const save = migrate(parsed);
+        this.status = save ? 'ok' : parsed?.schemaVersion > SAVE_SCHEMA_VERSION ? 'newer' : 'invalid';
+        if (!save)
+            console.warn(`save: ${SAVE_KEY} is ${this.status}; ignoring it (New Game will ask before replacing it)`);
+        return save;
     }
 
     storageFailed(action, error)
@@ -115,13 +158,22 @@ export class SaveSystem
     /** For window.__sammy.saveStatus. */
     debugState()
     {
-        return { hasSave: this.hasSave(), storageOk: this.storageOk, iconShowing: timeReal - this.savedAt < SCREENS.SAVE_ICON_TIME };
+        return {
+            hasSave: this.hasSave(),
+            hasStoredData: this.hasStoredData(),
+            status: this.status,
+            storageOk: this.storageOk,
+            iconShowing: timeReal - this.savedAt < SCREENS.SAVE_ICON_TIME,
+        };
     }
 }
 
 function emptySave()
 {
-    return { schemaVersion: SAVE_SCHEMA_VERSION, levelId: null, checkpointId: null, flags: {}, catsRescued: [], updatedAt: null };
+    return {
+        schemaVersion: SAVE_SCHEMA_VERSION, levelId: null, checkpointId: null, reachedCheckpoints: [],
+        flags: {}, catsRescued: [], updatedAt: null,
+    };
 }
 
 /** Bring an old save up to the current schema. Returns null for anything unusable. */
@@ -140,5 +192,8 @@ function migrate(data)
     // A save from a newer game version: don't guess at its shape.
     if (save.schemaVersion !== SAVE_SCHEMA_VERSION || typeof save.levelId !== 'string')
         return null;
-    return { ...emptySave(), ...save };
+    const merged = { ...emptySave(), ...save };
+    if (!Array.isArray(merged.reachedCheckpoints))
+        merged.reachedCheckpoints = [];
+    return merged;
 }

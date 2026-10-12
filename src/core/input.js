@@ -7,7 +7,7 @@ import {
     keyIsDown, keyWasPressed, keyWasReleased,
     mouseIsDown, mouseWasPressed, mouseWasReleased, mousePosScreen, mouseInWindow,
 } from '../../lib/littlejs/littlejs.esm.js';
-import { ACTION_KEYS, GAMEPLAY_ACTIONS } from '../data/controls.js';
+import { ACTION_KEYS, GAMEPLAY_ACTIONS, MENU_ACTIONS } from '../data/controls.js';
 
 // Keys masked until physically released, so a press that belonged to the previous
 // scene (e.g. Space to confirm a menu) doesn't leak into the next one as a held jump.
@@ -80,6 +80,17 @@ export function suppressUntilReleased()
     for (const keys of Object.values(ACTION_KEYS))
         for (const key of keys)
             if (keyIsDown(key))
+                suppressedKeys.add(key);
+}
+
+/** Like suppressUntilReleased, but only for menu keys that gameplay doesn't share (Esc, Enter).
+ *  Used when an overlay opens or closes over a level, so held movement/jump keys keep working. */
+export function suppressMenuKeysUntilReleased()
+{
+    const gameplayKeys = new Set(GAMEPLAY_ACTIONS.flatMap(action => keysFor(action)));
+    for (const action of MENU_ACTIONS)
+        for (const key of keysFor(action))
+            if (!gameplayKeys.has(key) && keyIsDown(key))
                 suppressedKeys.add(key);
 }
 

@@ -23,3 +23,7 @@ export const ACTION_KEYS = {
 // Actions that move or act as Sammy. lockGameplay() masks these (e.g. during a correction);
 // pause, menus, and the narrator's advance stay live.
 export const GAMEPLAY_ACTIONS = ['left', 'right', 'up', 'down', 'jump', 'interact'];
+
+// Actions menus use. Opening or closing an overlay masks only the keys these use that are NOT
+// also gameplay keys (Esc, Enter), so a held Space or direction carries straight back into play.
+export const MENU_ACTIONS = ['pause', 'confirm', 'menuUp', 'menuDown', 'menuLeft', 'menuRight'];

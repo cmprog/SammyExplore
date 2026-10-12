@@ -9,6 +9,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 |---|---|---|---|
 | `scene:change` | `{from, to, kind}` | SceneManager | `kind`: `change` (whole stack replaced), `push` (overlay opened, e.g. `pause`), `pop` (overlay closed). `from`/`to` are the top scene before/after |
 | `level:start` | `{levelId, name, timeOfDay, size}` | playing scene | after the level is built; `size` = `{x, y}` in tiles |
+| `level:loadFailed` | `{levelId, message}` | playing scene | the level could not be fetched or built; main.js returns to the title with a gentle notice |
 | `level:complete` | `{...zoneProps, id, levelId, nextLevel?}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load. `nextLevel` = the exit's own `nextLevel`, else the level data's; absent on the last level. Autosaved by SaveSystem; opens the level complete overlay |
 | `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load. Autosaved by SaveSystem. Not re-sent for a checkpoint restored by Continue |
 | `correction:triggered` | `{...zoneProps, id, levelId}` | LevelLoader | Sammy is somewhere silly. `id` = zone id (`world-bottom` for falling off the world); optional `lineId`, `reason` |
@@ -34,9 +35,13 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `audio:toggleMute` | none | any | |
 | `audio:changed` | settings object | Audio | |
 
-Save in localStorage `sammyexplore.save` (SaveSystem owns it): `{schemaVersion, levelId, checkpointId, flags, catsRescued, updatedAt}`.
+Save in localStorage `sammyexplore.save` (SaveSystem owns it): `{schemaVersion, levelId, checkpointId, reachedCheckpoints, flags, catsRescued, updatedAt}`.
 
 Settings in localStorage `sammyexplore.settings`: `{volume, muted, musicVolume, sfxVolume}`. Audio owns these keys. Other systems merge, never overwrite.
+
+**The one read-only query exception:** menus may import `getAudioSettings()` from `src/systems/Audio.js` to show the current
+sound state when they open (PauseScene does). It returns a copy and changes nothing. Changes still go only through the
+`audio:*` events, and later updates come from `audio:changed`. Every other cross-system read goes through the bus.
 
 Coordinates: level data (zone rects, entity x/y) uses tile column/row from the top-left of the map. Everything at runtime (events, `__sammy`, teleport) uses world space with y pointing up.
 

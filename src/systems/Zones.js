@@ -40,14 +40,17 @@ export class Zones
         this.checkpointId = null;
     }
 
-    /** Resume at a checkpoint reached in an earlier session: it becomes the respawn point and
-     *  won't fire (or autosave) again this load. Returns false if there is no such checkpoint. */
-    restoreCheckpoint(id)
+    /** Resume at a checkpoint reached in an earlier session: it becomes the respawn point, and it
+     *  and every id in `reached` won't fire (or autosave) again this load, so walking back past an
+     *  earlier checkpoint can't move the respawn backwards. Returns false if `id` doesn't exist. */
+    restoreCheckpoint(id, reached = [])
     {
+        for (const z of this.zones)
+            if (z.type === 'checkpoint' && (z.id === id || reached.includes(z.id)))
+                z.fired = true;
         const zone = this.zones.find(z => z.type === 'checkpoint' && z.id === id);
         if (!zone)
             return false;
-        zone.fired = true;
         this.checkpointId = zone.id;
         this.respawnPoint = standingPoint(zone);
         return true;
@@ -111,6 +114,7 @@ export class Zones
                 pos: plain(zone.pos),
                 size: plain(zone.size),
                 inside: zone.inside,
+                fired: zone.fired,
                 props: zone.props,
             })),
         };
