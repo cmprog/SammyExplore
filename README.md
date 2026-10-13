@@ -1,12 +1,14 @@
 # Sammy Explore
 
+**▶ Play it: https://cmprog.github.io/SammyExplore/**
+
 A small 2D platformer starring **Sammy the owl**. A narrator insists this is the epic tale of a mighty Eagle, and Sammy keeps proving otherwise. Along the way Sammy meets Twyx the tuxedo cat and (eventually) rescues Twyx's friends.
 
 Built with [LittleJS](https://github.com/KilledByAPixel/LittleJS). All of the art and sound is generated in code; there are no image or audio files.
 
 ## Play
 
-- **Online:** served with GitHub Pages from the repository root (see [Deploying](#deploying)).
+- **Online:** https://cmprog.github.io/SammyExplore/ (GitHub Pages, deployed from `main`)
 - **Locally:**
   ```
   python -m http.server 8000
