@@ -56,7 +56,7 @@ The scripts use your installed Google Chrome. See [`tools/playtest/README.md`](t
 
 ## Deploying
 
-The game is a static site that runs straight from the repository root, and `.nojekyll` makes GitHub Pages serve the files untouched. To publish it: **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)`**.
+Every push to `main` runs [`.github/workflows/pages.yml`](.github/workflows/pages.yml), which publishes **only the game** (`index.html`, `src/`, `lib/`) to GitHub Pages. Docs and tooling stay out of the public site. Repository setting: **Settings → Pages → Source: GitHub Actions**.
 
 ## License
 
