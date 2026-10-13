@@ -1,5 +1,15 @@
 # M1 check-in agenda (PM working notes)
 
+## Stakeholder feedback (2026-10-13, played through M1)
+- Overall: the feel is good. Props on the art design and style, especially the small animations (Twyx licking her paw).
+- The mechanics (jump, flap, glide) feel good. No tuning changes.
+- The narrator's voice is good, and plenty to build on. **Want:** more variety in the lines for repeated actions, and play with the player when they do something many times (escalation).
+- Sound is good. The meow is a bit squeaky but charming; keep it. Music is good. The typing blip is nicely soft.
+- Twyx is a **girl**. Of the cats, only Oshi is a boy.
+- The ghost "E" bubble is not visible on a real screen. Confirmed as a headless artifact.
+- Deploy: GitHub `cmprog/SammyExplore` (private), to be played via GitHub Pages.
+
+
 Questions for the stakeholder, collected during the M1 run.
 
 ## Needs your ears and eyes

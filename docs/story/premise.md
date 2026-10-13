@@ -9,9 +9,9 @@ Stakeholder-approved premise (2026-10-11). Details below the "Approved" section 
   Sammy keeps showing up anyway. Over the course of the game the narrator moves from denial, to grudging acceptance, to being fond of Sammy.
   The tone is Stanley Parable–style: the narrator comments on what the player does, reacts when the player ignores instructions, and subverts expectations.
 - **The cats are not in real danger.** They're stuck in silly places.
-  - **Twyx**: a **tuxedo cat** (black with a white chest, paws, and muzzle). Sammy meets Twyx early.
-  - **Snowy**, **Moxie**, **Elphaba**: cats to rescue. Their looks and personalities are still to be decided.
-  - **Oshi**: a cat to rescue, and very large. The game calls him "the furry basketball" and makes other silly references to his size.
+  - **Twyx** (girl): a **tuxedo cat** (black with a white chest, paws, and muzzle) with green eyes. Sammy meets her early.
+  - **Snowy**, **Moxie**, **Elphaba** (all girls): cats to rescue. Their looks and personalities are still to be decided.
+  - **Oshi** (boy, the only boy among the cats): a cat to rescue, and very large. The game calls him "the furry basketball" and makes other silly references to his size.
 - **Night is the main setting.** Daytime can happen when the story calls for it.
 - **Resets** happen when Sammy gets into a weird situation. The narrator "corrects" it by rewinding, rewriting, or putting Sammy back. A reset is never framed as death, failure, or harm.
 - Narration appears as on-screen text.
