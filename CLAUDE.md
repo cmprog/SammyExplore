@@ -23,6 +23,7 @@ Weekend-prototype scope, but the game **will keep growing**, so don't design any
   The title screen offers New Game and Continue. New Game warns before overwriting an existing save.
   The save data carries a schema version so it can change later.
 - Story and characters are in `docs/story/premise.md`. Narrator lines must follow the voice guide there.
+- **Twyx is the heart of the game.** Follow the special-care rules for her in `docs/story/premise.md` in all art, behavior, and lines.
 
 ## Stack
 
