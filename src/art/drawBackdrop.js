@@ -66,20 +66,21 @@ function drawGlint(tile, pos, size, color)
     drawTile(pos, vec2(size), tile, color, 0, false, undefined, undefined, true);
 }
 
-/** The bigger stars, fixed in the sky, each on its own twinkle rhythm. */
-export function drawTwinkles(twinkles, glints, palette, time)
+/** The bigger stars, fixed in the sky, each on its own twinkle rhythm. `offset` (screen pixels)
+ *  moves the whole field, `fade` (0..1) dims it (the bedroom window at dawn). */
+export function drawTwinkles(twinkles, glints, palette, time, offset = null, fade = 1)
 {
     for (const star of twinkles)
     {
-        const pos = vec2(star.x, star.y);
+        const pos = offset ? vec2(star.x + offset.x, star.y + offset.y) : vec2(star.x, star.y);
         // Mostly bright with a quick soft dip, like real twinkling, not a slow fade.
         const wave = .5 + .5 * Math.sin(time * star.speed + star.phase);
         const glow = .35 + .65 * wave ** 3;
         const color = star.cool ? palette.starCool : palette.star;
-        drawGlint(glints.glow, pos, star.size * 5, color.withAlpha(.4 * glow));
+        drawGlint(glints.glow, pos, star.size * 5, color.withAlpha(.4 * glow * fade));
         if (star.sparkle)
-            drawGlint(glints.sparkle, pos, star.size * (2.4 + glow * 1.6), color.withAlpha(.5 + .5 * glow));
-        drawGlint(glints.dot, pos, star.size * (.8 + .25 * glow), color.withAlpha(.6 + .4 * glow));
+            drawGlint(glints.sparkle, pos, star.size * (2.4 + glow * 1.6), color.withAlpha((.5 + .5 * glow) * fade));
+        drawGlint(glints.dot, pos, star.size * (.8 + .25 * glow), color.withAlpha((.6 + .4 * glow) * fade));
     }
 }
 

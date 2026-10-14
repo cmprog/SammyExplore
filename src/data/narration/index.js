@@ -3,10 +3,12 @@
 import common from './common.js';
 import test from './test.js';
 import sandbox from './sandbox.js';
+import bedroom from './bedroom.js';
 
 export const COMMON_SCRIPT = common;
 
 export const LEVEL_SCRIPTS = {
     test,
     sandbox,
+    bedroom,
 };

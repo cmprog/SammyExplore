@@ -23,6 +23,8 @@ const BAKE_MARGIN_TILES = 1;
 /** Thickness of the invisible walls left and right of the map and the ceiling above it.
  *  More than one tile so nothing fast can tunnel through. The bottom stays open (world-bottom). */
 const BOUNDS_THICKNESS = 2;
+/** Styles that run flat into the level bounds instead of rounding off at the map edge. */
+const WALL_JOINING_STYLES = ['ground', 'floorboards'];
 
 export class Terrain extends TileCollisionLayer
 {
@@ -95,7 +97,8 @@ export class Terrain extends TileCollisionLayer
     }
 
     /** Which neighbors are drawn in the same style. The invisible walls and ceiling count as
-     *  ground, so ground runs flat into them; below the map is open, so cliff bottoms round off. */
+     *  ground (or floor), so it runs flat into them; below the map is open, so cliff bottoms
+     *  round off. */
     neighbors(style, x, y)
     {
         const same = (nx, ny) =>
@@ -103,7 +106,7 @@ export class Terrain extends TileCollisionLayer
             if (ny < 0)
                 return false;
             if (nx < 0 || nx >= this.mapSize.x || ny >= this.mapSize.y)
-                return style === 'ground';
+                return WALL_JOINING_STYLES.includes(style);
             return this.styleAt(nx, ny) === style;
         };
         // Walls only count inside the map: the level edge shouldn't sprout corner bushes.

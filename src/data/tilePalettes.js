@@ -42,3 +42,21 @@ export const TILE_PALETTES = {
         nail:           rgb(.92, .90, .84),
     },
 };
+
+// Indoor floors, picked by the environment's `palette` (environments.js). Daylight colors: room
+// lighting darkens them at night.
+export const ROOM_TILE_PALETTES = {
+    bedroom: {
+        outline:     rgb(.38, .20, .32),
+        boardTop:    rgb(.95, .76, .54),   // the floor surface, honey wood planks
+        boardShine:  rgb(1, .88, .68),
+        boardSeam:   rgb(.74, .50, .34),
+        boardFront:  rgb(.84, .59, .39),   // the floor's front edge
+        boardGrain:  rgb(.74, .50, .33),
+        trim:        rgb(1, .94, .92),
+        under:       rgb(.55, .30, .47),   // below the floor: chunky blocks, like a toy house's base
+        underAlt:    rgb(.59, .33, .50),
+        underLight:  rgb(.63, .37, .54),
+        underDark:   rgb(.48, .25, .41),
+    },
+};

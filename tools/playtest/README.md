@@ -11,6 +11,7 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/sandbox_playthrough.py   # T-011b full sandbox run, title -> To be continued -> New Game again (~2 min); out/sandbox_NN_*.png
     .venv/Scripts/python tools/playtest/narrator_queue_scenario.py   # T-012 queue rules: noStale, condition re-check, forgetSeen
     .venv/Scripts/python tools/playtest/release_smoke.py      # T-012 release build (no ?debug): loads clean, no speed keys, no debug overlay
+    .venv/Scripts/python tools/playtest/bedroom_scenario.py   # T-013 bedroom: day/night cycle, nightlight, furniture platforming, fps vs sandbox; out/bedroom_*.png
 
 ## Debug and release builds
 
@@ -42,7 +43,7 @@ The game boots to the title screen; `session()` jumps straight into the `test` l
 
 Helpers in `harness.py`: `session()`, `hold(page, key, seconds)`, `tap(page, key)`, `state(page)`,
 `shot(page, name)`, `wait_scene(page, name)`.
-Debug commands worth knowing: `__sammy.commands.entityAction(id, action, hold)` pokes an entity
+Debug commands worth knowing: `__sammy.commands.setTimeOfDay(t)` jumps an indoor level's clock (0 midnight, .25 sunrise, .5 noon, .75 sunset; `__sammy.dayCycle` reports `{t, phase}`); `__sammy.commands.entityAction(id, action, hold)` pokes an entity
 (Twyx: `stand`/`sit`/`lick` [held if `hold`], `blink`, `swish`, `pet`, `release`); `__sammy.entities`
 lists every level entity's debug state. Keys are KeyboardEvent codes (`KeyD`, `Space`).
 LittleJS "DEBUG build loaded" is a warning and is ignored.
