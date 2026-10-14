@@ -1,7 +1,8 @@
 // Room lighting, using the engine's LightSystem plugin: the scene is drawn at full brightness
 // and then multiplied by a light map. The map starts at the time of day's `ambient` color
 // (dayCycle.js) and every light here adds onto it:
-//   - the window glass at full light (the sky keeps its own colors), with a soft spill around it
+//   - a soft glow over the window's open glass (the sky keeps most of its own colors), with a
+//     wider spill around it
 //   - a shaft of sun or moon light slanting in through the window
 //   - the nightlight's warm pool when it's on (it clicks on in the evening, off in the morning)
 //   - the fairy lights' little glows at night
@@ -13,23 +14,24 @@
 // The plugin is global: it is created the first time a room needs it and switched off whenever
 // no room is showing (title screen, outdoor levels).
 import {
-    EngineObject, LightSystemPlugin, lightSystem, vec2, rgb, drawTile, drawRect, isOnScreen,
-    mainCanvasSize, clamp, time, TileInfo, TextureInfo, WHITE,
+    EngineObject, LightSystemPlugin, lightSystem, vec2, rgb, drawTile, isOnScreen,
+    mainCanvasSize, clamp, time, WHITE,
 } from 'littlejs';
 import { RENDER_ORDER } from '../data/renderOrder.js';
 import { ROOM_LIGHT } from '../data/tuning.js';
-import { bakeGlints, GLINT_CELL, GLINT_KINDS } from '../art/backdropSky.js';
 import { drawNightlight, nightlightGlowPos } from '../art/room/drawNightlight.js';
 import { fairyBulbs } from '../art/room/decorWall.js';
-import { SmoothTexture } from './worldBake.js';
 
 // The light shaft's layers: [center along the shaft, width, length (fractions), share of strength].
 const BEAM_LAYERS = [[.45, 1.5, 1.15, .6], [.3, .9, .7, .5]];
 
 export class RoomLighting extends EngineObject
 {
-    /** @param {object} layout - systems/roomLayout.js  @param {object} palette  @param {DayCycle} cycle */
-    constructor(layout, palette, cycle)
+    /**
+     * @param {object} layout - systems/roomLayout.js  @param {object} palette  @param {DayCycle} cycle
+     * @param {object|null} glints - the room's shared glint atlas (worldBake.js bakeGlintAtlas)
+     */
+    constructor(layout, palette, cycle, glints)
     {
         super(vec2(), vec2(), undefined, 0, undefined, RENDER_ORDER.roomLights);
         this.mass = 0;
@@ -45,27 +47,16 @@ export class RoomLighting extends EngineObject
         this.popAge = Infinity;
         this.beam = null;
         this.motes = Array.from({ length: ROOM_LIGHT.MOTES }, (_, i) => ({ t: (i * .618) % 1, s: ((i * .37) % 1) - .5, speed: .02 + (i % 5) * .006, phase: i * 1.3 }));
-        this.bakeGlow();
+        this.glints = glints;
+        this.glow = glints?.tiles.glow ?? null;
+        this.dot = glints?.tiles.dot ?? null;
         enableLighting(cycle.look.ambient);
-    }
-
-    bakeGlow()
-    {
-        const strip = bakeGlints();
-        if (!strip)
-            return;
-        this.glowTexture = new TextureInfo(strip.canvas);
-        this.smoother = new SmoothTexture(this.glowTexture);
-        const index = GLINT_KINDS.indexOf('glow'), dot = GLINT_KINDS.indexOf('dot');
-        this.glow = new TileInfo(vec2(index * GLINT_CELL, 0), vec2(GLINT_CELL), this.glowTexture, 0, 0);
-        this.dot = new TileInfo(vec2(dot * GLINT_CELL, 0), vec2(GLINT_CELL), this.glowTexture, 0, 0);
     }
 
     destroy()
     {
         if (this.destroyed)
             return;
-        this.glowTexture?.destroyWebGLTexture();
         disableLighting();
         super.destroy();
     }
@@ -107,7 +98,7 @@ export class RoomLighting extends EngineObject
     {
         if (lightSystem)
             lightSystem.ambientColor.setFrom(this.cycle.look.ambient);   // the map clears to this
-        this.smoother?.apply();
+        this.glints?.smoother.apply();
         const look = this.cycle.look;
         if (this.layout.nightlight)
         {
@@ -154,11 +145,15 @@ export class RoomLighting extends EngineObject
         if (!this.glow)
             return;
         const look = this.cycle.look;
-        const glass = this.layout.window?.glass;
-        if (glass)
+        const open = this.layout.window?.open;
+        if (open)
         {
-            const center = vec2((glass.x0 + glass.x1) / 2, (glass.y0 + glass.y1) / 2);
-            drawRect(center, vec2(glass.x1 - glass.x0, glass.y1 - glass.y0), WHITE);
+            // The sky through the glass keeps most of its own color: a soft glow over the part the
+            // curtains leave open, fading out before the curtains, so nothing gets a hard lit edge.
+            const center = vec2((open.x0 + open.x1) / 2, (open.y0 + open.y1) / 2);
+            const size = vec2((open.x1 - open.x0) * ROOM_LIGHT.WINDOW_LIGHT_SPREAD, (open.y1 - open.y0) * ROOM_LIGHT.WINDOW_LIGHT_SPREAD);
+            for (let i = 0; i < 2; i++)
+                drawTile(center, size, this.glow, WHITE.withAlpha(ROOM_LIGHT.WINDOW_LIGHT));
             drawTile(center, vec2(ROOM_LIGHT.WINDOW_GLOW * 2), this.glow, look.spill);
         }
         if (this.beam)

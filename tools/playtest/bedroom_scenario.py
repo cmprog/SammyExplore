@@ -24,8 +24,8 @@ import time
 import harness
 
 FLOOR_Y = 5.45          # Sammy's center standing on the floor (floor top at 5)
-PHASES = [("night", .9), ("dawn", .255), ("day", .5), ("dusk", .725)]
-NIGHTLIGHT = {"night": 1, "dawn": 1, "day": 0, "dusk": 0}   # it switches on at .745 and off at .265
+PHASES = [("night", .9), ("dawn", .235), ("day", .5), ("dusk", .74)]
+NIGHTLIGHT = {"night": 1, "dawn": 1, "day": 0, "dusk": 0}   # it switches on at .765 and off at .245
 SPOTS = {"window": (31, 13.5), "nightlight": (60, 5.5), "spawn": (12, 5.5)}
 WATCHED = ["daycycle:phase", "level:start"]
 FPS = """async ms => { let n = 0; const t0 = performance.now();

@@ -11,8 +11,9 @@
 import { Color, smoothStep } from 'littlejs';
 import { emit } from '../core/events.js';
 
-const LOOK_COLORS = ['skyTop', 'skyMid', 'skyHorizon', 'ambient', 'viewTint', 'beam', 'spill'];
-const LOOK_AMOUNTS = ['stars', 'clouds', 'dayView', 'fairy'];
+/** The fields every key of a cycle's look carries (data/dayCycle.js): colors, then 0..1 amounts. */
+export const LOOK_COLORS = ['skyTop', 'skyMid', 'skyHorizon', 'ambient', 'viewTint', 'beam', 'spill'];
+export const LOOK_AMOUNTS = ['stars', 'clouds', 'dayView', 'fairy'];
 
 export class DayCycle
 {

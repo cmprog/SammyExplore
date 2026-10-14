@@ -2,7 +2,7 @@
 // world-space layout (y up) the room art, window view, and lighting work from.
 //   furniture: {kind, ...props, x0, y0, x1, y1, groundY}   groundY = the surface under the piece
 //   decor:     {kind, ...props, x, w, h, top, base}         top = top edge of row y, base = its bottom
-//   window:    {frame, glass, sillTop, rodY} or null        (see art/room/drawWindowFrame.js)
+//   window:    {frame, glass, open, sillTop, rodY} or null  (see art/room/drawWindowFrame.js)
 //   nightlight: {x, base} or null; reserved: [{id, task, x0, y0, x1, y1}]
 import { TILE_TYPES } from '../data/tileTypes.js';
 import { windowGeometry } from '../art/room/drawWindowFrame.js';

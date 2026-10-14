@@ -13,10 +13,10 @@ import {
 } from 'littlejs';
 import { BACKDROP_PALETTES } from '../data/palettes.js';
 import { ROOM_WINDOW } from '../data/tuning.js';
-import { bakeMoon, bakeClouds, bakeGlints, makeTwinkles, GLINT_CELL, GLINT_KINDS } from '../art/backdropSky.js';
+import { bakeMoon, bakeClouds, makeTwinkles } from '../art/backdropSky.js';
 import { drawTwinkles, drawMoon, drawSunRays } from '../art/drawBackdrop.js';
 import { bakeSunSprite, drawWindowStars, drawWindowScenery } from '../art/room/windowSky.js';
-import { bakeWorldRect, destroySprites, SmoothTexture } from './worldBake.js';
+import { bakeWorldRect, destroySprites } from './worldBake.js';
 
 const { night: NIGHT, day: DAY } = BACKDROP_PALETTES;
 const SEED = 4242;
@@ -29,14 +29,30 @@ const CLOUDS = { count: 4, scale: .38 };
 
 export class WindowView
 {
-    /** @param {{glass: {x0, y0, x1, y1}}} geometry  @param {object} viewPalette - roomPalette.view */
-    constructor(geometry, viewPalette)
+    /**
+     * @param {{glass: {x0, y0, x1, y1}}} geometry  @param {object} viewPalette - roomPalette.view
+     * @param {object|null} glints - the room's shared glint atlas (worldBake.js bakeGlintAtlas)
+     */
+    constructor(geometry, viewPalette, glints)
     {
         this.glass = geometry.glass;
+        this.glintAtlas = glints;
+        this.glints = glints?.tiles ?? null;
+        this.textures = [];
+        this.stars = this.night = this.day = [];
+        try { this.bake(viewPalette); }
+        catch (error)
+        {
+            this.destroy();       // free whatever was baked before the failure
+            throw error;
+        }
+    }
+
+    bake(viewPalette)
+    {
         const g = this.glass, margin = ROOM_WINDOW.PARALLAX_MAX + .2;
         this.center = vec2((g.x0 + g.x1) / 2, (g.y0 + g.y1) / 2);
         this.horizon = g.y0 + HORIZON;
-        this.textures = [];
         const area = { x0: g.x0 - margin, y0: g.y0 - margin, x1: g.x1 + margin, y1: g.y1 + margin };
         this.stars = bakeWorldRect(area.x0, area.y0, area.x1, area.y1, ctx => drawWindowStars(ctx, area, NIGHT));
         const sceneryArea = { ...area, y1: g.y0 + SCENERY_TOP };
@@ -47,7 +63,6 @@ export class WindowView
         const bodyPixels = ROOM_WINDOW.BODY_SIZE * cameraScale;
         this.moon = this.toLayer(bakeMoon(bodyPixels, NIGHT));
         this.sun = this.toLayer(bakeSunSprite(bodyPixels, DAY));
-        this.bakeGlints();
         const rng = new RandomGenerator(SEED);
         const width = (g.x1 - g.x0) * cameraScale;
         this.twinkles = makeTwinkles({ twinkleCount: 7, height: (g.y1 - g.y0 - HORIZON) * cameraScale }, rng, width);
@@ -63,17 +78,6 @@ export class WindowView
         const textureInfo = new TextureInfo(strip.canvas);
         this.textures.push(textureInfo);
         return { tile: new TileInfo().setFullImage(textureInfo), width: strip.width, height: strip.height };
-    }
-
-    bakeGlints()
-    {
-        const layer = this.toLayer(bakeGlints());
-        if (!layer)
-            return;
-        this.glintSmoother = new SmoothTexture(layer.tile.textureInfo);
-        this.glints = {};
-        GLINT_KINDS.forEach((kind, i) =>
-            this.glints[kind] = new TileInfo(vec2(i * GLINT_CELL, 0), vec2(GLINT_CELL), layer.tile.textureInfo, 0, 0));
     }
 
     destroy()
@@ -97,7 +101,7 @@ export class WindowView
     {
         if (!this.glints)
             return;
-        this.glintSmoother.apply();
+        this.glintAtlas.smoother.apply();
         const g = this.glass, offset = cameraPos.subtract(this.center);
         const shift = k => vec2(clamp(offset.x * k, -ROOM_WINDOW.PARALLAX_MAX, ROOM_WINDOW.PARALLAX_MAX),
             clamp(offset.y * k, -ROOM_WINDOW.PARALLAX_MAX, ROOM_WINDOW.PARALLAX_MAX));

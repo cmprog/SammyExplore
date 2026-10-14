@@ -60,28 +60,30 @@ const DUSK = {
 };
 
 export const DAY_CYCLES = {
-    // The bedroom. Night is the main setting, so it gets the biggest share of the clock.
+    // The bedroom. Where a visit starts and how long each phase lasts are still to be decided
+    // with the stakeholder: `start` and the phase/sun/moon/nightlight times are the knobs.
+    // For now day and night get about the same share, with shorter dawns and dusks.
     home: {
         period: 300,        // seconds for a whole day
-        start: .86,         // a visit starts here: night, with the nightlight on
+        start: .3,          // a visit starts here: early morning
         // [from, to) on the clock; any time not listed is `otherwise`.
         phases: [
-            { phase: 'dawn', from: .21, to: .30 },
-            { phase: 'day', from: .30, to: .68 },
-            { phase: 'dusk', from: .68, to: .77 },
+            { phase: 'dawn', from: .21, to: .29 },
+            { phase: 'day', from: .29, to: .71 },
+            { phase: 'dusk', from: .71, to: .79 },
         ],
         otherwise: 'night',
-        sun: { rise: .215, set: .775 },
-        moon: { rise: .70, set: 1.27 },
-        nightlight: { on: .745, off: .265 },
+        sun: { rise: .215, set: .785 },
+        moon: { rise: .74, set: 1.26 },
+        nightlight: { on: .765, off: .245 },
         keys: [
             { t: 0, ...NIGHT },
             { t: .19, ...NIGHT },
             { t: .245, ...DAWN },
-            { t: .32, ...DAY },
-            { t: .655, ...DAY },
-            { t: .725, ...DUSK },
-            { t: .80, ...NIGHT },
+            { t: .31, ...DAY },
+            { t: .69, ...DAY },
+            { t: .755, ...DUSK },
+            { t: .81, ...NIGHT },
         ],
     },
 };

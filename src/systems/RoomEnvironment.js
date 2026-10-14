@@ -9,7 +9,7 @@ import { DayCycle } from './DayCycle.js';
 import { RoomBackdrop } from './RoomBackdrop.js';
 import { RoomLighting } from './RoomLighting.js';
 import { BakedLayer } from './BakedLayer.js';
-import { bakeWorldRect } from './worldBake.js';
+import { bakeWorldRect, bakeGlintAtlas, destroySprites } from './worldBake.js';
 
 export class RoomEnvironment
 {
@@ -22,16 +22,31 @@ export class RoomEnvironment
         this.parts = [];
         try
         {
-            this.backdrop = this.own(new RoomBackdrop(level.room, palette, this.cycle));
-            const front = roomFrontBounds(level.room);
-            if (front)
-                this.own(new BakedLayer(bakeWorldRect(front.x0, front.y0, front.x1, front.y1,
-                    (ctx, bounds) => drawRoomFront(ctx, level.room, palette, bounds)), RENDER_ORDER.roomFront));
-            this.lighting = this.own(new RoomLighting(level.room, palette, this.cycle));
+            // One glint texture for the window's stars and moon and for the room's lights.
+            this.glints = bakeGlintAtlas();
+            this.glints && this.parts.push(this.glints);
+            this.backdrop = this.own(new RoomBackdrop(level.room, palette, this.cycle, this.glints));
+            this.bakeFront(level.room, palette);
+            this.lighting = this.own(new RoomLighting(level.room, palette, this.cycle, this.glints));
         }
         catch (error)
         {
             this.destroy();
+            throw error;
+        }
+    }
+
+    /** The rug layer, in front of the floorboards (if the room has rugs). */
+    bakeFront(room, palette)
+    {
+        const front = roomFrontBounds(room);
+        if (!front)
+            return;
+        const sprites = bakeWorldRect(front.x0, front.y0, front.x1, front.y1, (ctx, bounds) => drawRoomFront(ctx, room, palette, bounds));
+        try { this.own(new BakedLayer(sprites, RENDER_ORDER.roomFront)); }
+        catch (error)
+        {
+            destroySprites(sprites);
             throw error;
         }
     }

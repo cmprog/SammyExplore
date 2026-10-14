@@ -288,6 +288,8 @@ export const ROOM_LIGHT = {
     FAIRY_RADIUS: 2.4,
     FAIRY_STRENGTH: .3,
     FAIRY_TWINKLE: .25,         // how much each bulb's brightness drifts
+    WINDOW_LIGHT: .8,           // the glow over the open glass (drawn twice, so ~full in the middle)
+    WINDOW_LIGHT_SPREAD: 1.25,  // ...and its size as a multiple of the open glass, so it fades out softly
     WINDOW_GLOW: 7,             // radius of the glow around the window
     BEAM_LENGTH: 12,            // the light shaft through the window
     BEAM_MAX_SLANT: 1.0,        // radians from straight down, so a low sun doesn't shine sideways

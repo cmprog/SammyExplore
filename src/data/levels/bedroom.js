@@ -78,7 +78,7 @@ export default {
         // The nightlight plugs into the wall in this cell (low, beside the dresser).
         nightlight: { x: 56, y: 22 },
         // Each piece's rect covers its collision tiles above; the art draws the whole piece
-        // (legs reach down to the floor). See src/art/room/furniture.js for each kind's layout.
+        // (legs reach down to the floor). Each kind's art and layout: src/art/room/roomArt.js.
         furniture: [
             { kind: 'toyChest', x: 15, y: 21, w: 6, h: 2 },
             { kind: 'bricks', x: 22, y: 20, w: 2, h: 3 },
@@ -145,15 +145,16 @@ export default {
             { kind: 'bin', variant: 'grass', x: 80.3, y: 16 },
             { kind: 'plush', variant: 'frog', x: 82.7, y: 16 },
         ],
-        // Space kept free for later tasks. Nothing that collides may be placed in these rects
-        // (checked at load); decor may hang above them but not inside.
+        // Space kept free for later tasks (checked at load): no tiles, furniture, decor, entities
+        // or zones inside, unless the region allows furniture or decor.
         reserved: [
             // T-017: the chapter portal stands here (needs at least 6x8 tiles at floor level),
             // with its lever beside it and its sign above.
             { id: 'portal-alcove', task: 'T-017', x: 1, y: 12, w: 9, h: 11 },
-            // T-018: the practice course, about one screen. The bed and cubby are placeholders
-            // it can keep, move, or rebuild (the course goes under and around them).
-            { id: 'practice-course', task: 'T-018', x: 57, y: 5, w: 27, h: 18, allowFurniture: true },
+            // T-018: the practice course, about one screen. The bed and cubby (and the toys on
+            // them) are placeholders it can keep, move, or rebuild (the course goes under and
+            // around them).
+            { id: 'practice-course', task: 'T-018', x: 57, y: 5, w: 27, h: 18, allowFurniture: true, allowDecor: true },
         ],
     },
 };

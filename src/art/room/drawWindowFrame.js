@@ -11,13 +11,16 @@ import { rect, roundRect, outlinedBox, outlinedPoly, panel, circle, poly, pixelA
 const FRAME = .4;
 const MULLION = .16;
 const CURTAIN_W = 2.3;
+const CURTAIN_OVER = .38;   // share of a curtain's width that hangs over the frame
 
-/** Frame, glass, and sill rects for a window piece (shared with the view and the lighting). */
+/** Frame, glass, and sill rects for a window piece (shared with the view and the lighting).
+ *  `open` is the part of the glass the tied-back curtains don't hang over. */
 export function windowGeometry({ x0, y0, x1, y1 })
 {
     const frame = { x0: x0 + 1, y0: y0 + 1, x1: x1 - 1, y1 };
     const glass = { x0: frame.x0 + FRAME, y0: frame.y0 + FRAME, x1: frame.x1 - FRAME, y1: frame.y1 - FRAME };
-    return { frame, glass, sillTop: y0 + 1, rodY: y1 + .5 };
+    const open = { ...glass, x0: frame.x0 + CURTAIN_W * CURTAIN_OVER, x1: frame.x1 - CURTAIN_W * CURTAIN_OVER };
+    return { frame, glass, open, sillTop: y0 + 1, rodY: y1 + .5 };
 }
 
 export function drawWindowFrame(ctx, piece, p)
@@ -103,7 +106,7 @@ function drawCurtain(ctx, frame, rodY, sillTop, side, p)
 {
     const edge = side < 0 ? frame.x0 : frame.x1;            // the frame's outer edge on this side
     const outer = edge - side * (CURTAIN_W * .62);         // far side of the curtain, out on the wall
-    const inner = edge + side * (CURTAIN_W * .38);         // near side, over the frame
+    const inner = edge + side * (CURTAIN_W * CURTAIN_OVER); // near side, over the frame
     const tieY = sillTop + (rodY - sillTop) * .36;
     const tieInner = edge - side * .15, hemInner = edge + side * .25;
     const shape = [

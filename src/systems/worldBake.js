@@ -8,6 +8,7 @@ import {
     cameraPos, cameraScale, setCameraPos, setCameraScale, mainCanvasSize,
 } from 'littlejs';
 import { CAMERA_SCALE } from '../data/tuning.js';
+import { bakeGlints, GLINT_CELL, GLINT_KINDS } from '../art/backdropSky.js';
 
 const MAX_CHUNK_PIXELS = 2048;
 
@@ -23,21 +24,35 @@ export function bakeWorldRect(x0, y0, x1, y1, draw, pixelsPerTile = CAMERA_SCALE
         return [];
     const chunkTiles = Math.floor(MAX_CHUNK_PIXELS / pixelsPerTile);
     const sprites = [];
-    for (let cy = y0; cy < y1; cy += chunkTiles)
-    for (let cx = x0; cx < x1; cx += chunkTiles)
+    try
     {
-        const bounds = { x0: cx, y0: cy, x1: Math.min(cx + chunkTiles, x1), y1: Math.min(cy + chunkTiles, y1) };
-        const size = vec2(bounds.x1 - bounds.x0, bounds.y1 - bounds.y0);
-        const canvas = new OffscreenCanvas(Math.ceil(size.x * pixelsPerTile), Math.ceil(size.y * pixelsPerTile));
-        const ctx = canvas.getContext('2d');
-        if (!ctx)
-            break;
-        const pos = vec2(bounds.x0, bounds.y0).add(size.scale(.5));
-        withBakeCamera(ctx, pos, pixelsPerTile, () => draw(ctx, bounds));
-        const textureInfo = new TextureInfo(canvas);
-        sprites.push({ pos, size, textureInfo, tile: new TileInfo().setFullImage(textureInfo) });
+        for (let cy = y0; cy < y1; cy += chunkTiles)
+        for (let cx = x0; cx < x1; cx += chunkTiles)
+        {
+            const bounds = { x0: cx, y0: cy, x1: Math.min(cx + chunkTiles, x1), y1: Math.min(cy + chunkTiles, y1) };
+            const sprite = bakeChunk(bounds, draw, pixelsPerTile);
+            sprite && sprites.push(sprite);
+        }
+    }
+    catch (error)
+    {
+        destroySprites(sprites);   // don't leak the chunks baked before the one that failed
+        throw error;
     }
     return sprites;
+}
+
+function bakeChunk(bounds, draw, pixelsPerTile)
+{
+    const size = vec2(bounds.x1 - bounds.x0, bounds.y1 - bounds.y0);
+    const canvas = new OffscreenCanvas(Math.ceil(size.x * pixelsPerTile), Math.ceil(size.y * pixelsPerTile));
+    const ctx = canvas.getContext('2d');
+    if (!ctx)
+        return null;
+    const pos = vec2(bounds.x0, bounds.y0).add(size.scale(.5));
+    withBakeCamera(ctx, pos, pixelsPerTile, () => draw(ctx, bounds));
+    const textureInfo = new TextureInfo(canvas);
+    return { pos, size, textureInfo, tile: new TileInfo().setFullImage(textureInfo) };
 }
 
 /** Point the camera at `center` while `draw` runs, so world-space draws land on `ctx`. */
@@ -69,6 +84,23 @@ export function destroySprites(sprites)
 {
     sprites.forEach(sprite => sprite.textureInfo.destroyWebGLTexture());
     sprites.length = 0;
+}
+
+/**
+ * The soft white glints (glow, dot, sparkle) from the outdoor sky (art/backdropSky.js), baked
+ * once into one linear-filtered texture that several systems share. Null without canvas support.
+ * @returns {{tiles: {glow: TileInfo, dot: TileInfo, sparkle: TileInfo}, smoother: SmoothTexture, destroy(): void} | null}
+ */
+export function bakeGlintAtlas()
+{
+    const strip = bakeGlints();
+    if (!strip)
+        return null;
+    const textureInfo = new TextureInfo(strip.canvas);
+    const tiles = {};
+    GLINT_KINDS.forEach((kind, i) =>
+        tiles[kind] = new TileInfo(vec2(i * GLINT_CELL, 0), vec2(GLINT_CELL), textureInfo, 0, 0));
+    return { tiles, smoother: new SmoothTexture(textureInfo), destroy: () => textureInfo.destroyWebGLTexture() };
 }
 
 /**

@@ -13,8 +13,11 @@ const UNDER_FLOOR = 1;
 
 export class RoomBackdrop extends EngineObject
 {
-    /** @param {object} layout - systems/roomLayout.js  @param {object} palette  @param {DayCycle} cycle */
-    constructor(layout, palette, cycle)
+    /**
+     * @param {object} layout - systems/roomLayout.js  @param {object} palette  @param {DayCycle} cycle
+     * @param {object|null} glints - the room's shared glint atlas, for the window view
+     */
+    constructor(layout, palette, cycle, glints)
     {
         super(vec2(), vec2(), undefined, 0, undefined, RENDER_ORDER.backdrop);
         this.mass = 0;
@@ -27,7 +30,7 @@ export class RoomBackdrop extends EngineObject
         {
             this.sprites = bakeWorldRect(0, layout.floorY - UNDER_FLOOR, layout.width, layout.height,
                 (ctx, bounds) => drawRoomBack(ctx, layout, palette, bounds));
-            this.view = layout.window ? new WindowView(layout.window, palette.view) : null;
+            this.view = layout.window ? new WindowView(layout.window, palette.view, glints) : null;
         }
         catch (error)
         {
