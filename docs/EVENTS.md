@@ -27,16 +27,25 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `player:glideStart` | none | Sammy | |
 | `player:glideEnd` | none | Sammy | **any** exit from glide (release, flap, land, reset) |
 | `player:land` | `{impact}` | Sammy | impact is fall speed (0..1), so soft landings can sound softer |
-| `interact:<type>` | `{id, ...}` | Interaction | E pressed with that interactable nearest and in range; emitted before its `interact()` runs. The payload is the interactable's `interactPayload()`. Types so far: `interact:door` `{id}`, `interact:sign` `{id, key}` (`key` = the sign's narration key, so a line with that `key` "reads" it), `interact:twyx` `{id}` (Twyx the cat; Audio meows). An E press the narrator used to skip/dismiss a line is never an interaction |
+| `interact:<type>` | `{id, ...}` | Interaction | E pressed with that interactable nearest and in range; emitted before its `interact()` runs. The payload is the interactable's `interactPayload()`. Types so far: `interact:door` `{id}`, `interact:sign` `{id, key}` (`key` = the sign's narration key, so a line with that `key` "reads" it), `interact:twyx` `{id}` (Twyx the cat; Audio meows), `interact:lever` `{id}` (the lever then emits `mechanism:toggle` or `mechanism:cycle`, which Audio clunks on). An E press the narrator used to skip/dismiss a line is never an interaction |
 | `interact:nothing` | none | Interaction | E pressed with nothing in range |
 | `interact:doorLocked` | `{id}` | Door | after `interact:door`, when the door is locked |
 | `door:open` | `{id}` | Door | when the open animation starts (plays the creak) |
+| `mechanism:toggle` | `{id, on, targets}` | any trigger (Lever; later cat spots) | the **activation API**: Mechanisms (the level's registry) calls `setActive(on)` on each target id. `id` = the trigger. A lever emits it when thrown (not at level start: a `startsOn` lever snaps its targets silently). Audio plays the lever clunk. **The targets' state is the truth**: a toggle lever counts as on exactly when all its targets are active, re-reads that before every throw and sends the opposite, and its handle shows it, so triggers sharing a target never drift |
+| `mechanism:cycle` | `{id, targets}` | any trigger (a Lever in `cycle` mode; T-017's portal lever) | Mechanisms calls each target's `cycle()`, or flips it if it has none. Sent on every throw; Audio plays the lever clunk |
+| `bridge:move` | `{id, down}` | Bridge | it actually starts lowering (`down: true`) or raising. A bridge never raises while anyone stands on it, so a raise is announced when it finally goes up. Not sent for a silent snap at level start |
+| `gate:move` | `{id, open}` | Gate | it starts opening or closing |
+| `lift:move` | `{id, toward}` | Lift | it sets off; `toward` = `'a'` or `'b'` (its first or second point). Plays the wind-up hum |
+| `lift:arrive` | `{id, at}` | Lift | it reached an end (`'a'`/`'b'`) |
+| `lift:held` | `{id}` | Lift | it stopped because the next step would push into someone it isn't carrying; once per hold (it carries on by itself when they move) |
 | `menu:move` | none | menu scenes (Menu.js) | selection changed |
 | `menu:select` | none | menu scenes (Menu.js), level complete | item activated, slider adjusted, or celebration continued |
 | `audio:setVolume` | number | any (pause menu) | |
 | `audio:setMuted` | boolean | any | |
 | `audio:toggleMute` | none | any | |
 | `audio:changed` | settings object | Audio | |
+
+Mechanism state (levers, bridges, gates, lifts) is not saved: every level load rebuilds them as placed in the level data. A correction respawn keeps the level, so they keep their state. See `src/systems/Mechanisms.js`.
 
 Save in localStorage `sammyexplore.save` (SaveSystem owns it): `{schemaVersion, levelId, checkpointId, reachedCheckpoints, flags, catsRescued, updatedAt}`.
 

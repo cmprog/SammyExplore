@@ -203,6 +203,10 @@ export class PlayingScene
         hook.register('dayCycle', () => this.environment?.dayCycleState?.() ?? null);
         hook.register('interaction', () => this.interaction.debugState());
         hook.register('entities', () => this.level?.entities.map(entity => entity.debugState?.() ?? null) ?? []);
+        hook.register('mechanisms', () => this.level?.mechanisms.debugState() ?? []);
+        // Set a mechanism by id: activate('gate-lever', true) throws a lever (moving its targets),
+        // activate('lab-gate', false) drives a target directly. False for an unknown id.
+        hook.commands.activate = (id, on = true) => this.level?.mechanisms.activate(id, on) ?? false;
         hook.commands.loadLevel = (levelId, checkpointId = null, reachedCheckpoints = []) =>
             sceneManager.change('playing', { levelId, checkpointId, reachedCheckpoints });
         // Poke an entity's debug action by id, e.g. entityAction('twyx', 'sit', true) to hold a pose.

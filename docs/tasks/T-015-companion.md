@@ -29,3 +29,9 @@
 
 ## Event contract
 Use only events listed in `docs/EVENTS.md`. Add new events to it in the same change.
+
+## Notes from T-014 (mechanisms)
+- To ride lifts, stand on bridges, and be blocked by gates, cats need `mass > 0` and `setCollision(true, false, true)`, the same as Sammy. Twyx currently has no physics.
+- A lift waits rather than squash someone in its path (`lift:held`). **The companion must never idle or wait under or inside a lift's path.** Pick her waiting spot so she can't lock a lift.
+- Use the shared `objectsStandingOn(surface)` helper and the side-effect-free collision predicates in `terrainCollision.js`.
+- Mechanism truth rule: a target's actual state is the truth, and levers re-sync from their targets.

@@ -1,9 +1,9 @@
-// A loaded level: its terrain, zones, and spawned entities. Owns their lifetime.
+// A loaded level: its terrain, zones, spawned entities, and mechanism registry. Owns their lifetime.
 // `environment` names its surroundings (data/environments.js); `timeOfDay` is set outdoors,
 // `room` (the world-space layout from systems/roomLayout.js) indoors.
 export class Level
 {
-    constructor({ id, name, environment, timeOfDay, room = null, size, terrain, zones, entities })
+    constructor({ id, name, environment, timeOfDay, room = null, size, terrain, zones, entities, mechanisms })
     {
         this.id = id;
         this.name = name;
@@ -14,10 +14,12 @@ export class Level
         this.terrain = terrain;
         this.zones = zones;
         this.entities = entities;
+        this.mechanisms = mechanisms;   // systems/Mechanisms.js
     }
 
     destroy()
     {
+        this.mechanisms?.destroy();
         for (const entity of this.entities)
             entity.destroy?.();
         this.entities = [];

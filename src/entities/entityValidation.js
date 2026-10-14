@@ -51,3 +51,42 @@ export function requireEmptyColumn(entity, rowsUp, fail, { tileMap, legend })
             fail(`${entityLabel(entity)} overlaps a ${legend[tileMap[row][entity.x]]} tile at row ${row}`);
     }
 }
+
+export function optionalOneOf(entity, key, allowed, fail)
+{
+    if (entity[key] !== undefined && !allowed.includes(entity[key]))
+        fail(`${entityLabel(entity)}: "${key}" must be one of ${allowed.map(value => JSON.stringify(value)).join(', ')}`);
+}
+
+/** An integer prop within [min, max]; `fallback` when it may be left out (undefined = required). */
+export function integerInRange(entity, key, min, max, fail, fallback = undefined)
+{
+    const value = entity[key] ?? fallback;
+    if (!Number.isInteger(value) || value < min || value > max)
+        fail(`${entityLabel(entity)}: "${key}" must be a whole number from ${min} to ${max}`);
+    return value;
+}
+
+/** A trigger's `targets`: a non-empty list of entity ids. Whether each id exists (and can be
+ *  driven) is checked across the whole level by validateMechanismLinks in registry.js. */
+export function requireTargetList(entity, fail)
+{
+    const targets = entity.targets;
+    if (!Array.isArray(targets) || !targets.length || !targets.every(id => typeof id === 'string' && id))
+        fail(`${entityLabel(entity)} needs "targets": a list of the ids it moves, e.g. ["my-bridge"]`);
+}
+
+/** Every cell in columns x0..x1, rows y0..y1 (inclusive, tile coords) is inside the map and has
+ *  no collision. `what` names the cells in the error. */
+export function requireEmptyRect(entity, { x0, y0, x1, y1 }, what, fail, { tileMap, legend })
+{
+    for (let row = y0; row <= y1; row++)
+        for (let col = x0; col <= x1; col++)
+        {
+            if (row < 0 || row >= tileMap.length || col < 0 || col >= tileMap[0].length)
+                fail(`${entityLabel(entity)}: ${what} goes outside the map at (${col}, ${row})`);
+            const type = TILE_TYPES[legend[tileMap[row][col]]];
+            if (type.collision)
+                fail(`${entityLabel(entity)}: ${what} overlaps a ${legend[tileMap[row][col]]} tile at (${col}, ${row})`);
+        }
+}

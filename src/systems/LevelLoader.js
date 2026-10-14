@@ -10,12 +10,13 @@ import { TILE_TYPES } from '../data/tileTypes.js';
 import { TILE_PALETTES, ROOM_TILE_PALETTES } from '../data/tilePalettes.js';
 import { ENVIRONMENTS, DEFAULT_ENVIRONMENT } from '../data/environments.js';
 import { WORLD_FALL_MARGIN } from '../data/tuning.js';
-import { spawnEntity, validateEntity } from '../entities/registry.js';
+import { spawnEntity, validateEntity, validateMechanismLinks, validateCellClaims } from '../entities/registry.js';
 import { Terrain } from './Terrain.js';
 import { Zones, ZONE_TYPES, FALL_ZONE_ID } from './Zones.js';
 import { Level } from './Level.js';
 import { buildRoomLayout } from './roomLayout.js';
 import { validateRoom } from './roomValidation.js';
+import { Mechanisms } from './Mechanisms.js';
 
 const LEVEL_ID_PATTERN = /^[a-z0-9_-]+$/i;
 const ZONE_TYPES_NEEDING_ID = ['checkpoint', 'exit'];
@@ -61,6 +62,7 @@ export function buildLevel(data, { playerPos = () => null } = {})
         const context = {
             levelId: data.id,
             levelSize: { x: width, y: height },
+            timeOfDay: data.timeOfDay ?? null,   // null indoors (entities fall back to day colors)
             triggerExit: exitId => zones.triggerExit(exitId),
             playerPos,
         };
@@ -74,8 +76,11 @@ export function buildLevel(data, { playerPos = () => null } = {})
                 created.push(entity);
             }
         }
+        const mechanisms = new Mechanisms(data.id, entities);
+        created.push(mechanisms);
+        mechanisms.start();
         const room = indoor ? buildRoomLayout(data) : null;
-        return new Level({ id: data.id, name: data.name, environment, timeOfDay: data.timeOfDay ?? null, room, size, terrain, zones, entities });
+        return new Level({ id: data.id, name: data.name, environment, timeOfDay: data.timeOfDay ?? null, room, size, terrain, zones, entities, mechanisms });
     }
     catch (error)
     {
@@ -174,6 +179,7 @@ function validateEntities(data, fail)
             fail(`entity ${index} (${entity.type}) is outside the map`);
         validateEntity(entity, fail, data);   // type-specific props (see entities/registry.js)
     });
+    validateMechanismLinks(data, fail);       // levers' targets exist and can be moved
     // Ids name entities in events and narration keys, so two of the same would be ambiguous.
     const ids = entities.map(entity => entity.id).filter(id => id !== undefined);
     const duplicate = ids.find((entityId, i) => ids.indexOf(entityId) !== i);
@@ -200,16 +206,8 @@ function validateZones({ zones, entities }, fail)
         if (zone.id === FALL_ZONE_ID)
             fail(`zone ${index} uses the reserved id "${FALL_ZONE_ID}"`);
     });
-    // A respawn point inside a closed door would push Sammy out sideways (or trap him).
-    const doors = entities.filter(entity => entity.type === 'door');
-    zones.forEach((zone, index) =>
-    {
-        if (zone.type !== 'spawn' && zone.type !== 'checkpoint')
-            return;
-        const door = doors.find(d => rectHitsColumn(zone.rect, d.x, d.y - 1, d.y));
-        if (door)
-            fail(`${zone.type} zone ${zone.id ?? index} overlaps door "${door.id}"`);
-    });
+    // Respawn points clear of doors, gates, bridges and lift paths (see entities/registry.js).
+    validateCellClaims({ entities, zones }, fail);
     if (!zones.some(zone => zone.type === 'spawn'))
         fail('needs a spawn zone');
     // Exit doors' exitIds share the namespace: they are exit ids (save keys) too.
@@ -220,12 +218,6 @@ function validateZones({ zones, entities }, fail)
     const duplicate = ids.find((zoneId, i) => ids.indexOf(zoneId) !== i);
     if (duplicate)
         fail(`zone/exit id "${duplicate}" is used twice`);
-}
-
-/** Does a tile-space rect {x, y, w, h} overlap the cells of column x, rows top..bottom? */
-function rectHitsColumn(rect, x, top, bottom)
-{
-    return rect.x < x + 1 && rect.x + rect.w > x && rect.y < bottom + 1 && rect.y + rect.h > top;
 }
 
 function inBounds(x, y, tileMap)

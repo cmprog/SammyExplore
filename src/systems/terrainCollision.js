@@ -1,7 +1,7 @@
 // Shared tile-collision rule for anything that walks on terrain (Sammy now,
 // cats later). Objects opt in by overriding EngineObject.collideWithTile:
 //     collideWithTile(tileData, tilePos) { return collidesWithTerrain(this, tileData, tilePos); }
-import { vec2, tileCollisionTest, engineObjectsCollect, engineObjectsCollide } from 'littlejs';
+import { vec2, tileCollisionTest, engineObjectsCollect, engineObjectsCollide, isOverlapping } from 'littlejs';
 import { TILE_TYPES } from '../data/tileTypes.js';
 
 /** Collision values of tile types marked oneWay in data/tileTypes.js. */
@@ -57,4 +57,75 @@ function solidObjectBelow(object, probe, probeSize, bottom)
         other !== object && other.isSolid && !other.destroyed
         && bottom >= other.pos.y + other.size.y / 2 - epsilon
         && other.collideWithObject(object));
+}
+
+/** Would a box at `pos` of `size` overlap solid ground (one-way platforms don't count)? For
+ *  things that move other objects (a lift checks it won't carry a rider into a wall). */
+export function solidGroundAt(pos, size)
+{
+    return !!tileCollisionTest(pos, size, tileData => tileData > 0 && !ONE_WAY_COLLISION.has(tileData));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Moving and standable solid objects (lifts, bridges, gates). All of these are pure queries
+// except settleObjectsOnTop, which a surface calls from its own updatePhysics. Nothing here may
+// be called from collideWithObject: ground probes (hasGroundWithin) call collideWithObject too,
+// so it must stay free of side effects.
+
+/** Things that walk and fall (Sammy, cats): dynamic objects that collide with solid objects. */
+function isMover(other, surface)
+{
+    return other !== surface && !other.destroyed && other.mass > 0 && other.collideSolidObjects;
+}
+
+function overlapsHorizontally(a, b)
+{
+    return Math.abs(a.pos.x - b.pos.x) * 2 < a.size.x + b.size.x;
+}
+
+/** Movers standing on top of `surface`: grounded on it, or feet within `epsilon` of its top and
+ *  not rising (e.g. they landed on it this step, before or after it moved). */
+export function objectsStandingOn(surface, epsilon = .05)
+{
+    const top = surface.pos.y + surface.size.y / 2;
+    return engineObjectsCollide.filter(other =>
+    {
+        if (!isMover(other, surface) || !overlapsHorizontally(other, surface))
+            return false;
+        const bottom = other.pos.y - other.size.y / 2;
+        return other.groundObject === surface || (Math.abs(bottom - top) < epsilon && other.velocity.y <= .001);
+    });
+}
+
+/** Would `object`, moved to `pos`, overlap a solid object that blocks it (a closed gate or door,
+ *  a lowered bridge, a lift)? `ignore` is left out (e.g. the lift doing the carrying). Pure:
+ *  relies on collideWithObject being side-effect free. */
+export function solidObjectAt(object, pos, ignore = null)
+{
+    return engineObjectsCollide.some(other =>
+        other !== object && other !== ignore && other.isSolid && !other.destroyed
+        && isOverlapping(pos, object.size, other.pos, other.size) && other.collideWithObject(object));
+}
+
+/**
+ * The engine only nudges an object that starts a step already overlapping a solid one, very
+ * gently, so a mover resting exactly on a surface's top (placed there, or a hair inside it from
+ * float error) would sink through it. A standable surface calls this from its updatePhysics:
+ * movers whose feet are just inside its top (within `tolerance`) and that aren't rising are put
+ * back on top and grounded. `accepts(other)` lets the surface skip ones it doesn't block.
+ */
+export function settleObjectsOnTop(surface, accepts = () => true, tolerance = .05)
+{
+    const top = surface.pos.y + surface.size.y / 2;
+    for (const other of engineObjectsCollide)
+    {
+        if (!isMover(other, surface) || other.velocity.y > 0 || !overlapsHorizontally(other, surface))
+            continue;
+        const bottom = other.pos.y - other.size.y / 2;
+        if (bottom >= top || bottom < top - tolerance || !accepts(other))
+            continue;
+        other.pos.y = top + other.size.y / 2 + .001;
+        other.velocity.y = 0;
+        other.groundObject = surface;
+    }
 }

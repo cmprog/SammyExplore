@@ -304,3 +304,42 @@ export const ROOM_WINDOW = {
     CLOUD_DRIFT: .12,           // tiles per second
     BODY_SIZE: 1.5,             // sun and moon diameter
 };
+
+// --- Mechanisms (T-014): levers and what they move --- distances in tiles, times in seconds,
+// angles in radians. Sizes here are the collision boxes; the art is drawn to match.
+export const LEVER = {
+    RADIUS: 1.3,               // E range, from the lever's center to Sammy's center
+    THROW_ANGLE: 0.62,         // handle tilt either side of upright (off = left, on = right)
+    SPRING: 0.28,              // handle spring per step: overshoots a little, then settles
+    DAMPING: 0.72,
+    SQUASH: 0.18,              // the base squashes this much when thrown...
+    SQUASH_TIME: 0.3,          // ...and springs back over this long
+    PULSE_HOLD: 0.2,           // cycle mode: the handle stays over this long before springing back
+    SPARKS: 5,                 // little stars that pop off the knob on a throw
+    SPARK_LIFE: 0.55,
+    SPARK_SPEED: 2.2,
+};
+
+export const BRIDGE = {
+    THICKNESS: 0.36,           // the plank; its top is flush with the top of its row
+    LOWER_TIME: 0.9,           // drops with a little bounce at the end
+    RAISE_TIME: 1.1,           // winds back up more slowly
+    SOLID_AT: 0.8,             // lowered fraction from which it can be stood on (where it touches down)
+    RAISED_ANGLE: 1.35,        // radians up from flat when raised (a touch short of upright)
+};
+
+export const GATE = {
+    WIDTH: 0.8,
+    OPEN_TIME: 0.7,            // the brick wall sinks into its base plate
+    CLOSE_TIME: 0.6,
+    PASSABLE_AT: 0.85,         // opened fraction from which Sammy (and cats) can walk through
+};
+
+export const LIFT = {
+    THICKNESS: 0.4,            // the plate; its top is flush with the top of its row
+    SPEED: 2.2,                // tiles per second at the middle of a leg (each leg eases in and out)
+    START_DELAY: 0.45,         // winds up for this long before setting off (time to hop on)
+    END_PAUSE: 0.9,            // loop mode: waits this long at each end
+    RIDE_EPSILON: 0.05,        // feet within this of the top count as riding
+    HEADROOM: 2,               // rows above the path that must be free of solid tiles (level validation)
+};

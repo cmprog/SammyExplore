@@ -1,6 +1,9 @@
 // The bedroom: Sammy's home base (M2). Rescued cats live here, and later the chapter portal
 // (T-017) and a practice course (T-018). Narration lives in src/data/narration/bedroom.js.
 //
+// `companionHub: true` marks the home base: the cats roam here, and Sammy picks a companion here
+// (T-015 reads it).
+//
 // Indoors (`environment: 'bedroom'`, see data/environments.js): no outdoor backdrop. The wall,
 // window, furniture and decor are drawn from the `room` block below, and a day/night cycle
 // (data/dayCycle.js) runs the light outside the window and in the room.
@@ -26,6 +29,8 @@ export default {
     id: 'bedroom',
     name: 'The Bedroom',
     environment: 'bedroom',
+    // The home base where rescued cats live and a companion is chosen (read by T-015).
+    companionHub: true,
     legend: {
         '.': 'empty',
         '#': 'floor',
