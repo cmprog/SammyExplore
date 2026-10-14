@@ -11,6 +11,7 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/sandbox_playthrough.py   # T-011b full sandbox run, title -> To be continued -> New Game again (~2 min); out/sandbox_NN_*.png
     .venv/Scripts/python tools/playtest/narrator_queue_scenario.py   # T-012 queue rules: noStale, condition re-check, forgetSeen
     .venv/Scripts/python tools/playtest/release_smoke.py      # T-012 release build (no ?debug): loads clean, no speed keys, no debug overlay
+    .venv/Scripts/python tools/playtest/mechanism_scenario.py # T-014 levers, bridge, gate, lift (real E presses): state, collision, riding; out/mech_*.png
 
 ## Debug and release builds
 
@@ -44,7 +45,8 @@ Helpers in `harness.py`: `session()`, `hold(page, key, seconds)`, `tap(page, key
 `shot(page, name)`, `wait_scene(page, name)`.
 Debug commands worth knowing: `__sammy.commands.entityAction(id, action, hold)` pokes an entity
 (Twyx: `stand`/`sit`/`lick` [held if `hold`], `blink`, `swish`, `pet`, `release`); `__sammy.entities`
-lists every level entity's debug state. Keys are KeyboardEvent codes (`KeyD`, `Space`).
+lists every level entity's debug state. `__sammy.mechanisms` lists levers and their targets, and
+`__sammy.commands.activate(id, on)` throws a lever or sets a target directly. Keys are KeyboardEvent codes (`KeyD`, `Space`).
 LittleJS "DEBUG build loaded" is a warning and is ignored.
 
 ## Assert state, not pixels, for overlay UI

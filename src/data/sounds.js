@@ -74,6 +74,33 @@ export const SOUNDS = {
     // Two low "dun-dun" rattles: the knob doesn't budge.
     doorLocked: [.38, .05, 200, 0, .12, .06, 1, 1, -2.5, 0, 0, 0, .08, .4, 0, 0, 0, 1, 0, 0, -1100],
 
+    // Lever: a wooden "clack" (a click and a knock a fifth down) as the handle hits its stop.
+    leverThrow: { layers: [
+        { zzfx: [.3, .04, 900, 0, .01, .03, 1, 1, 0, 0, 0, 0, 0, .2, 0, 0, 0, 1, 0, 0, -2600] },
+        { zzfx: [.38, .04, 220, 0, .03, .1, 0, 1, -4, 0, 0, 0, 0, .25, 0, 0, 0, 1, 0, 0, -1200], at: .05 },
+    ] },
+
+    // Bridge: the spool's ratchet ticking as the string pays out, then a wooden thunk on landing.
+    bridgeMove: { layers: [
+        { zzfx: [.18, .1, 1300, 0, .62, .05, 1, 1, 0, 0, 0, 0, .05, .3, 0, 0, 0, .7, 0, .9, -3000] },
+        { zzfx: [.4, .05, 140, 0, .04, .14, 0, 1, -3, 0, 0, 0, 0, .35, 0, 0, 0, 1, 0, 0, -800], at: .7 },
+    ] },
+
+    // Gate: plastic bricks sliding (a short shushing slide down), then a snug click.
+    gateMove: { layers: [
+        { zzfx: [.2, .05, 500, .02, .4, .15, 4, 1, -.8, 0, 0, 0, 0, 0, 0, 0, 0, .6, 0, 0, -1500] },
+        { zzfx: [.28, .03, 700, 0, .015, .04, 1, 1, 0, 0, 0, 0, 0, .1, 0, 0, 0, 1, 0, 0, -2400], at: .6 },
+    ] },
+
+    // Lift: a wind-up toy's buzzing whirr (a soft square wave with a fast flutter), about as
+    // long as a short trip.
+    liftHum: { minInterval: .3, layers: [
+        { zzfx: [.14, .02, 170, .12, 1.1, .35, 5, 1, 0, 0, 0, 0, .04, 0, 0, 0, 0, .8, 0, .6, -900] },
+    ] },
+
+    // Lift arrives: a soft bump.
+    liftArrive: [.26, .04, 180, 0, .02, .09, 0, 1, -2.5, 0, 0, 0, 0, .3, 0, 0, 0, 1, 0, 0, -900],
+
     // Two-note chime, G5 then C6.
     checkpoint: { layers: [
         { zzfx: BELL, semitones: 7 },
@@ -127,6 +154,12 @@ export const SOUND_EVENTS = {
     'interact:nothing':     'interactNothing',
     'interact:twyx':        'meow',
     'door:open':            'doorOpen',
+    'mechanism:toggle':     'leverThrow',   // any trigger thrown (a lever, later a cat spot)
+    'mechanism:cycle':      'leverThrow',
+    'bridge:move':          'bridgeMove',
+    'gate:move':            'gateMove',
+    'lift:move':            'liftHum',
+    'lift:arrive':          'liftArrive',
     'checkpoint:reached':   'checkpoint',
     'correction:triggered': 'correction',
     'narrator:blip':        'narratorBlip',
