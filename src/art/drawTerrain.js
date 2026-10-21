@@ -1,5 +1,5 @@
 // Procedural terrain tiles: rounded, softly outlined ground with a grassy cap, and wooden
-// one-way planks. Shapes are built once per tile at level load (buildTerrainTile).
+// one-way planks. Indoor floorboards live in drawFloorboards.js and are dispatched from here. Shapes are built once per tile at level load (buildTerrainTile).
 // The static look is drawn in passes (outline, body, detail) so outlines never paint over a
 // neighbor's fill; Terrain bakes those passes into cached canvases once. Only the swaying grass
 // blades and flowers (drawTerrainAnimated) are drawn live every frame.
@@ -9,6 +9,9 @@
 // A tile occupies the world cell [x, x+1] x [y, y+1] (y up). Corners only round where both
 // touching sides are open, so connected ground reads as one soft blob, not a grid of squares.
 import { vec2, drawPoly, drawEllipse, drawRect, drawCircle } from 'littlejs';
+import {
+    buildFloorboards, drawFloorboardsOutline, drawFloorboardsBody, drawFloorboardsDetail,
+} from './drawFloorboards.js';
 
 const OUTLINE = 0.06;          // soft outline thickness, world units
 const CORNER_RADIUS = 0.3;
@@ -26,7 +29,7 @@ const ARC_SEGMENTS = 6;
 
 /**
  * Precompute everything static about one tile.
- * @param {'ground'|'plank'} style - the tile type's `draw` style (data/tileTypes.js)
+ * @param {'ground'|'plank'|'floorboards'} style - the tile type's `draw` style (data/tileTypes.js)
  * @param {number} x - world cell x
  * @param {number} y - world cell y (bottom of the cell)
  * @param {{up:boolean, down:boolean, left:boolean, right:boolean, wallLeft:boolean, wallRight:boolean}} same
@@ -36,13 +39,17 @@ const ARC_SEGMENTS = 6;
 export function buildTerrainTile(style, x, y, same)
 {
     const pos = vec2(x, y);
+    if (style === 'floorboards')
+        return buildFloorboards(pos, same);
     return style === 'plank' ? buildPlank(pos, same) : buildGround(pos, same);
 }
 
 /** Pass 1: outlines for every tile in view, before any fills. */
 export function drawTerrainOutline(tile, palette, ctx)
 {
-    if (tile.style === 'plank')
+    if (tile.style === 'floorboards')
+        drawFloorboardsOutline(tile, palette, ctx);
+    else if (tile.style === 'plank')
         poly(tile.outline, palette.woodOutline, ctx);
     else
     {
@@ -59,6 +66,8 @@ export function drawTerrainOutline(tile, palette, ctx)
 /** Pass 2: main fills. */
 export function drawTerrainBody(tile, palette, ctx)
 {
+    if (tile.style === 'floorboards')
+        return drawFloorboardsBody(tile, palette, ctx);
     if (tile.style === 'plank')
     {
         poly(tile.body, palette.wood, ctx);
@@ -72,7 +81,9 @@ export function drawTerrainBody(tile, palette, ctx)
 /** Pass 3: specks, grass cap, nails. */
 export function drawTerrainDetail(tile, palette, ctx)
 {
-    if (tile.style === 'plank')
+    if (tile.style === 'floorboards')
+        drawFloorboardsDetail(tile, palette, ctx);
+    else if (tile.style === 'plank')
         drawPlankDetail(tile, palette, ctx);
     else
         drawGroundDetail(tile, palette, ctx);

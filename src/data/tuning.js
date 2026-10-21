@@ -275,6 +275,36 @@ export const TWYX = {
     HEART_SWAY: 0.6,
 };
 
+// --- Indoor rooms (T-013) --- distances in tiles, times in seconds
+// Light strengths are 0..1 additions to the room's light (dayCycle.js `ambient` is the base).
+export const ROOM_LIGHT = {
+    LIGHTMAP_SCALE: .25,        // the light map is this fraction of the screen (it is soft anyway)
+    NIGHTLIGHT_FADE: .7,        // the nightlight eases on and off over this long
+    NIGHTLIGHT_POP: .35,        // a little squash when it clicks on
+    NIGHTLIGHT_RADIUS: 8.5,     // its warm pool of light...
+    NIGHTLIGHT_STRENGTH: .62,
+    NIGHTLIGHT_CORE: 1.6,       // ...and the bright heart of it, so the lamp itself glows
+    NIGHTLIGHT_FLICKER: .04,    // a gentle candle-like breathing, never a flicker you notice
+    FAIRY_RADIUS: 2.4,
+    FAIRY_STRENGTH: .3,
+    FAIRY_TWINKLE: .25,         // how much each bulb's brightness drifts
+    WINDOW_LIGHT: .8,           // the glow over the open glass (drawn twice, so ~full in the middle)
+    WINDOW_LIGHT_SPREAD: 1.25,  // ...and its size as a multiple of the open glass, so it fades out softly
+    WINDOW_GLOW: 7,             // radius of the glow around the window
+    BEAM_LENGTH: 12,            // the light shaft through the window
+    BEAM_MAX_SLANT: 1.0,        // radians from straight down, so a low sun doesn't shine sideways
+    MOTES: 14,                  // dust specks drifting in a sunbeam
+};
+
+// The view out of the window: far things shift a little as the camera moves, for depth.
+export const ROOM_WINDOW = {
+    SKY_PARALLAX: .06,          // fraction of the camera's offset from the window
+    VIEW_PARALLAX: .12,
+    PARALLAX_MAX: .7,           // tiles; the baked view has this much margin past the glass
+    CLOUD_DRIFT: .12,           // tiles per second
+    BODY_SIZE: 1.5,             // sun and moon diameter
+};
+
 // --- Mechanisms (T-014): levers and what they move --- distances in tiles, times in seconds,
 // angles in radians. Sizes here are the collision boxes; the art is drawn to match.
 export const LEVER = {

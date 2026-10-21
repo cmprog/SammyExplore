@@ -8,7 +8,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | Event | Payload | Owner | Notes |
 |---|---|---|---|
 | `scene:change` | `{from, to, kind}` | SceneManager | `kind`: `change` (whole stack replaced), `push` (overlay opened, e.g. `pause`), `pop` (overlay closed). `from`/`to` are the top scene before/after |
-| `level:start` | `{levelId, name, timeOfDay, size, checkpointId}` | playing scene | after the level is built; `size` = `{x, y}` in tiles. `checkpointId` = the checkpoint a Continue resumed at, `null` on a fresh start (so intros can stay quiet on Continue) |
+| `level:start` | `{levelId, name, environment, timeOfDay, size, checkpointId}` | playing scene | after the level is built; `size` = `{x, y}` in tiles. `environment` = the level's environment (`data/environments.js`, e.g. `outdoor`, `bedroom`); `timeOfDay` is set outdoors and `null` indoors. `checkpointId` = the checkpoint a Continue resumed at, `null` on a fresh start (so intros can stay quiet on Continue) |
 | `level:loadFailed` | `{levelId, message}` | playing scene | the level could not be fetched or built; main.js returns to the title with a gentle notice |
 | `level:complete` | `{...zoneProps, id, levelId, nextLevel?, door?}` | LevelLoader (exit zone) | `id` = exit zone id (required in data; a save key); once per level load. `nextLevel` = the exit's own `nextLevel`, else the level data's; absent on the last level. Autosaved by SaveSystem; opens the level complete overlay. An exit door (a door with `exitId`) fires the same exit path when it finishes opening: `id` = its `exitId`, `door` = the door's id |
 | `checkpoint:reached` | `{id, levelId, pos}` | LevelLoader | `id` = checkpoint zone id; once per level load. Autosaved by SaveSystem. Not re-sent for a checkpoint restored by Continue |
@@ -16,6 +16,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `correction:reset` | `{zoneId}` | Narrator | midpoint of the rewrite effect. The playing scene moves the player to `level.respawn`. Also sent immediately (no visuals) if the narrator is disposed/reloaded mid-correction and the reset hadn't gone out yet |
 | `correction:done` | `{zoneId}` | Narrator | input unlocked. Also sent immediately (no visuals) on dispose/reload mid-correction. A `correction:triggered` arriving while a correction runs is ignored by the narrator; on `correction:done` the playing scene re-arms correction zones so one the player is still inside fires again |
 | `narration:zone` | `{key, id, levelId}` | LevelLoader | |
+| `daycycle:phase` | `{phase}` | DayCycle | indoor levels with a day/night cycle (the bedroom). `phase`: `dawn`, `day`, `dusk`, or `night`. Sent once when the room is set up (the phase the visit starts in, right after `level:start`), then whenever the phase changes, including after `__sammy.commands.setTimeOfDay` |
 | `narrator:blip` | `{lineId}` | Narrator | typewriter tick; emitted quietly (kept out of the debug event ring) |
 | `narrator:line` | `{id, text}` | Narrator | a line started showing |
 | `narrator:revealed` | `{id}` | Narrator | the showing line is fully revealed (typed out, or skipped to the end). The level complete overlay waits for it before offering to continue |

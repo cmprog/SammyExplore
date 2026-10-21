@@ -1,16 +1,21 @@
 // Turns level data (src/data/levels/<id>.js) into a live Level: terrain collision + art,
 // zones, and entities from the registry. Adding a level only means adding a data file.
+// A level's `environment` (data/environments.js, default outdoor) says whether it is outdoors
+// (`timeOfDay` picks the palettes) or in a room (the `room` block lays out its furniture).
 //
 // Level data coordinates are tile column/row from the top-left of tileMap (how the map reads);
 // the world is y-up with the bottom-left of the map at (0, 0), so rows are flipped here.
 import { vec2 } from 'littlejs';
 import { TILE_TYPES } from '../data/tileTypes.js';
-import { TILE_PALETTES } from '../data/tilePalettes.js';
+import { TILE_PALETTES, ROOM_TILE_PALETTES } from '../data/tilePalettes.js';
+import { ENVIRONMENTS, DEFAULT_ENVIRONMENT } from '../data/environments.js';
 import { WORLD_FALL_MARGIN } from '../data/tuning.js';
 import { spawnEntity, validateEntity, validateMechanismLinks, validateCellClaims } from '../entities/registry.js';
 import { Terrain } from './Terrain.js';
 import { Zones, ZONE_TYPES, FALL_ZONE_ID } from './Zones.js';
 import { Level } from './Level.js';
+import { buildRoomLayout } from './roomLayout.js';
+import { validateRoom } from './roomValidation.js';
 import { Mechanisms } from './Mechanisms.js';
 
 const LEVEL_ID_PATTERN = /^[a-z0-9_-]+$/i;
@@ -44,7 +49,10 @@ export function buildLevel(data, { playerPos = () => null } = {})
         const types = [];
         for (let y = 0; y < height; y++)
             types.push([...data.tileMap[height - 1 - y]].map(char => data.legend[char]));
-        const terrain = new Terrain(types, TILE_PALETTES[data.timeOfDay]);   // cleans up after itself if it throws
+        const environment = data.environment ?? DEFAULT_ENVIRONMENT;
+        const indoor = ENVIRONMENTS[environment].kind === 'room';
+        const tilePalette = indoor ? ROOM_TILE_PALETTES[ENVIRONMENTS[environment].palette] : TILE_PALETTES[data.timeOfDay];
+        const terrain = new Terrain(types, tilePalette);   // cleans up after itself if it throws
         created.push(terrain);
 
         const worldZones = data.zones.map((zone, index) => toWorldZone(zone, index, height, data.nextLevel));
@@ -54,7 +62,7 @@ export function buildLevel(data, { playerPos = () => null } = {})
         const context = {
             levelId: data.id,
             levelSize: { x: width, y: height },
-            timeOfDay: data.timeOfDay,
+            timeOfDay: data.timeOfDay ?? null,   // null indoors (entities fall back to day colors)
             triggerExit: exitId => zones.triggerExit(exitId),
             playerPos,
         };
@@ -71,8 +79,9 @@ export function buildLevel(data, { playerPos = () => null } = {})
         const mechanisms = new Mechanisms(data.id, entities);
         created.push(mechanisms);
         mechanisms.start();
+        const room = indoor ? buildRoomLayout(data) : null;
         return new Level({
-            id: data.id, name: data.name, timeOfDay: data.timeOfDay, size, terrain, zones, entities, mechanisms,
+            id: data.id, name: data.name, environment, timeOfDay: data.timeOfDay ?? null, room, size, terrain, zones, entities, mechanisms,
             companionHub: !!data.companionHub,
         });
     }
@@ -124,7 +133,10 @@ function validateLevel(data, id)
         fail('data module must `export default` the level object');
     if (data.id !== id)
         fail(`id is "${data.id}" but the file is named "${id}.js"`);
-    if (!TILE_PALETTES[data.timeOfDay])
+    const environment = ENVIRONMENTS[data.environment ?? DEFAULT_ENVIRONMENT];
+    if (!environment)
+        fail(`environment must be one of ${Object.keys(ENVIRONMENTS).join(', ')}`);
+    if (environment.kind === 'sky' && !TILE_PALETTES[data.timeOfDay])
         fail(`timeOfDay must be one of ${Object.keys(TILE_PALETTES).join(', ')}`);
     // companionHub: true marks a home base (the bedroom): the cats placed there live there, and E
     // asks one along or lets the companion stay (systems/Companion.js). Elsewhere E is a pet.
@@ -137,6 +149,8 @@ function validateLevel(data, id)
     validateMap(data, fail);
     validateEntities(data, fail);
     validateZones(data, fail);
+    if (environment.kind === 'room')
+        validateRoom(data, environment, fail);
 }
 
 function validateMap({ tileMap, legend }, fail)

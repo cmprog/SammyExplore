@@ -23,6 +23,8 @@ const BAKE_MARGIN_TILES = 1;
 /** Thickness of the invisible walls left and right of the map and the ceiling above it.
  *  More than one tile so nothing fast can tunnel through. The bottom stays open (world-bottom). */
 const BOUNDS_THICKNESS = 2;
+/** Styles that run flat into the level bounds instead of rounding off at the map edge. */
+const WALL_JOINING_STYLES = ['ground', 'floorboards'];
 
 export class Terrain extends TileCollisionLayer
 {
@@ -95,7 +97,8 @@ export class Terrain extends TileCollisionLayer
     }
 
     /** Which neighbors are drawn in the same style. The invisible walls and ceiling count as
-     *  ground, so ground runs flat into them; below the map is open, so cliff bottoms round off. */
+     *  ground (or floor), so it runs flat into them; below the map is open, so cliff bottoms
+     *  round off. */
     neighbors(style, x, y)
     {
         const same = (nx, ny) =>
@@ -103,7 +106,7 @@ export class Terrain extends TileCollisionLayer
             if (ny < 0)
                 return false;
             if (nx < 0 || nx >= this.mapSize.x || ny >= this.mapSize.y)
-                return style === 'ground';
+                return WALL_JOINING_STYLES.includes(style);
             return this.styleAt(nx, ny) === style;
         };
         // Walls only count inside the map: the level edge shouldn't sprout corner bushes.
@@ -128,16 +131,30 @@ export class Terrain extends TileCollisionLayer
                 x0 + chunkSize.x - 1 + BAKE_MARGIN_TILES, y0 + chunkSize.y - 1 + BAKE_MARGIN_TILES);
             if (!tiles.length)
                 continue;    // all sky: no canvas, no texture
-            const center = vec2(x0, y0).add(chunkSize.scale(0.5));
+            // Only as big as the art in it: every transparent pixel still costs fill each frame.
+            const { pos, size } = this.trimToTiles(tiles, x0, y0, chunkSize);
+            const center = pos.add(size.scale(0.5));
             // Created without a GL texture; updateWebGL() uploads it once, after baking.
-            const chunk = new CanvasLayer(center, chunkSize, 0, RENDER_ORDER.terrain,
-                chunkSize.scale(BAKE_PIXELS_PER_TILE), false);
+            const chunk = new CanvasLayer(center, size, 0, RENDER_ORDER.terrain,
+                size.scale(BAKE_PIXELS_PER_TILE), false);
             this.chunks.push(chunk);
             if (!chunk.context)    // no canvas in engine headless mode; nothing to bake
                 continue;
             this.bakeChunk(chunk, tiles);
             chunk.updateWebGL();
         }
+    }
+
+    /** The chunk area cut down to the bounding box of `tiles` (which include the margin
+     *  neighbors) plus BAKE_MARGIN_TILES, for their overhangs. Returns {pos, size}. */
+    trimToTiles(tiles, x0, y0, chunkSize)
+    {
+        const xs = tiles.map(tile => tile.pos.x), ys = tiles.map(tile => tile.pos.y);
+        const left = Math.max(x0, Math.min(...xs) - BAKE_MARGIN_TILES);
+        const bottom = Math.max(y0, Math.min(...ys) - BAKE_MARGIN_TILES);
+        const right = Math.min(x0 + chunkSize.x, Math.max(...xs) + 1 + BAKE_MARGIN_TILES);
+        const top = Math.min(y0 + chunkSize.y, Math.max(...ys) + 1 + BAKE_MARGIN_TILES);
+        return { pos: vec2(left, bottom), size: vec2(right - left, top - bottom) };
     }
 
     /**

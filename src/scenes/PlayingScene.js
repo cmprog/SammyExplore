@@ -8,13 +8,13 @@
 // Hosts the narrator (see the wiring notes at the top of systems/Narrator.js) and the
 // interaction system, which reads E only after the narrator has had its chance to use it.
 import {
-    vec2, rgb, setGravity, mainCanvasSize, drawTextScreen,
+    vec2, rgb, setGravity, mainCanvasSize, drawTextScreen, timeDelta,
 } from 'littlejs';
 import { on, emit } from '../core/events.js';
 import { fetchLevelData, buildLevel } from '../systems/LevelLoader.js';
 import { Camera } from '../systems/Camera.js';
 import { Sammy } from '../entities/Sammy.js';
-import { Backdrop } from '../systems/Backdrop.js';
+import { createEnvironment } from '../systems/createEnvironment.js';
 import { Interaction } from '../systems/Interaction.js';
 import { Companion } from '../systems/Companion.js';
 import { registerTestCat } from '../data/cats.js';
@@ -33,7 +33,7 @@ export class PlayingScene
         this.camera = new Camera();
         this.interaction = new Interaction();
         this.companion = new Companion();
-        this.backdrop = null;
+        this.environment = null;   // the sky backdrop outdoors, or a room (systems/createEnvironment.js)
         this.levelId = null;
         this.loading = false;
         this.loadError = null;
@@ -64,7 +64,7 @@ export class PlayingScene
             this.level?.zones.rearmCorrections();
             this.companion.release();
         }));
-        this.unsubscribers.push(on('level:start', ({ timeOfDay }) => this.showBackdrop(timeOfDay)));
+        this.unsubscribers.push(on('level:start', () => this.showEnvironment()));
         this.load(levelId);
     }
 
@@ -114,10 +114,10 @@ export class PlayingScene
             if (token === this.loadToken)
                 this.loading = false;
         }
-        const { id, name, timeOfDay, size } = this.level;
+        const { id, name, environment, timeOfDay, size } = this.level;
         // checkpointId: where a Continue picked the story up (null on a fresh start).
         const checkpointId = this.level.zones.checkpointId ?? null;
-        emit('level:start', { levelId: id, name, timeOfDay, size: { x: size.x, y: size.y }, checkpointId });
+        emit('level:start', { levelId: id, name, environment, timeOfDay, size: { x: size.x, y: size.y }, checkpointId });
     }
 
     /** A copy of the player's position (or null), so no other system can move Sammy by accident. */
@@ -137,8 +137,8 @@ export class PlayingScene
 
     unload()
     {
-        this.backdrop?.destroy();
-        this.backdrop = null;
+        this.environment?.destroy();
+        this.environment = null;
         this.camera.detach();
         this.companion.detach();
         this.interaction.clear();
@@ -148,10 +148,12 @@ export class PlayingScene
         this.level = null;
     }
 
-    showBackdrop(timeOfDay)
+    showEnvironment()
     {
-        this.backdrop?.destroy();
-        this.backdrop = new Backdrop(timeOfDay);
+        this.environment?.destroy();
+        this.environment = null;
+        if (this.level)
+            this.environment = createEnvironment(this.level);
     }
 
     resetPlayer()
@@ -168,6 +170,7 @@ export class PlayingScene
     update()
     {
         this.narrator.update();
+        this.environment?.tick?.(timeDelta);   // the day goes by (rooms with a day cycle)
         // Under an overlay nothing can be started (and the bubble fades away).
         this.interaction.update(this.overlaid ? null : this.player?.pos ?? null);
     }
@@ -214,7 +217,8 @@ export class PlayingScene
         hook.register('level', () => this.levelDebugState());
         hook.register('camera', () => this.camera.debugState());
         hook.register('player', () => this.player?.debugState() ?? null);
-        hook.register('backdrop', () => this.backdrop?.debugState() ?? null);
+        hook.register('backdrop', () => this.environment?.debugState() ?? null);
+        hook.register('dayCycle', () => this.environment?.dayCycleState?.() ?? null);
         hook.register('interaction', () => this.interaction.debugState());
         hook.register('entities', () => this.level?.entities.map(entity => entity.debugState?.() ?? null) ?? []);
         hook.register('mechanisms', () => this.level?.mechanisms.debugState() ?? []);
@@ -243,6 +247,14 @@ export class PlayingScene
             if (!entity?.debugAction)
                 return false;
             entity.debugAction(action, ...args);
+            return true;
+        };
+        // Jump an indoor level's clock: 0 = midnight, .25 = sunrise, .5 = noon, .75 = sunset.
+        hook.commands.setTimeOfDay = t =>
+        {
+            if (!this.environment?.setTimeOfDay || !Number.isFinite(t))
+                return false;
+            this.environment.setTimeOfDay(t);
             return true;
         };
         hook.commands.teleport = (x, y) =>
