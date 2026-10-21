@@ -3,7 +3,7 @@
 Checks (real key presses for movement; teleport and setTimeOfDay only set up tests):
 - The bedroom loads as an indoor level (environment, room backdrop, lighting, no outdoor sky), with
   Twyx idling, the chapter portal and its lever in the old portal alcove (T-017; portal_scenario.py
-  tests them), and the practice course still reserved.
+  tests them), and the practice course built (T-018; practice_scenario.py tests it): no reserved region left.
 - The day/night cycle: __sammy.dayCycle {t, phase}; setTimeOfDay steps through night, dawn, day,
   and dusk; daycycle:phase fires on each change; the room is darker at night than by day; the
   nightlight is on at night and off by day; the clock runs on its own.
@@ -150,7 +150,7 @@ def test_loads(pg):
     check(portal is not None and 1 <= portal["feet"]["x"] - 2.5 and portal["feet"]["x"] + 2.5 <= 10 and portal["feet"]["y"] == 5,
           f"the chapter portal stands in the old alcove (x 1-10), on the floor: {portal and portal['feet']}")
     check(lever is not None and lever["mode"] == "cycle" and lever["pos"]["x"] < 10, f"its cycle lever stands beside it: {lever}")
-    check(course is not None and 25 <= course["x1"] - course["x0"] <= 35, f"practice course reserved, about a screen: {course}")
+    check(course is None and not regions, f"the practice course is built (T-018): no reserved region left: {regions}")
     twyx = next((e for e in s["entities"] if e and e.get("type") == "twyx"), None)
     check(twyx is not None and twyx["action"] in ("stand", "sit", "lick"), f"Twyx is in the bedroom, idling: {twyx and twyx['action']}")
     check(any(t.get("type") == "twyx" for t in s["interaction"]["targets"]), "Twyx can be petted (interactable)")

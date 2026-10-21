@@ -50,6 +50,12 @@ const day = {
     wheel:        rgb(.26, .23, .32),
     sweat:        rgb(.62, .86, 1),
     blush:        rgb(1, .55, .68, .55),
+    // The toy star (T-018, a placeholder find): a plump golden plush star.
+    toyStar:      rgb(1, .86, .30),
+    toyStarLight: rgb(1, .97, .72),
+    toyStarDark:  rgb(.94, .62, .18),
+    toyStarGlow:  rgb(1, .92, .55),
+    confetti:     [rgb(1, .55, .70), rgb(.55, .80, 1), rgb(.62, .92, .55), rgb(1, .86, .35), rgb(.80, .66, 1)],
 };
 
 /** Moonlight: a little darker and bluer, but the toys still read as toys. */

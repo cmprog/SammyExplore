@@ -90,6 +90,18 @@ export const ROOM_PALETTES = {
             star:    { top: rgb(1, .92, .55), side: rgb(1, .84, .42), speck: rgb(1, 1, .85), topSpeck: rgb(.96, .70, .30) },
         },
 
+        // Craft blocks (T-018): foam toy cubes with pixel faces (art/room/craftBlocks.js)
+        craftBlocks: {
+            grass: { top: rgb(.44, .80, .36), topSpeck: rgb(.34, .66, .28), side: rgb(.62, .42, .28), speck: rgb(.50, .33, .22),
+                light: rgb(.78, .58, .40), shade: rgb(.40, .26, .18) },
+            plank: { top: rgb(.90, .70, .44), topSpeck: rgb(.80, .58, .34), side: rgb(.84, .62, .38), speck: rgb(.64, .44, .26),
+                light: rgb(.96, .80, .56), shade: rgb(.56, .38, .22) },
+            stone: { top: rgb(.76, .76, .82), topSpeck: rgb(.66, .66, .72), side: rgb(.64, .64, .70), speck: rgb(.52, .52, .58),
+                light: rgb(.82, .82, .88), shade: rgb(.42, .42, .50) },
+            gem:   { top: rgb(.76, .76, .82), topSpeck: rgb(.66, .66, .72), side: rgb(.64, .64, .70), speck: rgb(.52, .52, .58),
+                light: rgb(.82, .82, .88), shade: rgb(.42, .42, .50), gem: rgb(.36, .86, .92), gemLight: rgb(.78, 1, 1) },
+        },
+
         // Outside the window: the neighbor's house and the garden fence (the sky, hills and trees
         // use the outdoor backdrop palettes, palettes.js)
         view: {

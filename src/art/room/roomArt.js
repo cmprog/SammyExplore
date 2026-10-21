@@ -9,7 +9,8 @@ import { drawRoomWall } from './drawRoomWall.js';
 import { drawWindowFrame } from './drawWindowFrame.js';
 import { drawToyChest, drawBookshelf, drawWallShelf, drawDresser, drawCubby } from './furnitureStorage.js';
 import { drawDesk, drawBed } from './furnitureDeskBed.js';
-import { drawBrickStack, drawBrickHouse, drawBrickCastle, drawBrickTower } from './toyBricks.js';
+import { drawBrickStack, drawBrickHouse, drawBrickCastle, drawBrickTower, drawBrickFort } from './toyBricks.js';
+import { drawCraftBlock } from './craftBlocks.js';
 import { drawPoster, drawBunting, drawFairyLights } from './decorWall.js';
 import {
     drawPlush, drawBooks, drawBookStack, drawDeskLamp, drawPencilCup, drawPlant, drawPhoto, drawBin,
@@ -26,6 +27,7 @@ export const FURNITURE_ART = {
     dresser: drawDresser,
     bed: drawBed,
     cubby: drawCubby,
+    brickFort: drawBrickFort,
 };
 
 export const DECOR_ART = {
@@ -44,6 +46,7 @@ export const DECOR_ART = {
     plant:       { draw: drawPlant, place: 'stand' },
     photo:       { draw: drawPhoto, place: 'stand' },
     bin:         { draw: drawBin, place: 'stand' },
+    craftBlock:  { draw: drawCraftBlock, place: 'stand' },
 };
 
 /** Furniture art reaches this far past its rect (legs, curtains, overhangs), for chunk culling. */

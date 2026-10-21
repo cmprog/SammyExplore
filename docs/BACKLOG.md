@@ -36,8 +36,8 @@ Goal: after Chapter One, Sammy arrives in the bedroom home base. Twyx follows hi
 | T-015 | Companion follow: pick a cat in the base (E), she follows Sammy across levels, waits where she can't follow, and a mechanism lets her through | game-dev | T-014 | done |
 | T-016 | Cat spots and abilities: CatSpot entity (doesn't show which cat), ability registry, Twyx's Comfort, narrator japes for no cat or the wrong cat | game-dev | T-015 | done |
 | T-017 | Portal and chapters: chapters data, Minecraft-style portal with a per-chapter color and sign, lever cycles unlocked chapters, save progression, Chapter One → bedroom flow | game-dev | T-013 | done |
-| T-018 | Bedroom practice course: a small section of the base that exercises following, a help-her-through mechanism, and a Comfort cat spot | game-dev | T-013..T-017 | in-progress |
-| T-019 | Narration: bedroom lines, the cast-list gag, cat-spot japes, Twyx companion lines, more variety and escalation for repeated actions | game-dev | T-016, T-018 | ready |
+| T-018 | Bedroom practice course: a small section of the base that exercises following, a help-her-through mechanism, and a Comfort cat spot | game-dev | T-013..T-017 | done |
+| T-019 | Narration: bedroom lines, the cast-list gag, cat-spot japes, Twyx companion lines, more variety and escalation for repeated actions | game-dev | T-016, T-018 | in-progress |
 | T-020 | M2 final review and playtest, plus fixes | reviewer/playtester | all | ready |
 
 ## Milestone 3: Chapter Two, Snowy (planned)

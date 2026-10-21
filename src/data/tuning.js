@@ -500,3 +500,25 @@ export const WINDUP_MOUSE = {
     SCOOT_DELAY: 0.7,          // calm: a relieved sigh, then it scoots off...
     SCOOT_SPEED: 3.2,          // ...at up to this many tiles per second (eased at both ends)
 };
+
+// --- Finds (T-018): a placeholder pickup (the toy star) until the hat collectibles exist --------
+// Distances in tiles, times in seconds.
+export const COLLECTIBLE = {
+    RADIUS: .8,                // Sammy's center this close to its center picks it up
+    FLOAT: .55,                // its center floats this far above the floor of its cell
+    BOB: .08,                  // gentle up-and-down while it waits
+    BOB_SPEED: 2.2,            // radians per second
+    SWAY: .14,                 // rocks side to side (radians)
+    SWAY_SPEED: 1.4,
+    TWINKLE_EVERY: .45,        // a sparkle drifts off it this often
+    BLINK_EVERY: 3.6,
+    // Found: it hops up, spins and swells, then pops into sparkles, a ring and confetti.
+    FOUND_TIME: .9,
+    FOUND_RISE: .8,            // tiles it rises before popping
+    FOUND_SPIN: 4 * Math.PI,   // radians over FOUND_TIME
+    FOUND_SWELL: .5,           // grows by this fraction before it pops
+    BURST_SPARKS: 18,
+    BURST_CONFETTI: 24,
+    LIGHT_RADIUS: 2.4,         // its glow in a room's light map
+    LIGHT_STRENGTH: .55,
+};

@@ -1,5 +1,6 @@
 // The bedroom: Sammy's home base (M2). Rescued cats live here, the chapter portal (T-017) stands
-// here, and later a practice course (T-018). Narration lives in src/data/narration/bedroom.js.
+// here, and the practice course (T-018) fills the right end. Narration lives in
+// src/data/narration/bedroom.js.
 //
 // `companionHub: true` marks the home base: the cats roam here, and Sammy picks a companion here
 // (T-015 reads it).
@@ -17,9 +18,24 @@
 //   - The desk (top 10, walk under it) below the window. Its sill (top 13) is a one-way ledge;
 //     a long one-way shelf above the window (top 24) holds a brick castle and plushies.
 //   - The bookshelf: one-way shelves at 8, 11, 14, 17 and a solid top at 20.
-//   - The dresser (top 11), and the nightlight plugged in low on the wall beside it.
-//   - Practice course (x 57-83): RESERVED. The bed (mattress top 9, headboard 14, room to walk
-//     under) and the toy cubby (one-way shelves at 8 and 11, top 15) stand in it for now.
+//   - The dresser (top 11), with brick steps (tops 7 and 9) up its left side and a toy shelf
+//     (top 9) on its right, so a cat can cross it both ways; the nightlight is plugged in low on
+//     the wall beside it.
+//   - The practice course (x 55-84, T-018): an optional loop that teaches the companion's
+//     follow / help-her-through / cat spot routine, about one screen. Left to right:
+//       - entry (x 55-58, narration 'practice.entry'): little one-way toy shelves (9 by the
+//         dresser, 7, then 9 again) up to the bed (footboard 10, mattress 9, headboard 11, with
+//         2 tiles to walk under it): hops Twyx follows.
+//       - the gap (x 71-76, 'practice.gap'): too wide for her. Sammy flaps across to the toy
+//         cubby (top 11), where a one-way lever ('practice.lever') lowers a ruler bridge from his
+//         side, and a checkpoint (her catch-up point if she's left waiting, see T-015).
+//       - on the cubby, a cat spot cushion ('practice.tunnel') by a brick fort whose only way in
+//         is a one-tile tunnel, blocked by the frazzled wind-up mouse. Twyx's Comfort calms it,
+//         it scoots inside, and the toy star (a placeholder find) is in the fort.
+//     Without Twyx, everything but the fort works the same (Sammy flies the gap; the cushion
+//     answers with a hint). The cubby's sides are too tall for a cat from the floor, so the
+//     bridge is her only way across. Ways out: back over the bridge (it stays down), or drop
+//     into the gap: the floor there runs under the bed back to the entry, so nobody is stuck.
 //   - A plush shelf (top 14) over the toy chest.
 // Every height step is at most 5 tiles (a jump and flaps), and nothing here can strand Sammy:
 // the room is closed (walls and ceiling are the level bounds) and the floor runs wall to wall.
@@ -44,6 +60,7 @@ export default {
         r: 'furniture',     // dresser
         b: 'furniture',     // bed: footboard, mattress, headboard
         c: 'furniture',     // toy cubby top
+        f: 'furniture',     // brick fort (practice course)
     },
     tileMap: [
         '....................................................................................',   //  0
@@ -59,16 +76,16 @@ export default {
         '....................................................................................',   // 10
         '.......................................-------......................................',   // 11
         '....................................................................................',   // 12
-        '...............................................................................ccccc',   // 13  cubby top
-        '............--------...................-------.............................bb.......',   // 14  plush shelf
-        '..........................------------.....................................bb.......',   // 15  window sill
-        '...........................................................................bb.......',   // 16
-        '.......................................-------.rrrrrrrr....................bb..-----',   // 17
-        '........................ll.dddddddddd..........rrrrrrrr...b................bb.......',   // 18  desk
-        '........................ll.....................rrrrrrrr...bbbbbbbbbbbbbbbbbbb.......',   // 19  bed
-        '......................llll.............-------.rrrrrrrr...bbbbbbbbbbbbbbbbbbb..-----',   // 20
-        '...............tttttt.llll.....................rrrrrrrr.............................',   // 21
-        '...............tttttt.llll.....................rrrrrrrr.............................',   // 22  floor level
+        '....................................................................................',   // 13
+        '............--------...................-------..................................ffff',   // 14  plush shelf; fort roof
+        '..........................------------..........................................f...',   // 15  window sill; fort wall over the tunnel
+        '....................................................................................',   // 16
+        '.......................................-------..rrrrrrr..............bb.....cccccccc',   // 17  cubby top (course far side), headboard top
+        '........................ll.dddddddddd...........rrrrrrr......b.......bb.............',   // 18  desk; footboard top
+        '........................ll.....................lrrrrrrr--..--bbbbbbbbbb.............',   // 19  bed; toy shelves (top 9)
+        '......................llll.............-------.lrrrrrrr......bbbbbbbbbb.....--------',   // 20  cubby shelf
+        '...............tttttt.llll....................llrrrrrrr..--.........................',   // 21  toy shelf (top 7)
+        '...............tttttt.llll....................llrrrrrrr.............................',   // 22  floor level
         '####################################################################################',   // 23  floor top = 5
         '####################################################################################',   // 24
         '####################################################################################',   // 25
@@ -80,9 +97,23 @@ export default {
         // T-017: the chapter portal (x = the middle of its opening) and its lever.
         { type: 'portal', id: 'portal', x: 4, y: 22 },
         { type: 'lever', id: 'portal-lever', mode: 'cycle', targets: ['portal'], x: 8, y: 22 },
+        // T-018 practice course: the bridge over the gap (hinged on the cubby side, where its
+        // lever is), the cat spot, the wind-up mouse in the fort's tunnel (it scoots inside to
+        // the back wall once calm), and the toy star in the fort.
+        { type: 'bridge', id: 'practice-bridge', length: 5, hinge: 'right', x: 71, y: 17 },
+        { type: 'lever', id: 'practice-lever', targets: ['practice-bridge'], oneWay: true, x: 77, y: 16 },
+        { type: 'catspot', id: 'practice-spot', ability: 'comfort', targets: ['practice-mouse'], key: 'practice.mouse', x: 79, y: 16 },
+        { type: 'windupMouse', id: 'practice-mouse', restX: 83, x: 80, y: 16 },
+        { type: 'collectible', id: 'practice-star', kind: 'toyStar', x: 82, y: 16 },
     ],
     zones: [
         { type: 'spawn', rect: { x: 11, y: 21, w: 1, h: 2 } },
+        // T-018 practice course. The checkpoint is past the bridge, where Twyx may wait.
+        { type: 'narration', key: 'practice.entry', rect: { x: 56, y: 17, w: 2, h: 6 } },
+        { type: 'narration', key: 'practice.gap', rect: { x: 67, y: 12, w: 4, h: 7 } },
+        { type: 'narration', key: 'practice.lever', rect: { x: 76, y: 12, w: 2, h: 5 } },
+        { type: 'narration', key: 'practice.tunnel', rect: { x: 79, y: 14, w: 1, h: 3 } },
+        { type: 'checkpoint', id: 'practice-far-side', rect: { x: 76, y: 14, w: 3, h: 3 } },
     ],
     room: {
         // The nightlight plugs into the wall in this cell (low, beside the dresser).
@@ -99,10 +130,22 @@ export default {
             { kind: 'window', x: 26, y: 6, w: 12, h: 10 },
             { kind: 'wallShelf', x: 25, y: 4, w: 14, h: 1 },
             { kind: 'bookshelf', x: 39, y: 8, w: 7, h: 15, shelfEvery: 3 },
-            { kind: 'dresser', x: 47, y: 17, w: 8, h: 6 },
+            { kind: 'dresser', x: 48, y: 17, w: 7, h: 6 },
+            // T-018: brick steps up the dresser's left side, so a cat can climb over it (she hops
+            // at most 2): from the floor to 7, 9, then the dresser top at 11. The toy shelves on
+            // its right side (below) are her steps on that side, into the practice course.
+            { kind: 'bricks', x: 46, y: 21, w: 1, h: 2 },
+            { kind: 'bricks', x: 47, y: 19, w: 1, h: 4 },
             // Footboard (1 wide, 3 tall), mattress (2 tall), headboard (2 wide, the full height).
-            { kind: 'bed', x: 58, y: 14, w: 19, h: 7 },
-            { kind: 'cubby', x: 79, y: 13, w: 5, h: 10, shelfEvery: 3 },
+            // T-018 practice course: three little toy shelves up to the bed, the bed (lower
+            // headboard, so a cat can hop up it), the toy cubby across the gap, and the brick fort
+            // on top of the cubby (its art draws the tunnel door and the room inside).
+            { kind: 'wallShelf', x: 55, y: 19, w: 2, h: 1 },
+            { kind: 'wallShelf', x: 57, y: 21, w: 2, h: 1 },
+            { kind: 'wallShelf', x: 59, y: 19, w: 2, h: 1 },
+            { kind: 'bed', x: 61, y: 17, w: 10, h: 4 },
+            { kind: 'cubby', x: 76, y: 17, w: 8, h: 6, shelfEvery: 3 },
+            { kind: 'brickFort', x: 80, y: 14, w: 4, h: 3 },
         ],
         // Decor never collides. Rect items ({x, y, w, h}) are placed like zones; standing items
         // ({x, y}) stand on the bottom of cell row y, centered on x (both may be fractional).
@@ -146,22 +189,23 @@ export default {
             { kind: 'plant', x: 48.3, y: 16 },
             { kind: 'photo', x: 50.7, y: 16 },
             { kind: 'plush', variant: 'cat', x: 53.3, y: 16 },
-            // Bed and cubby (inside the practice course region; T-018 may move them)
-            { kind: 'plush', variant: 'bunny', x: 70.6, y: 18 },
-            { kind: 'bin', variant: 'grass', x: 80.3, y: 21.6 },
-            { kind: 'bin', variant: 'gem', x: 82.7, y: 21.6 },
-            { kind: 'bin', variant: 'heart', x: 80.3, y: 19 },
-            { kind: 'bin', variant: 'star', x: 82.7, y: 19 },
-            { kind: 'bin', variant: 'grass', x: 80.3, y: 16 },
-            { kind: 'plush', variant: 'frog', x: 82.7, y: 16 },
+            // Practice course: a plush on the bed, toys under it (lost things end up under
+            // beds), bins in the cubby, and craft blocks about.
+            { kind: 'plush', variant: 'bunny', x: 63.6, y: 18 },
+            { kind: 'craftBlock', variant: 'grass', x: 64.2, y: 22 },
+            { kind: 'craftBlock', variant: 'plank', x: 66.6, y: 22, size: .6 },
+            { kind: 'bookStack', x: 59.4, y: 22 },
+            { kind: 'craftBlock', variant: 'stone', x: 72.6, y: 22 },
+            { kind: 'craftBlock', variant: 'gem', x: 73.5, y: 22, size: .7 },
+            { kind: 'craftBlock', variant: 'grass', x: 72.9, y: 21.2, size: .7 },
+            { kind: 'bin', variant: 'grass', x: 78, y: 21.6 },
+            { kind: 'bin', variant: 'gem', x: 82, y: 21.6 },
+            { kind: 'bin', variant: 'heart', x: 78, y: 19 },
+            { kind: 'plush', variant: 'frog', x: 82, y: 19 },
         ],
         // Space kept free for later tasks (checked at load): no tiles, furniture, decor, entities
-        // or zones inside, unless the region allows furniture or decor.
-        reserved: [
-            // T-018: the practice course, about one screen. The bed and cubby (and the toys on
-            // them) are placeholders it can keep, move, or rebuild (the course goes under and
-            // around them).
-            { id: 'practice-course', task: 'T-018', x: 57, y: 5, w: 27, h: 18, allowFurniture: true, allowDecor: true },
-        ],
+        // or zones inside, unless the region allows furniture or decor. None at the moment: the
+        // portal alcove (T-017) and the practice course (T-018) are built.
+        reserved: [],
     },
 };

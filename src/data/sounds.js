@@ -180,6 +180,15 @@ export const SOUNDS = {
         { zzfx: [.16, 0, 1700, .01, .05, .08, 0, 1, 8, 0, 0, 0, 0, 0, 0, 0, 0, .7, 0, 0, 0], at: .1 },
     ] },
 
+    // A find (T-018's toy star): a quick twinkly run up and a bright bell, then a sparkle as it pops.
+    collectibleFound: { minInterval: .5, layers: [
+        { zzfx: BELL, semitones: 12, volume: .5 },
+        { zzfx: BELL, semitones: 16, at: .07, volume: .5 },
+        { zzfx: BELL, semitones: 19, at: .14, volume: .5 },
+        { zzfx: BELL_LONG, semitones: 24, at: .22, volume: .55 },
+        { zzfx: [.1, 0, 2400, .01, .05, .35, 0, 1, 2, 0, 0, 0, .05, 0, 0, 0, 0, .6, 0, .5], at: .85 },
+    ] },
+
     // Little arpeggio C-E-G-C, a ringing top note, and a sparkle on top.
     levelComplete: { minInterval: .5, layers: [
         { zzfx: BELL, semitones: 0 },
@@ -221,6 +230,7 @@ export const SOUND_EVENTS = {
     'menu:select':          'menuSelect',
     'level:complete':       'levelComplete',
     'interact:catspot':     'catspotPoke',  // the pat; the right cat then purrs (ability:start)
+    'collectible:found':    'collectibleFound',
 };
 
 // An upset thing's sound when it calms down, by its entity type (upset:calmed {kind}).

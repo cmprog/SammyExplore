@@ -22,6 +22,11 @@
 - Comfort target (draft): a frazzled grey-lavender felt wind-up mouse in a tunnel. After Twyx comforts it, it scoots to the far end and sits contentedly. Keep it?
 - When a cat-spot errand gets called off (Sammy wanders far away), Twyx just comes back to him. OK?
 
+- Practice course reward (placeholder): a plush "toy star" with a face that pops into sparkles and confetti. Right placeholder look for future hats?
+- Should found collectibles be remembered between visits? Right now the star (and the course) resets every time you return to the bedroom.
+- The checkpoint past the course bridge autosaves, so Continue can resume up on the toy cubby instead of by the portal. OK, or should Continue always start at the bedroom's arrival spot?
+- To let Twyx reach the course, the dresser got brick steps and the bed's headboard is lower. OK?
+
 ## Decisions PM made (FYI)
 - A lever is the single source of truth for whether its targets start on or off.
 - Bridges refuse to raise while anyone is standing on them (the lift does the same). A companion cat can never be dropped.

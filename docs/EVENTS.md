@@ -52,6 +52,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `ability:used` | `{ability, cat, spotId}` (+ `key?`) | CatSpots | the moment it works (the ability's `effectAt`). Sent just before the spot's `mechanism:toggle {by: 'catspot'}` drives its targets. Audio plays `sounds.used` (Comfort: a soft chime). Called off before this moment (a correction, a checkpoint fetch bringing her back to Sammy, `companion:caughtUp`, Sammy wandering off, a companion change): nothing is sent but `ability:cancel` (if she had started) |
 | `ability:cancel` | `{ability, cat, spotId}` | CatSpots | an ability that had started (`ability:start`) was called off before it worked. Audio stops its start sound (the purr); its targets are unsoothed. The Companion never moves a cat while she performs |
 | `upset:calmed` | `{id, kind}` | Upset (e.g. the wind-up mouse) | an upset thing finished calming down (after its own `mechanism:toggle {by: 'upset'}`, if it has targets). `kind` = its entity type (e.g. `windupMouse`); Audio picks its sound from `UPSET_CALM_SOUNDS` in `data/sounds.js`. Not sent for a silent snap at level start |
+| `collectible:found` | `{id, kind, levelId}` | Collectible | Sammy touched a find (T-018: the practice course's toy star, `kind: 'toyStar'`; a placeholder for the hat collectibles). Once per level load: it celebrates and is gone. Not saved yet: it is back on the next visit. Audio plays a twinkly chime; a narrator line can use the find's `id` as its key |
 | `menu:move` | none | menu scenes (Menu.js) | selection changed |
 | `menu:select` | none | menu scenes (Menu.js), level complete | item activated, slider adjusted, or celebration continued |
 | `audio:setVolume` | number | any (pause menu) | |
@@ -59,7 +60,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `audio:toggleMute` | none | any | |
 | `audio:changed` | settings object | Audio | |
 
-Mechanism state (levers, bridges, gates, lifts, cat spots and upset things) is not saved: every level load rebuilds them as placed in the level data. A correction respawn keeps the level, so they keep their state. See `src/systems/Mechanisms.js`.
+Mechanism state (levers, bridges, gates, lifts, cat spots and upset things) and finds (`collectible:found`) are not saved: every level load rebuilds them as placed in the level data. A correction respawn keeps the level, so they keep their state. See `src/systems/Mechanisms.js`.
 
 Save in localStorage `sammyexplore.save` (SaveSystem owns it), schema v2: `{schemaVersion, levelId, checkpointId, reachedCheckpoints, flags, catsRescued, companion, unlockedChapters, completedChapters, updatedAt}`. `companion` = the cat id along with Sammy, or null. v1 saves (M1, live) migrate by adding `companion: null`. `unlockedChapters` / `completedChapters` (T-017) are additive v2 fields, because v2 was already live: a save without them gets them from its `levelComplete.<level>` flags (a finished Chapter One stays finished), and one parked at the start of a chapter it had finished (the old end-of-game spot) continues in the bedroom. Unknown chapter ids are dropped on load.
 

@@ -17,6 +17,7 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/planner_bench.py      # T-015 cat leap planner cost per call (ms)
     .venv/Scripts/python tools/playtest/catspot_scenario.py   # T-016 cat spots (catspot dev level): no cat, wrong (test) cat, Twyx's Comfort clearing the tunnel, can't-get-there hint, call-offs (correction, mid-ability, checkpoint fetch), camera zoom in/out and reset on level change; pose sheet -> out/catspot/, out/catspot_sheet.png
     .venv/Scripts/python tools/playtest/portal_scenario.py    # T-017 portal + chapters: live v1/v2 saves, lever cycling (fake test chapter), swirl in/out with Twyx, chapter complete -> bedroom, Continue; out/portal_*.png
+    .venv/Scripts/python tools/playtest/practice_scenario.py  # T-018 bedroom practice course, real keys: with Twyx (follow, help-her-through bridge, Comfort, toy star, the way back over the dresser), without a companion (hint, blocked fort, out through the gap), cushion-before-lever hint, Twyx down the gap and out; out/practice_*.png (~4 min)
 
 ## Debug and release builds
 
@@ -59,7 +60,7 @@ spot (no args: follow again), `regroupCompanion()` brings her to Sammy (she trot
 and `cameraFocus(x, y)` / `cameraFocus()` frames a point instead of Sammy (pose captures). `__sammy.catSpots` lists the level's cat spots
 (`{id, ability, targets, state: ready|busy|done, errand}`); `loadLevel('catspot')` is the cat spot course (a companion hub);
 `entityAction('twyx', 'comfort' | 'abilityEffect' | 'endAbility')` plays Comfort where she stands, and
-`entityAction('tunnel-mouse', 'calm')` calms the wind-up mouse. `loadLevel('companion')` is
+`entityAction('tunnel-mouse', 'calm')` calms the wind-up mouse. Finds (T-018's toy star, type `collectible`) show in `__sammy.entities` as `{type: 'collectible', id, kind, state: waiting|found|gone}`; `entityAction('practice-star', 'collect')` finds it. `loadLevel('companion')` is
 the companion course (a companion hub); `loadLevel('companion_narrow')` is a room narrower than the view (page-flip fallback). Debug `teleport` puts Sammy's center there: give it a hair over feet + 0.45, since 8.45 - 0.45
 rounds into the tile below and he falls through. Keys are KeyboardEvent codes (`KeyD`, `Space`).
 LittleJS "DEBUG build loaded" is a warning and is ignored.

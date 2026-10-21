@@ -46,6 +46,7 @@ import { Lift } from './Lift.js';
 import { Portal } from './Portal.js';
 import { CatSpot } from './CatSpot.js';
 import { WindupMouse } from './WindupMouse.js';
+import { Collectible } from './Collectible.js';
 
 const ENTITY_TYPES = {
     door: {
@@ -88,6 +89,8 @@ const ENTITY_TYPES = {
         mechanismTarget: true,
         blocksCells: ({ x, y }) => ({ x0: x, y0: y, x1: x, y1: y }),
     },
+    // T-018: a find to pick up (the toy star; a placeholder for the hat collectibles).
+    collectible: { create: (pos, props, context) => new Collectible(pos, props, context), validate: Collectible.validateEntry },
 };
 
 const types = new Map(Object.entries(ENTITY_TYPES));
