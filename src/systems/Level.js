@@ -1,7 +1,7 @@
 // A loaded level: its terrain, zones, spawned entities, and mechanism registry. Owns their lifetime.
 export class Level
 {
-    constructor({ id, name, timeOfDay, size, terrain, zones, entities, mechanisms })
+    constructor({ id, name, timeOfDay, size, terrain, zones, entities, mechanisms, companionHub = false })
     {
         this.id = id;
         this.name = name;
@@ -11,6 +11,7 @@ export class Level
         this.zones = zones;
         this.entities = entities;
         this.mechanisms = mechanisms;   // systems/Mechanisms.js
+        this.companionHub = companionHub;   // a home base: choose a companion here (see Companion.js)
     }
 
     destroy()
@@ -31,6 +32,7 @@ export class Level
             timeOfDay: this.timeOfDay,
             size: { x: this.size.x, y: this.size.y },
             entityCount: this.entities.length,
+            companionHub: this.companionHub,
             ...this.zones.debugState(),
         };
     }

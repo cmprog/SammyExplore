@@ -1,11 +1,17 @@
-// The remembered half of Twyx's animation: which way Twyx faces (turning toward Sammy when he's
-// near), the idle routine (stand, sit down, lick a paw), blinks, tail swishes, the pet reaction
-// and a squash-and-stretch spring. Twyx calls update() once per step and onPet() on E; pose()
-// hands drawTwyx plain data, so the drawing stays a pure function of (pos, pose, time).
+// The remembered half of Twyx's animation: which way Twyx faces (toward where she's going, or
+// toward Sammy when she stops), the idle routine (stand, sit down, lick a paw), blinks, tail
+// swishes, the pet reaction, a squash-and-stretch spring, and (T-015) moving: the trot cycle,
+// leaps, glancing up at Sammy or back over her shoulder for him, and the curious sit-and-look
+// while she waits. Twyx calls update() once per step; pose() hands drawTwyx plain data, so the
+// drawing stays a pure function of (pos, pose, time).
 import { clamp, rand, randBool } from 'littlejs';
-import { TWYX as T } from '../data/tuning.js';
+import { TWYX as T, TWYX_MOTION as M } from '../data/tuning.js';
 
 export const TWYX_ACTIONS = ['stand', 'sit', 'lick'];
+
+/** What a still cat reports (no mover). */
+const STILL = { vx: 0, vy: 0, grounded: true, waiting: false, riding: false, wantsToMove: false };
+const MOVING_SPEED = .006;   // tiles per step: slower than this is standing
 
 export class TwyxAnimator
 {
@@ -33,41 +39,103 @@ export class TwyxAnimator
         this.squash = 0;
         this.squashVelocity = 0;
         this.frozen = false;        // debug: hold the current action (pose captures)
+        // Moving (T-015)
+        this.walk = 0;              // trot blend 0..1
+        this.gait = 0;              // trot cycle phase, radians
+        this.air = 0;               // leap blend 0..1
+        this.airLean = 0;           // -1 diving .. 1 rising
+        this.headTurn = 1;          // 1 looking where she faces, -1 looking back over her shoulder
+        this.lookUp = 0;            // head tilt toward Sammy, radians (up is +)
+        this.curious = 0;           // the waiting head tilt
+        this.glanceIn = rand(M.GLANCE_EVERY_MIN, M.GLANCE_EVERY_MAX);
+        this.glanceAge = Infinity;
+        this.glanceBack = false;    // this glance is over her shoulder (else up at Sammy)
+        this.mrrpAge = Infinity;
+        this.shakeAge = Infinity;
+        this.caughtUpAge = Infinity;
+        this.settled = false;       // sitting tight: waiting at an edge, or riding a lift
+        this.moving = false;
     }
 
     /** E pressed on Twyx: ears perk, eyes squint happily, a little hop. Stops a paw lick. */
     onPet()
     {
         this.petAge = 0;
-        this.squash = T.PET_HOP;
-        this.squashVelocity = 0;
+        this.kick(T.PET_HOP);
         if (this.action === 'lick')
             this.startAction('sit', rand(T.SIT_TIME_MIN, T.SIT_TIME_MAX));
     }
 
-    /** @param {number} dt  @param {number|null} toPlayer - Sammy's x minus Twyx's x, or null when far */
-    update(dt, toPlayer)
+    onLeap()  { this.kick(M.LEAP_STRETCH); }
+    onLand(impact) { this.kick(-(M.LAND_SQUASH + M.LAND_SQUASH_IMPACT * impact)); }
+    /** The little "mrrp?" when she has to wait: mouth opens, ears perk. */
+    onMrrp() { this.mrrpAge = 0; }
+    /** A gentle "not now" head shake. */
+    onShake() { this.shakeAge = 0; }
+    /** Back with Sammy: a happy squint (the hop itself is real, see Twyx.happyHop). */
+    onCaughtUp() { this.caughtUpAge = 0; }
+
+    kick(amount)
     {
-        if (toPlayer !== null && Math.abs(toPlayer) > .1)
-            this.facing = Math.sign(toPlayer);
-        this.turn = approach(this.turn, this.facing, T.TURN_SPEED * dt);
-        this.updateAction(dt);
-        this.sit = approach(this.sit, this.action === 'stand' ? 0 : 1, T.SIT_SPEED * dt);
-        const licking = this.action === 'lick' && this.sit > .9;
+        this.squash = amount;
+        this.squashVelocity = 0;
+    }
+
+    /**
+     * @param {number} dt
+     * @param {{x:number, y:number}|null} toPlayer - Sammy minus Twyx (head to head), or null when she doesn't notice him
+     * @param {{vx:number, vy:number, grounded:boolean, waiting:boolean, riding:boolean, wantsToMove:boolean}} [motion]
+     */
+    update(dt, toPlayer, motion = STILL)
+    {
+        this.moving = motion.grounded && Math.abs(motion.vx) > MOVING_SPEED;
+        this.settled = motion.waiting || motion.riding;
+        this.updateFacing(dt, toPlayer, motion);
+        this.updateAction(dt, motion);
+        const sitTarget = this.settled || (this.action !== 'stand' && !this.busy(motion)) ? 1 : 0;
+        const sitSpeed = sitTarget ? T.SIT_SPEED : this.busy(motion) ? M.STAND_UP_SPEED : T.SIT_SPEED;
+        this.sit = approach(this.sit, sitTarget, sitSpeed * dt);
+        const licking = this.action === 'lick' && this.sit > .9 && !this.settled;
         this.lick = approach(this.lick, licking ? 1 : 0, T.LICK_SPEED * dt);
+        this.updateMotion(dt, toPlayer, motion);
         this.updateBlink(dt);
         this.updateSwish(dt);
         this.petAge += dt;
-        this.perk += ((this.petAge < T.PET_TIME ? 1 : 0) - this.perk) * T.PERK_EASE;
+        this.mrrpAge += dt;
+        this.shakeAge += dt;
+        this.caughtUpAge += dt;
+        const perked = this.petAge < T.PET_TIME || this.mrrpAge < M.MRRP_TIME * 2 || this.curious > .5;
+        this.perk += ((perked ? 1 : 0) - this.perk) * T.PERK_EASE;
         this.squashVelocity = (this.squashVelocity - this.squash * T.SQUASH_SPRING) * T.SQUASH_DAMPING;
         this.squash = clamp(this.squash + this.squashVelocity, -.4, .4);
     }
 
-    updateAction(dt)
+    busy(motion)
+    {
+        return this.moving || motion.wantsToMove || !motion.grounded;
+    }
+
+    updateFacing(dt, toPlayer, motion)
+    {
+        if (this.moving || (!motion.grounded && Math.abs(motion.vx) > MOVING_SPEED))
+            this.facing = Math.sign(motion.vx);
+        else if (toPlayer && Math.abs(toPlayer.x) > .1)
+            this.facing = Math.sign(toPlayer.x);
+        this.turn = approach(this.turn, this.facing, T.TURN_SPEED * dt);
+    }
+
+    updateAction(dt, motion)
     {
         this.actionTime += dt;
         if (this.frozen)
             return;
+        // On the move (or sitting tight), the idle routine waits; it starts over once she's still.
+        if (this.busy(motion) || this.settled)
+        {
+            if (this.action !== 'stand')
+                this.startAction('stand');
+            return;
+        }
         if (this.action !== 'stand')
         {
             if (this.actionTime >= this.actionLength)
@@ -80,6 +148,46 @@ export class TwyxAnimator
             this.startAction('lick', T.LICK_TIME);
         else
             this.startAction('sit', rand(T.SIT_TIME_MIN, T.SIT_TIME_MAX));
+    }
+
+    /** Trot cycle, leap blend, and where her head points. */
+    updateMotion(dt, toPlayer, motion)
+    {
+        this.walk = approach(this.walk, this.moving ? 1 : 0, M.WALK_BLEND_SPEED * dt);
+        if (motion.grounded)
+            this.gait = (this.gait + Math.abs(motion.vx) / M.TILES_PER_STRIDE * Math.PI * 2) % (Math.PI * 2);
+        this.air = approach(this.air, motion.grounded ? 0 : 1, M.AIR_BLEND_SPEED * dt);
+        if (!motion.grounded)
+            this.airLean = clamp(motion.vy / .22, -1, 1);
+        // Trotting away from Sammy (the trail can lead that way), she looks back over her shoulder
+        // for him; and now and then on the move she glances back anyway, or up at him.
+        this.updateGlance(dt);
+        const behind = this.moving && toPlayer && Math.abs(toPlayer.x) > .5 && Math.sign(toPlayer.x) !== this.facing;
+        const glancingBack = this.glanceBack && this.glanceAge < M.GLANCE_TIME;
+        this.headTurn = approach(this.headTurn, behind || glancingBack ? -1 : 1, M.HEAD_TURN_SPEED * dt);
+        let look = 0;
+        if (toPlayer)
+            look = clamp(Math.atan2(toPlayer.y, Math.abs(toPlayer.x) + .5) * .7, -M.LOOK_MAX_DOWN, M.LOOK_MAX_UP);
+        if (!this.glanceBack)
+            look += this.glanceAmount() * M.GLANCE_UP;
+        this.lookUp += (look * (1 - this.lick) - this.lookUp) * M.LOOK_EASE;
+        this.curious += ((motion.waiting ? 1 : 0) - this.curious) * M.CURIOUS_EASE;
+    }
+
+    updateGlance(dt)
+    {
+        this.glanceAge += dt;
+        if (this.walk < .5 || (this.glanceIn -= dt) > 0)
+            return;
+        this.glanceAge = 0;
+        this.glanceBack = randBool(M.GLANCE_BACK_CHANCE);
+        this.glanceIn = rand(M.GLANCE_EVERY_MIN, M.GLANCE_EVERY_MAX);
+    }
+
+    glanceAmount()
+    {
+        const x = this.glanceAge / M.GLANCE_TIME;
+        return x >= 1 ? 0 : Math.sin(x * Math.PI);
     }
 
     startAction(action, length = Infinity)
@@ -133,23 +241,47 @@ export class TwyxAnimator
             this.blinkAge = 0;
         else if (what === 'swish')
             this.swishAge = 0;
+        else if (what === 'mrrp')
+            this.onMrrp();
+        else if (what === 'glanceBack' || what === 'glanceUp')
+        {
+            this.glanceAge = 0;
+            this.glanceBack = what === 'glanceBack';
+        }
         else if (what === 'release')
             this.frozen = false;
+    }
+
+    get happy()
+    {
+        return this.petAge < T.PET_TIME || this.caughtUpAge < M.CAUGHT_UP_TIME;
     }
 
     /** Plain data for drawTwyx. */
     pose()
     {
+        const mrrp = this.mrrpAge / M.MRRP_TIME;
+        const shake = this.shakeAge / M.SHAKE_TIME;
         return {
             turn: this.turn,
             sit: this.sit,
             lick: this.lick,
             lickTime: this.actionTime,
             perk: this.perk,
-            happy: this.petAge < T.PET_TIME ? 1 : 0,
+            happy: this.happy ? 1 : 0,
             blink: this.blinkAge < T.BLINK_TIME ? 1 : 0,
             swish: this.swishAmount(),
             squash: this.squash,
+            walk: this.walk * (1 - this.sit),
+            gait: this.gait,
+            air: this.air,
+            airLean: this.airLean,
+            headTurn: this.headTurn,
+            lookUp: this.lookUp,
+            curious: this.curious,
+            mrrp: mrrp < 1 ? Math.sin(mrrp * Math.PI) : 0,
+            // Side to side three times, fading out.
+            shake: shake < 1 ? Math.sin(shake * Math.PI * 6) * (1 - shake) : 0,
         };
     }
 }

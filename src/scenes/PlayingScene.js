@@ -3,7 +3,8 @@
 // enter({ levelId, checkpointId, reachedCheckpoints }) starts at that checkpoint instead of the
 // spawn (Continue); reachedCheckpoints are already used up. newStory: true (New Game) makes the
 // narrator forget every line it has said this session, so the story is told fresh. A level that fails to load emits
-// level:loadFailed (main.js falls back to the title).
+// level:loadFailed (main.js falls back to the title). companion: a cat id (or null) sets who comes
+// along (Continue passes the saved one, New Game null); left out, the current companion stays.
 // Hosts the narrator (see the wiring notes at the top of systems/Narrator.js) and the
 // interaction system, which reads E only after the narrator has had its chance to use it.
 import {
@@ -15,6 +16,8 @@ import { Camera } from '../systems/Camera.js';
 import { Sammy } from '../entities/Sammy.js';
 import { Backdrop } from '../systems/Backdrop.js';
 import { Interaction } from '../systems/Interaction.js';
+import { Companion } from '../systems/Companion.js';
+import { registerTestCat } from '../data/cats.js';
 import { WORLD_GRAVITY } from '../data/tuning.js';
 
 export const DEFAULT_LEVEL_ID = 'test';
@@ -29,6 +32,7 @@ export class PlayingScene
         this.player = null;
         this.camera = new Camera();
         this.interaction = new Interaction();
+        this.companion = new Companion();
         this.backdrop = null;
         this.levelId = null;
         this.loading = false;
@@ -40,8 +44,10 @@ export class PlayingScene
         this.overlaid = false;   // an overlay scene is on top (see pause())
     }
 
-    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null, reachedCheckpoints = [], newStory = false } = {})
+    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null, reachedCheckpoints = [], newStory = false, companion } = {})
     {
+        if (companion !== undefined)
+            this.companion.choose(companion);
         this.startCheckpointId = checkpointId;
         this.reachedCheckpoints = reachedCheckpoints;
         this.overlaid = false;
@@ -53,7 +59,11 @@ export class PlayingScene
         this.narrator.setPlayerPositionProvider(() => this.playerPos());
         // The narrator runs the rewrite effect; it asks for the move while the page is covered.
         this.unsubscribers.push(on('correction:reset', () => this.resetPlayer()));
-        this.unsubscribers.push(on('correction:done', () => this.level?.zones.rearmCorrections()));
+        this.unsubscribers.push(on('correction:done', () =>
+        {
+            this.level?.zones.rearmCorrections();
+            this.companion.release();
+        }));
         this.unsubscribers.push(on('level:start', ({ timeOfDay }) => this.showBackdrop(timeOfDay)));
         this.load(levelId);
     }
@@ -84,6 +94,10 @@ export class PlayingScene
             this.player = new Sammy(this.startPoint());
             this.interaction.setTargets(this.level.entities);
             this.camera.attach(this.player, this.level.size);
+            this.companion.attach({
+                level: this.level, player: this.player, interaction: this.interaction, playerPos: () => this.playerPos(),
+                canSee: (pos, size) => this.camera.canSee(pos, size),
+            });
         }
         catch (error)
         {
@@ -126,6 +140,7 @@ export class PlayingScene
         this.backdrop?.destroy();
         this.backdrop = null;
         this.camera.detach();
+        this.companion.detach();
         this.interaction.clear();
         this.player?.destroy();
         this.player = null;
@@ -144,6 +159,7 @@ export class PlayingScene
         if (!this.player || !this.level)
             return;
         this.player.resetTo(this.level.zones.respawnPoint);
+        this.companion.onPlayerReset();   // she trots in beside him once the page lifts
         this.camera.snap();   // under the page, so the world is already settled when it lifts
     }
 
@@ -168,6 +184,7 @@ export class PlayingScene
             return;
         if (!this.overlaid)
             this.level.zones.update(this.player.pos, this.player.size);
+        this.companion.update();
         this.camera.setNarrating(this.narrator.showing);
         this.camera.update();
     }
@@ -178,6 +195,7 @@ export class PlayingScene
             drawTextScreen(this.loadError, mainCanvasSize.scale(.5), 40, ERROR_COLOR);
         if (!this.overlaid)
             this.interaction.renderPost();   // under the narrator's text box; not under pause
+        this.companion.renderPost();         // the page flip that can bring the cat in
         this.narrator.renderPost();
     }
 
@@ -200,6 +218,19 @@ export class PlayingScene
         hook.register('interaction', () => this.interaction.debugState());
         hook.register('entities', () => this.level?.entities.map(entity => entity.debugState?.() ?? null) ?? []);
         hook.register('mechanisms', () => this.level?.mechanisms.debugState() ?? []);
+        // {cat, state: following|waiting|catchingUp|idle, pos, reason, ...}, or null with no companion.
+        hook.register('companion', () => this.companion.debugState());
+        // Make a cat the companion right now (null: nobody), e.g. setCompanion('twyx').
+        hook.commands.setCompanion = catId => this.companion.debugChoose(catId ?? null);
+        // Bring the companion to Sammy's side (she trots in), e.g. after a teleport.
+        hook.commands.regroupCompanion = () => this.companion.placeBeside('regroup');
+        // A pretend cat id (drawn as Twyx, never saved) for tests, e.g. T-016's wrong-cat check:
+        // addTestCat('testcat') then setCompanion('testcat').
+        hook.commands.addTestCat = (id, entityType = 'twyx') => registerTestCat(id, entityType);
+        // Send the companion to a spot (T-016's cat spots) instead of following; no args: follow again.
+        hook.commands.companionGoTo = (x, y) => this.companion.goTo(Number.isFinite(x) ? vec2(x, y) : null);
+        // Frame a world point instead of Sammy (pose captures); cameraFocus() follows him again.
+        hook.commands.cameraFocus = (x, y) => this.camera.setFocus(Number.isFinite(x) ? vec2(x, y) : null);
         // Set a mechanism by id: activate('gate-lever', true) throws a lever (moving its targets),
         // activate('lab-gate', false) drives a target directly. False for an unknown id.
         hook.commands.activate = (id, on = true) => this.level?.mechanisms.activate(id, on) ?? false;

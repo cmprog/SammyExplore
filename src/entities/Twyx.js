@@ -1,49 +1,50 @@
-// Twyx the tuxedo cat (T-011a). Placed in level data on the tile it stands on.
-//   { type: 'twyx', x, y, id }
-// Stays put for now (following Sammy comes later). Idles (tail swish, blink, sits, licks a paw),
-// turns to face Sammy when he's near, and is an interactable: E emits interact:twyx {id} (Audio
-// meows, the narrator remarks) and Twyx reacts with perked ears, a happy squint and hearts.
-// Not solid: Sammy walks past (and in front of) Twyx.
-import { EngineObject, vec2, lerp, time, timeDelta, isOnScreen } from 'littlejs';
+// Twyx the tuxedo cat (T-011a, T-015). Placed in level data on the tile she stands on:
+//   { type: 'twyx', x, y, id, roam? }
+//   roam - tiles she wanders either side of her spot while she's at home (default
+//          COMPANION.ROAM_RADIUS; 0 keeps her exactly where the level puts her)
+// She idles (tail swish, blink, sits, licks a paw), turns to face Sammy when he's near, and is an
+// interactable: E emits interact:twyx {id} (Audio meows, the narrator remarks) and she reacts
+// with perked ears, a happy squint and hearts. In a companion hub level the Companion system
+// (systems/Companion.js) uses that same E to ask her along, or to let her stay.
+//
+// Her body, physics and movement are CatBody's; this class is her look: art, animator, effects.
+import { vec2, lerp, time, timeDelta, isOnScreen } from 'littlejs';
+import { CatBody, round } from './CatBody.js';
 import { drawTwyx } from '../art/drawTwyx.js';
 import { TwyxAnimator } from './TwyxAnimator.js';
 import { ParticleField } from './ParticleField.js';
-import { spawnPetHearts } from './twyxEffects.js';
-import { RENDER_ORDER } from '../data/renderOrder.js';
-import { TWYX } from '../data/tuning.js';
+import { spawnPetHearts, spawnHappyHearts, spawnMrrp, spawnLandPuff } from './twyxEffects.js';
+import { TWYX, COMPANION } from '../data/tuning.js';
 import { TWYX_SHAPES } from '../data/twyxPoses.js';
-import { requireId, allowOnlyProps, requireEmptyColumn } from './entityValidation.js';
+import { CATS } from '../data/cats.js';
+import { requireId, allowOnlyProps, requireEmptyColumn, entityLabel } from './entityValidation.js';
 
-const PROPS = ['id'];
-const SIZE = vec2(.9, .9);
-const DRAW_EXTENT = vec2(2, 2.2);
+const PROPS = ['id', 'roam'];
+const DRAW_EXTENT = vec2(2.4, 2.6);
 const HEARTS_ABOVE_HEAD = .45;   // hearts start just over the ears, never over the face
 const PROMPT_ABOVE_HEAD = .5;    // the E bubble's tail, clear of the ear tips
+const PUFF_MIN_IMPACT = .25;
+const NOTICE = { x: TWYX.NOTICE_RADIUS, y: TWYX.NOTICE_HEIGHT };
 
-export class Twyx extends EngineObject
+export class Twyx extends CatBody
 {
     static validateEntry(entity, fail, level)
     {
         requireId(entity, fail);
         allowOnlyProps(entity, PROPS, fail);
         requireEmptyColumn(entity, 1, fail, level);
+        if (entity.roam !== undefined && !(Number.isFinite(entity.roam) && entity.roam >= 0 && entity.roam <= 12))
+            fail(`${entityLabel(entity)}: "roam" must be a number of tiles from 0 to 12`);
     }
 
     /**
-     * @param {Vector2} cellCenter - center of the tile Twyx stands on
-     * @param {{id:string}} props
+     * @param {Vector2} cellCenter - center of the cell Twyx stands in (on the tile below it)
+     * @param {{id:string, roam?:number}} props
      * @param {{playerPos?:() => Vector2|null}} context
      */
-    constructor(cellCenter, { id }, { playerPos = null } = {})
+    constructor(cellCenter, { id, roam = COMPANION.ROAM_RADIUS }, context = {})
     {
-        const feet = cellCenter.add(vec2(0, -.5));
-        super(feet.add(vec2(0, SIZE.y / 2)), SIZE.copy());
-        this.feet = feet;
-        this.id = id;
-        this.playerPos = playerPos;
-        this.renderOrder = RENDER_ORDER.cats;
-        this.mass = 0;
-        this.setCollision(false, false, false);
+        super(cellCenter, { id, roam, catId: CATS.twyx.id }, context);
         this.animator = new TwyxAnimator();
         this.fx = new ParticleField();
         this.pets = 0;
@@ -54,7 +55,7 @@ export class Twyx extends EngineObject
     }
 
     get interactPos() { return this.pos; }
-    get promptPos()   { return vec2(this.feet.x, this.headPos().y + PROMPT_ABOVE_HEAD); }   // rises when Twyx sits
+    get promptPos()   { return vec2(this.pos.x, this.headPos().y + PROMPT_ABOVE_HEAD); }   // rises when Twyx sits
 
     canInteract()
     {
@@ -83,24 +84,48 @@ export class Twyx extends EngineObject
         return this.feet.add(vec2(x, lerp(stand.head.y, sit.head.y, amount)));
     }
 
-    update()
+    // --- CatBody hooks ------------------------------------------------------------------------
+
+    sitAmount() { return this.animator.sit; }
+    onLeapStart() { this.animator.onLeap(); }
+
+    onLanded(impact)
     {
-        this.animator.update(timeDelta, this.offsetToPlayer());
+        this.animator.onLand(impact);
+        if (impact >= PUFF_MIN_IMPACT)
+            spawnLandPuff(this.fx, this.feet, impact);
     }
 
-    /** Sammy's x relative to Twyx, or null when he's too far away to notice. */
-    offsetToPlayer()
+    /** She had to stop: a little "mrrp?" with a question mark. */
+    mrrp()
     {
-        const player = this.playerPos?.();
-        if (!player)
-            return null;
-        const dx = player.x - this.pos.x, dy = player.y - this.pos.y;
-        return Math.abs(dx) <= TWYX.NOTICE_RADIUS && Math.abs(dy) <= TWYX.NOTICE_HEIGHT ? dx : null;
+        this.animator.onMrrp();
+        spawnMrrp(this.fx, this.headPos(), this.animator.facing);
     }
+
+    /** Not just now: a little head shake. */
+    refuse()
+    {
+        this.animator.onShake();
+    }
+
+    /** Back with Sammy: a happy squint and a couple of hearts (the hop is CatBody's). */
+    onHappy()
+    {
+        this.animator.onCaughtUp();
+        spawnHappyHearts(this.fx, this.headPos().add(vec2(0, HEARTS_ABOVE_HEAD)));
+    }
+
+    animate(motion)
+    {
+        this.animator.update(timeDelta, this.offsetToPlayer(NOTICE), motion);
+    }
+
+    // --- drawing and debug --------------------------------------------------------------------
 
     render()
     {
-        if (!isOnScreen(this.pos, DRAW_EXTENT))
+        if (!isOnScreen(this.pos.add(vec2(0, .3)), DRAW_EXTENT))
             return;
         drawTwyx(this.feet, this.animator.pose(), time);
     }
@@ -116,16 +141,23 @@ export class Twyx extends EngineObject
         const a = this.animator;
         return {
             type: 'twyx',
-            id: this.id,
-            pos: { x: this.pos.x, y: this.pos.y },
+            ...this.bodyDebugState(),
             facing: a.facing,
             turn: round(a.turn),
             action: a.action,
             sit: round(a.sit),
             lick: round(a.lick),
+            walk: round(a.walk),
+            air: round(a.air),
+            headTurn: round(a.headTurn),
+            lookUp: round(a.lookUp),
+            curious: round(a.curious),
+            mrrping: a.mrrpAge < 1,
+            shaking: a.shakeAge < 1,
             blinking: a.blinkAge < TWYX.BLINK_TIME,
             swish: round(a.swishAmount()),
             reacting: a.petAge < TWYX.PET_TIME,
+            happy: a.happy,
             perk: round(a.perk),
             pets: this.pets,
             hearts: this.fx.count,
@@ -137,11 +169,8 @@ export class Twyx extends EngineObject
     {
         if (what === 'pet')
             return void this.interact();
+        if (what === 'mrrp')
+            return void this.mrrp();
         this.animator.force(what, hold);
     }
-}
-
-function round(value)
-{
-    return Math.round(value * 1000) / 1000;
 }

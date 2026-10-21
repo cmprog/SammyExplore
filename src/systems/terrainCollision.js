@@ -1,11 +1,16 @@
-// Shared tile-collision rule for anything that walks on terrain (Sammy now,
-// cats later). Objects opt in by overriding EngineObject.collideWithTile:
+// Shared tile-collision rule for anything that walks on terrain (Sammy and the cats). Objects opt in by overriding EngineObject.collideWithTile:
 //     collideWithTile(tileData, tilePos) { return collidesWithTerrain(this, tileData, tilePos); }
 import { vec2, tileCollisionTest, engineObjectsCollect, engineObjectsCollide, isOverlapping } from 'littlejs';
 import { TILE_TYPES } from '../data/tileTypes.js';
 
 /** Collision values of tile types marked oneWay in data/tileTypes.js. */
 const ONE_WAY_COLLISION = new Set(Object.values(TILE_TYPES).filter(type => type.oneWay).map(type => type.collision));
+
+/** Is this tile collision value a one-way platform? (For queries that test tiles themselves.) */
+export function isOneWayTile(tileData)
+{
+    return ONE_WAY_COLLISION.has(tileData);
+}
 
 /**
  * One-way tiles only block an object that is moving down and whose feet were at or above the

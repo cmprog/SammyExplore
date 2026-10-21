@@ -1,5 +1,6 @@
-// Twyx's body shapes (T-011a). drawTwyx blends between `stand` and `sit` by the pose's `sit`
-// amount (0..1), so the sit-down is one smooth squish rather than a pop. A paw lick is the sit
+// Twyx's body shapes (T-011a, T-015). drawTwyx blends between `stand` and `sit` by the pose's
+// `sit` amount (0..1), so the sit-down is one smooth squish rather than a pop, then toward `trot`
+// by `walk` and toward `leap` by `air`. Every shape has the same parts and fields. A paw lick is the sit
 // shape plus `lick` (front paw raised to the mouth, head dipped).
 //
 // Art units: 1 = one tile. Origin between the feet, y up, facing right (+x is the front).
@@ -26,6 +27,39 @@ export const TWYX_SHAPES = {
         backLeg:  { x: .02, hip: .12, length: .12 },
         tail:   { x: -.34, y: .09, angle: 3.2, curl: -2.8 },
     },
+    // Trotting (T-015): a touch longer and lower, head forward, tail held up in a happy
+    // question mark. drawTwyx blends toward it by the pose's `walk` and swings the legs (TWYX_GAIT).
+    trot: {
+        body:   { x: 0,    y: .38, w: .94, h: .47, tilt: .03 },
+        haunch: { x: -.23, y: .35, w: .35, h: .35, tilt: 0 },
+        bib:    { x: .29,  y: .35, w: .29, h: .35, tilt: -.3 },
+        head:   { x: .39,  y: .75 },
+        frontLeg: { x: .25,  hip: .32, length: .32 },
+        backLeg:  { x: -.27, hip: .32, length: .32 },
+        tail:   { x: -.42, y: .5, angle: 1.62, curl: -2.1 },
+    },
+    // In the air (a hop or a leap): stretched out long, front paws reaching, tail streaming back.
+    leap: {
+        body:   { x: .02,  y: .44, w: 1.02, h: .43, tilt: .02 },
+        haunch: { x: -.25, y: .42, w: .33, h: .33, tilt: 0 },
+        bib:    { x: .33,  y: .42, w: .27, h: .31, tilt: -.38 },
+        head:   { x: .44,  y: .78 },
+        frontLeg: { x: .29,  hip: .38, length: .3 },
+        backLeg:  { x: -.29, hip: .38, length: .3 },
+        tail:   { x: -.44, y: .5, angle: 2.75, curl: -.9 },
+    },
+};
+
+// The trot: diagonal pairs of legs swing together (near front with far back). Paw offsets in
+// art units: `stride` forward/back, `lift` up while swinging forward. The body bobs twice per
+// cycle. `reach` is where the paws go in a leap (front forward, back behind), scaled by `air`.
+export const TWYX_GAIT = {
+    stride: .12,
+    lift: .08,
+    bob: .028,
+    headBob: .012,
+    tailBounce: .1,
+    reach: { front: { dx: .17, lift: .12 }, back: { dx: -.15, lift: .08 } },
 };
 
 // The head turns this far toward the facing side (3/4 view), as in Sammy's face.

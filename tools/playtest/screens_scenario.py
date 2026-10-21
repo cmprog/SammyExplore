@@ -113,7 +113,7 @@ def title_checks(pg):
     click(pg, "newGame")
     wait_level(pg)
     save = stored_save(pg)
-    check(save is not None and save["levelId"] == FIRST_LEVEL_ID and save["checkpointId"] is None and save["schemaVersion"] == 1,
+    check(save is not None and save["levelId"] == FIRST_LEVEL_ID and save["checkpointId"] is None and save["schemaVersion"] == 2,
           f"New Game (click) -> playing, fresh save at level start ({save})")
     check(st(pg)["level"]["id"] == FIRST_LEVEL_ID, f"New Game starts {FIRST_LEVEL_ID}")
     use_test_level(pg)
@@ -352,7 +352,7 @@ def save_edge_cases(pg):
     press(pg, "Enter")
     check(pg.evaluate("localStorage.getItem('sammyexplore.save')") == "{oops", "corrupt save: No keeps the raw data")
 
-    # Save from a newer game version: same protection; Yes replaces it with a v1 save.
+    # Save from a newer game version: same protection; Yes replaces it with a current (v2) save.
     pg.evaluate("localStorage.setItem('sammyexplore.save', JSON.stringify({schemaVersion: 99, levelId: 'test'}))")
     reload_to_title(pg)
     check(st(pg)["saveStatus"]["status"] == "newer", "newer-schema save detected")
@@ -361,7 +361,7 @@ def save_edge_cases(pg):
     press(pg, "KeyA")
     press(pg, "Enter")
     wait_level(pg)
-    check((stored_save(pg) or {}).get("schemaVersion") == 1, "newer save: Yes replaces it")
+    check((stored_save(pg) or {}).get("schemaVersion") == 2, "newer save: Yes replaces it")
 
     # A save pointing at a level that doesn't exist: Continue falls back to the title, gently.
     pg.evaluate("localStorage.setItem('sammyexplore.save', JSON.stringify({schemaVersion: 1, levelId: 'missing-level',"

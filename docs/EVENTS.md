@@ -26,7 +26,7 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `player:glideStart` | none | Sammy | |
 | `player:glideEnd` | none | Sammy | **any** exit from glide (release, flap, land, reset) |
 | `player:land` | `{impact}` | Sammy | impact is fall speed (0..1), so soft landings can sound softer |
-| `interact:<type>` | `{id, ...}` | Interaction | E pressed with that interactable nearest and in range; emitted before its `interact()` runs. The payload is the interactable's `interactPayload()`. Types so far: `interact:door` `{id}`, `interact:sign` `{id, key}` (`key` = the sign's narration key, so a line with that `key` "reads" it), `interact:twyx` `{id}` (Twyx the cat; Audio meows), `interact:lever` `{id}` (the lever then emits `mechanism:toggle` or `mechanism:cycle`, which Audio clunks on). An E press the narrator used to skip/dismiss a line is never an interaction |
+| `interact:<type>` | `{id, ...}` | Interaction | E pressed with that interactable nearest and in range; emitted before its `interact()` runs. The payload is the interactable's `interactPayload()`. Types so far: `interact:door` `{id}`, `interact:sign` `{id, key}` (`key` = the sign's narration key, so a line with that `key` "reads" it), `interact:twyx` `{id}` (Twyx the cat; Audio meows. In a level with `companionHub: true` the Companion system treats it as asking her along or letting her stay, see `companion:*`; everywhere else it is just a pet), `interact:lever` `{id}` (the lever then emits `mechanism:toggle` or `mechanism:cycle`, which Audio clunks on). An E press the narrator used to skip/dismiss a line is never an interaction |
 | `interact:nothing` | none | Interaction | E pressed with nothing in range |
 | `interact:doorLocked` | `{id}` | Door | after `interact:door`, when the door is locked |
 | `door:open` | `{id}` | Door | when the open animation starts (plays the creak) |
@@ -37,6 +37,10 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `lift:move` | `{id, toward}` | Lift | it sets off; `toward` = `'a'` or `'b'` (its first or second point). Plays the wind-up hum |
 | `lift:arrive` | `{id, at}` | Lift | it reached an end (`'a'`/`'b'`) |
 | `lift:held` | `{id}` | Lift | it stopped because the next step would push into someone it isn't carrying; once per hold (it carries on by itself when they move) |
+| `companion:join` | `{cat}` | Companion | only in a companion hub level (level data `companionHub: true`, the bedroom): E on a cat who isn't the companion, and she comes along. `cat` = her id in `src/data/cats.js` (e.g. `'twyx'`), not the level entity id. One at a time: the previous companion gets `companion:leave` first (refused, so E is a pet, if the current companion is a visitor the hub doesn't place). Autosaved by SaveSystem |
+| `companion:leave` | `{cat}` | Companion | only in a companion hub, and only for a cat that hub places (her home): E on the companion lets her stay and roam there. A visitor is never left behind (E is a pet); outside hubs E is always a pet. Autosaved by SaveSystem |
+| `companion:waiting` | `{cat, reason}` | Companion | she stopped where Sammy's trail needs something she can't do. Sent once per hold-up: not again for the same reason until she has made progress (so a stuck re-try never repeats it). `reason`: `gap` (a gap too wide, or a bridge still up/in the way) \| `ledge` \| `gate` \| `door` \| `lift`. She re-checks often, including for a plain walk to Sammy, and carries on by herself when the way opens. Audio plays a "mrrp?" |
+| `companion:caughtUp` | `{cat, via}` | Companion | she is back beside Sammy after being apart. `via`: `walked` (made her own way after waiting), `met` (Sammy came back to her), `correction` (put down beside him at the respawn under the page; she trots in once it lifts), `checkpoint` (left behind and Sammy reached a checkpoint: she comes in only when both where she was and where she appears are out of view, retrying as he moves; after `COMPANION.FETCH_FALLBACK_AFTER` s with no such spot, from just off the current screen, or under a sub-second page flip with no input lock. A fetch only starts at a checkpoint: put one after every gate, bridge or lift), `arrived` (level start, a level change or Continue), `regroup` (below-the-world safety net, also brought in unseen; or debug). Audio chirps |
 | `menu:move` | none | menu scenes (Menu.js) | selection changed |
 | `menu:select` | none | menu scenes (Menu.js), level complete | item activated, slider adjusted, or celebration continued |
 | `audio:setVolume` | number | any (pause menu) | |
@@ -46,7 +50,9 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 
 Mechanism state (levers, bridges, gates, lifts) is not saved: every level load rebuilds them as placed in the level data. A correction respawn keeps the level, so they keep their state. See `src/systems/Mechanisms.js`.
 
-Save in localStorage `sammyexplore.save` (SaveSystem owns it): `{schemaVersion, levelId, checkpointId, reachedCheckpoints, flags, catsRescued, updatedAt}`.
+Save in localStorage `sammyexplore.save` (SaveSystem owns it), schema v2: `{schemaVersion, levelId, checkpointId, reachedCheckpoints, flags, catsRescued, companion, updatedAt}`. `companion` = the cat id along with Sammy, or null. v1 saves (M1, live) migrate by adding `companion: null`.
+
+The companion is not tied to a level: she arrives with Sammy in every level (a level that places her own cat entity uses that one). Mechanism state rules above apply to her too (a lift carries her, a bridge holds her, a gate blocks her).
 
 Settings in localStorage `sammyexplore.settings`: `{volume, muted, musicVolume, sfxVolume}`. Audio owns these keys. Other systems merge, never overwrite.
 

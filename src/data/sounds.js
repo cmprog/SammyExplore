@@ -129,6 +129,15 @@ export const SOUNDS = {
     // Twyx: nasal low-passed saw that slides up, peaks ~0.1s, then curls back down.
     meow: [.3, .06, 560, .02, .09, .1, 2, 1, 10, -100, 0, 0, 0, 0, 0, 0, 0, .8, 0, 0, -1600],
 
+    // Twyx waiting at an edge (T-015): a soft trilled "mrrp?" (tremolo trill, sliding up at the end).
+    mrrp: [.24, .05, 330, .015, .12, .08, 2, 1, 7, 0, 0, 0, 0, 0, 0, 0, 0, .75, .02, .55, -1300],
+
+    // Twyx back with Sammy: a happy little chirrup, two quick rising chirps.
+    chirp: { minInterval: .4, layers: [
+        { zzfx: [.2, .04, 520, .01, .03, .05, 2, 1, 12, 0, 0, 0, 0, 0, 0, 0, 0, .8, 0, 0, -1800] },
+        { zzfx: [.2, .04, 520, .01, .03, .06, 2, 1, 12, 0, 0, 0, 0, 0, 0, 0, 0, .8, 0, 0, -1800], semitones: 5, at: .09 },
+    ] },
+
     // Little arpeggio C-E-G-C, a ringing top note, and a sparkle on top.
     levelComplete: { minInterval: .5, layers: [
         { zzfx: BELL, semitones: 0 },
@@ -153,6 +162,8 @@ export const SOUND_EVENTS = {
     'interact:sign':        'interact',
     'interact:nothing':     'interactNothing',
     'interact:twyx':        'meow',
+    'companion:waiting':    'mrrp',
+    'companion:caughtUp':   'chirp',
     'door:open':            'doorOpen',
     'mechanism:toggle':     'leverThrow',   // any trigger thrown (a lever, later a cat spot)
     'mechanism:cycle':      'leverThrow',

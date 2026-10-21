@@ -12,6 +12,8 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/narrator_queue_scenario.py   # T-012 queue rules: noStale, condition re-check, forgetSeen
     .venv/Scripts/python tools/playtest/release_smoke.py      # T-012 release build (no ?debug): loads clean, no speed keys, no debug overlay
     .venv/Scripts/python tools/playtest/mechanism_scenario.py # T-014 levers, bridge, gate, lift (real E presses): state, collision, riding; out/mech_*.png
+    .venv/Scripts/python tools/playtest/companion_scenario.py # T-015 Twyx following (companion course, test + sandbox levels), save v1->v2; out/companion/, out/companion_sheet.png (~4 min)
+    .venv/Scripts/python tools/playtest/planner_bench.py      # T-015 cat leap planner cost per call (ms)
 
 ## Debug and release builds
 
@@ -46,7 +48,14 @@ Helpers in `harness.py`: `session()`, `hold(page, key, seconds)`, `tap(page, key
 Debug commands worth knowing: `__sammy.commands.entityAction(id, action, hold)` pokes an entity
 (Twyx: `stand`/`sit`/`lick` [held if `hold`], `blink`, `swish`, `pet`, `release`); `__sammy.entities`
 lists every level entity's debug state. `__sammy.mechanisms` lists levers and their targets, and
-`__sammy.commands.activate(id, on)` throws a lever or sets a target directly. Keys are KeyboardEvent codes (`KeyD`, `Space`).
+`__sammy.commands.activate(id, on)` throws a lever or sets a target directly.
+`__sammy.companion` is `{cat, state: following|waiting|catchingUp|idle, pos, reason, ...}` (null with nobody along);
+`__sammy.commands.setCompanion('twyx' | null)` chooses one now (any level; E only chooses in a `companionHub` level),
+`addTestCat('id')` adds a pretend cat (Twyx's body, never saved) for wrong-cat tests, `companionGoTo(x, y)` sends her to a
+spot (no args: follow again), `regroupCompanion()` brings her to Sammy (she trots in),
+and `cameraFocus(x, y)` / `cameraFocus()` frames a point instead of Sammy (pose captures). `loadLevel('companion')` is
+the companion course (a companion hub); `loadLevel('companion_narrow')` is a room narrower than the view (page-flip fallback). Debug `teleport` puts Sammy's center there: give it a hair over feet + 0.45, since 8.45 - 0.45
+rounds into the tile below and he falls through. Keys are KeyboardEvent codes (`KeyD`, `Space`).
 LittleJS "DEBUG build loaded" is a warning and is ignored.
 
 ## Assert state, not pixels, for overlay UI

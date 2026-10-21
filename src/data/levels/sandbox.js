@@ -61,7 +61,7 @@ export default {
     ],
     entities: [
         { type: 'sign', id: 'chapter-sign', key: 'sandbox.sign.chapter', x: 23, y: 18 },
-        { type: 'twyx', id: 'twyx', x: 34, y: 18 },
+        { type: 'twyx', id: 'twyx', x: 34, y: 18, roam: 0 },
         { type: 'sign', id: 'perch-sign', key: 'sandbox.sign.perch', x: 96, y: 11 },
         { type: 'door', id: 'eagle-door', locked: true, x: 146, y: 13 },
         { type: 'door', id: 'tunnel-door', x: 146, y: 16 },

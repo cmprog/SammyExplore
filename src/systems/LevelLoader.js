@@ -71,7 +71,10 @@ export function buildLevel(data, { playerPos = () => null } = {})
         const mechanisms = new Mechanisms(data.id, entities);
         created.push(mechanisms);
         mechanisms.start();
-        return new Level({ id: data.id, name: data.name, timeOfDay: data.timeOfDay, size, terrain, zones, entities, mechanisms });
+        return new Level({
+            id: data.id, name: data.name, timeOfDay: data.timeOfDay, size, terrain, zones, entities, mechanisms,
+            companionHub: !!data.companionHub,
+        });
     }
     catch (error)
     {
@@ -123,6 +126,10 @@ function validateLevel(data, id)
         fail(`id is "${data.id}" but the file is named "${id}.js"`);
     if (!TILE_PALETTES[data.timeOfDay])
         fail(`timeOfDay must be one of ${Object.keys(TILE_PALETTES).join(', ')}`);
+    // companionHub: true marks a home base (the bedroom): the cats placed there live there, and E
+    // asks one along or lets the companion stay (systems/Companion.js). Elsewhere E is a pet.
+    if (data.companionHub !== undefined && typeof data.companionHub !== 'boolean')
+        fail('companionHub must be true or false');
     const leadsTo = [...(data.zones ?? []), ...(Array.isArray(data.entities) ? data.entities : [])];
     for (const target of [data.nextLevel, ...leadsTo.map(entry => entry.nextLevel)])
         if (target !== undefined && (typeof target !== 'string' || !LEVEL_ID_PATTERN.test(target)))

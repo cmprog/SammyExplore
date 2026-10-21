@@ -313,3 +313,76 @@ export const LIFT = {
     RIDE_EPSILON: 0.05,        // feet within this of the top count as riding
     HEADROOM: 2,               // rows above the path that must be free of solid tiles (level validation)
 };
+
+// --- Companion (T-015): a cat following Sammy --- distances in tiles, speeds in tiles per step
+// (x60 = tiles per second), times in seconds. A cat walks, hops and drops; she CANNOT fly or
+// glide, so these are her limits. Heights are of her feet above the ground she leaves from.
+//   Hop up ............. a ledge at most HOP_MAX_UP above her (2 tiles: the test level's hill)
+//   Gap ................ about GAP_MAX tiles edge to edge (LEAP_MAX_DX is center to center)
+//   Drop ............... at most DROP_MAX tiles down
+// Anything beyond that and she waits at the edge (companion:waiting) until the way opens.
+export const COMPANION = {
+    HITBOX: { x: 0.8, y: 0.8 },
+    GRAVITY_SCALE: 0.9,        // of WORLD_GRAVITY; a touch floatier than a stone
+    MAX_FALL_SPEED: 0.38,
+
+    TROT_SPEED: 0.085,         // 5.1 tiles/s: a happy trot (Sammy runs 8.4)
+    CATCHUP_SPEED: 0.13,       // 7.8 tiles/s: hurrying back to him
+    CATCHUP_DISTANCE: 5,       // further than this from Sammy: hurry
+    ACCEL: 0.01,               // speeding up per step (slowing down is instant, so she never overshoots an edge)
+
+    FOLLOW_STOP: 1.8,          // she starts settling this close to Sammy (feet to feet; she comes to rest ~1.5)...
+    FOLLOW_START: 2.8,         // ...and sets off again when he is further than this
+
+    HOP_MAX_UP: 2.1,
+    GAP_MAX: 2.2,
+    LEAP_MAX_DX: 2.9,
+    DROP_MAX: 7,
+    LEAP_APEX_MAX: 2.7,        // highest arc she will try, above her takeoff
+    LEAP_SPEED_MAX: 0.17,      // sideways speed in a leap
+
+    CRUMB_SPACING: 0.5,        // Sammy's ground path is remembered as a point every this far
+    TRAIL_MAX: 1500,           // crumbs kept (about 750 tiles of walking)
+    SHORTCUT_RANGE: 8,         // she skips ahead to a later crumb she can walk straight to
+    WAIT_RECHECK: 0.25,        // while waiting, how often she checks whether the way has opened
+    STUCK_TIME: 3,             // trying to move but not getting anywhere this long: wait instead
+
+    ENTRY_DISTANCE: 3,         // she trots in to Sammy from about this far (correction, level start)
+    CATCHUP_FAR: 12,           // a checkpoint fetches her if she is waiting, or this far behind, out of sight
+    FETCH_FALLBACK_AFTER: 3,   // no unseen spot to bring her in from for this long: just past the screen edge,
+                               // or (a level narrower than the view) under a quick page flip
+    COVER_TIME: 0.8,           // the page flip: sweeps across, she's put down at full cover, sweeps away
+    NARROW_LEVEL_SCREENS: 2,   // a level under this many screens wide with gates/bridges/lifts gets a load warning
+    CAUGHT_UP_HOP: 0.13,       // the happy little hop on catching up (upward speed)
+
+    ROAM_RADIUS: 3,            // default `roam` for a placed cat: wanders this far either side of home
+    ROAM_SPEED: 0.03,          // a gentle amble
+    ROAM_PAUSE_MIN: 5,
+    ROAM_PAUSE_MAX: 11,
+    ROAM_NOTICE: 3,            // stops wandering to watch Sammy when he is this close
+};
+
+// Twyx moving (T-015): her trot, leaps and waiting look. Shapes in data/twyxPoses.js.
+export const TWYX_MOTION = {
+    WALK_BLEND_SPEED: 6,       // trot blend per second (0 standing .. 1 trotting)
+    STAND_UP_SPEED: 7,         // sit blend per second when she has somewhere to go (quicker than sitting down)
+    AIR_BLEND_SPEED: 10,
+    TILES_PER_STRIDE: 0.9,     // one full trot cycle per this many tiles
+    HEAD_TURN_SPEED: 7,        // looking back over her shoulder
+    LOOK_EASE: 0.12,           // head tilt toward Sammy, per step
+    LOOK_MAX_UP: 0.38,         // radians
+    LOOK_MAX_DOWN: 0.2,
+    GLANCE_EVERY_MIN: 2.5,     // trotting, she glances up at Sammy or back over her shoulder now and then
+    GLANCE_EVERY_MAX: 5,
+    GLANCE_TIME: 0.7,
+    GLANCE_UP: 0.3,
+    GLANCE_BACK_CHANCE: 0.5,   // otherwise the glance is up at Sammy
+    LEAP_STRETCH: 0.22,
+    LAND_SQUASH: 0.14,
+    LAND_SQUASH_IMPACT: 0.18,
+    CURIOUS_EASE: 0.1,         // the waiting head tilt eases in
+    MRRP_TIME: 0.6,            // mouth open for the "mrrp?"
+    SHAKE_TIME: 0.6,           // the "not now" head shake
+    SHAKE_ANGLE: 0.22,         // radians at its widest
+    CAUGHT_UP_TIME: 1.2,       // happy squint after catching up
+};

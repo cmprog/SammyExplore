@@ -14,3 +14,8 @@
 
 ## Event contract
 Use only events listed in `docs/EVENTS.md`. Add new events to it in the same change.
+
+## Level-design rules for companion levels (from T-015)
+- Put a **checkpoint after every gate, bridge or lift** the cat might wait at. Her off-screen catch-up only triggers at checkpoints.
+- Use **loop (shuttle) lifts** where the cat must cross by lift. A plain toggle lift only works for her if Sammy rides with her, or sends it back.
+- Never put a spawn or checkpoint inside a lift path or a gateway. Validation enforces this.

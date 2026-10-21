@@ -1,11 +1,15 @@
 // Autosave: one save slot in localStorage, written at gameplay milestones (checkpoints, level
-// complete; later cat rescues). The in-memory copy is the source of truth, so if storage is
-// blocked (private mode, quota) the game still works and Continue still works this session.
+// complete, choosing a companion; later cat rescues). The in-memory copy is the source of truth,
+// so if storage is blocked (private mode, quota) the game still works and Continue still works
+// this session.
 //
-// Shape (SAVE_SCHEMA_VERSION 1):
-//   { schemaVersion, levelId, checkpointId, reachedCheckpoints: [], flags: {}, catsRescued: [], updatedAt }
+// Shape (SAVE_SCHEMA_VERSION 2):
+//   { schemaVersion, levelId, checkpointId, reachedCheckpoints: [], flags: {}, catsRescued: [],
+//     companion, updatedAt }
 //   checkpointId null = start of the level. reachedCheckpoints = every checkpoint id reached in
-//   levelId so far (they stay used up on Continue). updatedAt is an ISO timestamp.
+//   levelId so far (they stay used up on Continue). companion = the cat id along with Sammy
+//   (data/cats.js), or null. updatedAt is an ISO timestamp.
+// History: v1 (M1, live on the deployed site) had no companion; v1 -> v2 adds companion: null.
 // Audio settings are NOT here: Audio owns sammyexplore.settings.
 //
 // Two separate questions: is there a usable save (Continue), and is there anything stored at
@@ -13,18 +17,23 @@
 // `status` says what was found at startup: none | ok | corrupt (not JSON) | invalid (wrong shape)
 // | newer (from a later game version) | blocked (storage could not be read).
 //
-// Events consumed: checkpoint:reached {id, levelId}, level:complete {id, levelId, nextLevel?}
+// Events consumed: checkpoint:reached {id, levelId}, level:complete {id, levelId, nextLevel?},
+//   companion:join {cat}, companion:leave {cat}
 import { timeReal } from 'littlejs';
 import { on } from '../core/events.js';
 import { SAVE_SCHEMA_VERSION } from '../data/version.js';
 import { SCREENS } from '../data/tuning.js';
 import { SAVE_TEXT } from '../data/screens.js';
+import { CATS } from '../data/cats.js';
 import { drawSaveIcon } from '../art/drawSaveIcon.js';
 
 export const SAVE_KEY = 'sammyexplore.save';
 
 // MIGRATIONS[n] turns a version-n save into a version-(n + 1) save. Add one per schema bump.
-const MIGRATIONS = {};
+const MIGRATIONS = {
+    // T-015: the companion. A v1 story had nobody along (Twyx stays where Chapter One puts her).
+    1: save => ({ ...save, companion: null }),
+};
 
 export class SaveSystem
 {
@@ -38,6 +47,12 @@ export class SaveSystem
         this.unsubscribers = [
             on('checkpoint:reached', payload => this.onCheckpoint(payload)),
             on('level:complete', payload => this.onLevelComplete(payload)),
+            on('companion:join', ({ cat } = {}) => this.onCompanion(cat)),
+            on('companion:leave', ({ cat } = {}) =>
+            {
+                if (this.data?.companion === cat)
+                    this.onCompanion(null);
+            }),
         ];
     }
 
@@ -91,6 +106,16 @@ export class SaveSystem
         // further yet, so Continue replays the finished level from its start.
         const flags = { ...this.data?.flags, [`levelComplete.${levelId}`]: true };
         this.write({ levelId: nextLevel ?? levelId, checkpointId: null, reachedCheckpoints: [], flags });
+    }
+
+    /** Choosing (or letting go of) a companion is a milestone. Only into a story in progress:
+     *  with no save (a debug level load) there is nothing to attach it to. */
+    onCompanion(cat)
+    {
+        if (cat && !CATS[cat])
+            return;   // a debug test cat is never saved
+        if (this.data && this.data.companion !== cat)
+            this.write({ companion: cat ?? null });
     }
 
     write(changes)
@@ -172,7 +197,7 @@ function emptySave()
 {
     return {
         schemaVersion: SAVE_SCHEMA_VERSION, levelId: null, checkpointId: null, reachedCheckpoints: [],
-        flags: {}, catsRescued: [], updatedAt: null,
+        flags: {}, catsRescued: [], companion: null, updatedAt: null,
     };
 }
 
@@ -195,5 +220,7 @@ function migrate(data)
     const merged = { ...emptySave(), ...save };
     if (!Array.isArray(merged.reachedCheckpoints))
         merged.reachedCheckpoints = [];
+    if (!CATS[merged.companion])
+        merged.companion = null;   // a cat this version doesn't know (or junk): nobody along
     return merged;
 }

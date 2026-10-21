@@ -43,7 +43,7 @@ export default {
     // Doors stand on the given tile and fill the one above it too.
     entities: [
         { type: 'sign', id: 'meadow-sign', key: 'test.sign', x: 33, y: 13 },
-        { type: 'twyx', id: 'twyx', x: 15, y: 13 },
+        { type: 'twyx', id: 'twyx', x: 15, y: 13, roam: 0 },
         { type: 'door', id: 'meadow-door', x: 40, y: 13 },
         { type: 'door', id: 'island-locked', locked: true, x: 26, y: 6 },
         { type: 'door', id: 'island-exit', exitId: 'island-door', x: 29, y: 6 },

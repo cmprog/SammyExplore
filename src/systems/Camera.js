@@ -4,7 +4,7 @@
 // the view a little lower. The lower framing outlasts the box a moment, so back-to-back lines
 // don't make the view bob up and down between them.
 import {
-    vec2, lerp, clamp, timeDelta, setCameraPos, setCameraScale, cameraPos, cameraScale, getCameraSize,
+    vec2, lerp, clamp, timeDelta, setCameraPos, setCameraScale, cameraPos, cameraScale, getCameraSize, isOnScreen,
 } from 'littlejs';
 import {
     CAMERA_SCALE, CAMERA_FOLLOW_LERP_X, CAMERA_FOLLOW_LERP_Y, CAMERA_LOOK_AHEAD,
@@ -22,6 +22,13 @@ export class Camera
         this.lookAhead = 0;
         this.narrating = false;  // eased like any other move, by the follow lerp
         this.narrationHold = 0;  // seconds the lower framing stays after the box closes
+        this.focus = null;       // debug: look at this point instead of the target (pose captures)
+    }
+
+    /** Debug: frame this world point instead of the target (null to follow the target again). */
+    setFocus(pos)
+    {
+        this.focus = pos ? pos.copy() : null;
     }
 
     /** showing: the narrator's text box is up this step. */
@@ -76,8 +83,37 @@ export class Camera
 
     desiredPos()
     {
+        if (this.focus)
+            return this.focus.copy();
         const offsetY = CAMERA_OFFSET_Y + (this.narrating ? CAMERA_NARRATION_OFFSET_Y : 0);
         return vec2(this.target.pos.x + this.lookAhead, this.target.pos.y + offsetY);
+    }
+
+    /**
+     * Could the player see a box of `size` at `pos`: on screen now (the engine's own test), or in
+     * any view the camera may ease to from here (look-ahead to either side, the narration framing,
+     * the level-edge clamp), with `margin` tiles to spare? Used so a cat is never seen popping
+     * in or out.
+     * Fails open: under a debug cameraFocus, or with no target, only the current view (and the
+     * engine's on-screen test) counts, so a box outside it reads as unseen even if the camera
+     * would later swing there.
+     */
+    canSee(pos, size, margin = 1)
+    {
+        if (isOnScreen(pos, size))
+            return true;
+        const half = getCameraSize().scale(.5);
+        const near = view => Math.abs(pos.x - view.x) * 2 < half.x * 2 + size.x + margin * 2
+                          && Math.abs(pos.y - view.y) * 2 < half.y * 2 + size.y + margin * 2;
+        if (near(cameraPos))
+            return true;
+        if (!this.target || this.focus)
+            return false;
+        for (const lead of [this.lookAhead, -CAMERA_LOOK_AHEAD, CAMERA_LOOK_AHEAD])
+            for (const offsetY of [CAMERA_OFFSET_Y, CAMERA_OFFSET_Y + CAMERA_NARRATION_OFFSET_Y])
+                if (near(this.clampToBounds(vec2(this.target.pos.x + lead, this.target.pos.y + offsetY))))
+                    return true;
+        return false;
     }
 
     clampToBounds(pos)
@@ -91,6 +127,10 @@ export class Camera
 
     debugState()
     {
-        return { pos: { x: cameraPos.x, y: cameraPos.y }, scale: cameraScale, lookAhead: this.lookAhead, narrating: this.narrating, narrationHold: this.narrationHold };
+        return {
+            pos: { x: cameraPos.x, y: cameraPos.y }, scale: cameraScale, lookAhead: this.lookAhead,
+            narrating: this.narrating, narrationHold: this.narrationHold,
+            focus: this.focus ? { x: this.focus.x, y: this.focus.y } : null,
+        };
     }
 }

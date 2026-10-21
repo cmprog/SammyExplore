@@ -1,7 +1,8 @@
 // Twyx the tuxedo cat, drawn from layered primitives in the same round style as Sammy.
 // A pure function of (pos, pose, time): the remembered animation (facing turn, sit and lick
-// blends, blink, tail swish, pet reaction, squash spring) arrives in `pose`, worked out by
-// TwyxAnimator. Missing fields fall back to a calm standing cat, so drawTwyx(pos, {}, t) works.
+// blends, blink, tail swish, pet reaction, squash spring, and since T-015 the trot cycle, leaps,
+// head turns and the waiting look) arrives in `pose`, worked out by TwyxAnimator. Missing fields
+// fall back to a calm standing cat, so drawTwyx(pos, {}, t) works.
 //
 // Art units: 1 = one tile. Origin between the feet, y up, drawn facing right and mirrored for
 // facing left. Body shapes are data (data/twyxPoses.js), colors are TWYX_PALETTE.
@@ -10,8 +11,8 @@
 import { lerp } from 'littlejs';
 import { ArtFrame } from './ArtFrame.js';
 import { TWYX_PALETTE as P } from '../data/palettes.js';
-import { TWYX_SHAPES, TWYX_FACE_TURN as TURN } from '../data/twyxPoses.js';
-import { TWYX } from '../data/tuning.js';
+import { TWYX_SHAPES, TWYX_GAIT as GAIT, TWYX_FACE_TURN as TURN } from '../data/twyxPoses.js';
+import { TWYX, TWYX_MOTION } from '../data/tuning.js';
 
 const OUTLINE = .04;
 const HEAD = { w: .66, h: .56 };
@@ -29,12 +30,15 @@ const RIM_LIFT = .022;        // how far the moonlit rim peeks out above each fu
 export function drawTwyx(pos, pose, time, { scale = 1 } = {})
 {
     const look = lookFor(pose, time);
-    const shape = shapeFor(look.sit);
+    const shape = shapeFor(look);
     const root = ArtFrame.root(pos, {
         scale,
         mirror: look.mirror,
         stretchX: look.turnSqueeze * (1 - look.squash * .5),
         stretchY: 1 + look.squash,
+        // In the air she noses up on the way up and down on the way down.
+        tilt: look.airLean * .2 * look.air * look.mirror,
+        pivotY: .4,
     });
 
     drawShadow(ArtFrame.root(pos, { scale }), look, shape);
@@ -70,18 +74,46 @@ function lookFor(pose, time)
         happy: pose.happy ?? 0,
         blink: pose.blink ?? 0,
         swish: pose.swish ?? 0,
+        walk: pose.walk ?? 0,
+        gait: pose.gait ?? 0,
+        air: pose.air ?? 0,
+        airLean: pose.airLean ?? 0,
+        headTurn: pose.headTurn ?? 1,
+        lookUp: pose.lookUp ?? 0,
+        curious: pose.curious ?? 0,
+        mrrp: pose.mrrp ?? 0,
+        shake: pose.shake ?? 0,
     };
 }
 
-/** The body shape for a sit amount. The two ends are the data objects themselves (no blending). */
-function shapeFor(sit)
+/** The body shape for the look: stand/sit by `sit`, then toward trot by `walk` and leap by
+ *  `air`. Standing or sitting still is the data object itself (no blending, no allocation). */
+function shapeFor(look)
 {
-    if (sit <= 0)
-        return TWYX_SHAPES.stand;
-    if (sit >= 1)
-        return TWYX_SHAPES.sit;
-    const t = sit * sit * (3 - 2 * sit);
-    return blendShape(TWYX_SHAPES.stand, TWYX_SHAPES.sit, t);
+    const ease = t => t * t * (3 - 2 * t);
+    const { sit, walk, air } = look;
+    let shape = sit <= 0 ? TWYX_SHAPES.stand
+        : sit >= 1 ? TWYX_SHAPES.sit
+        : blendShape(TWYX_SHAPES.stand, TWYX_SHAPES.sit, ease(sit));
+    if (walk > 0)
+        shape = trotBob(blendShape(shape, TWYX_SHAPES.trot, ease(walk)), look);
+    if (air > 0)
+        shape = blendShape(shape, TWYX_SHAPES.leap, ease(air));
+    return shape;
+}
+
+/** The body rides up twice per trot cycle (once per footfall), the head nods a little behind
+ *  it, and the raised tail bounces. Mutates a freshly blended shape. */
+function trotBob(shape, { gait, walk })
+{
+    const bob = Math.abs(Math.sin(gait)) * GAIT.bob * walk;
+    for (const part of [shape.body, shape.haunch, shape.bib, shape.tail])
+        part.y += bob;
+    shape.head.y += bob + Math.sin(gait * 2 - .6) * GAIT.headBob * walk;
+    shape.frontLeg.hip += bob;
+    shape.backLeg.hip += bob;
+    shape.tail.angle += Math.sin(gait * 2 - 1.2) * GAIT.tailBounce * walk;
+    return shape;
 }
 
 function blendShape(a, b, t)
@@ -100,8 +132,10 @@ function blendShape(a, b, t)
 
 function drawShadow(ground, look, shape)
 {
+    if (look.air >= 1)
+        return;   // up in the air: her shadow is on the ground somewhere below, not at her feet
     const w = (.62 + .3 * (1 - look.sit)) * (1 - look.squash * .4);
-    ground.ellipse(shape.body.x, .005, w, .12, P.shadow);
+    ground.ellipse(shape.body.x * look.mirror, .005, w, .12, P.shadow.scale(1, 1 - look.air));
 }
 
 /** One smooth band along a curved centerline, with round ends, so the tail tapers to a soft
@@ -153,7 +187,8 @@ function tailBand(spine, half, grow, lift)
     return [...side(1), ...cap(n, Math.PI / 2), ...side(-1).reverse(), ...cap(0, -Math.PI / 2)];
 }
 
-/** Far legs (behind the body, shaded) or near legs: stubby, each ending in a white paw. */
+/** Far legs (behind the body, shaded) or near legs: stubby, each ending in a white paw. Each
+ *  leg runs from its hip down to its paw, so a swinging or reaching paw tilts the leg with it. */
 function drawLegs(root, shape, look, far)
 {
     const raised = look.lick;
@@ -166,15 +201,34 @@ function drawLegs(root, shape, look, far)
             continue;   // that paw is up at the mouth (drawLickPaw)
         const fur = far ? P.furShade : P.fur;
         const paw = far ? P.whiteShade : P.white;
-        const top = leg.hip, h = leg.length + .04;
-        root.ellipse(x, top - h / 2 + .02, LEG_W + OUTLINE * 2, h + OUTLINE * 2, P.outline);
-        root.ellipse(x + .04, PAW.h / 2, PAW.w + OUTLINE * 2, PAW.h + OUTLINE * 2, P.outline);
-        root.ellipse(x, top - h / 2 + .02, LEG_W, h, fur);
-        root.ellipse(x + .04, PAW.h / 2, PAW.w, PAW.h, paw);
+        const { dx, lift } = legSwing(look, front, far);
+        const top = leg.hip + .02, bottom = lift - .02;
+        const px = x + dx, drop = top - bottom;
+        const h = Math.hypot(dx, drop), angle = Math.atan2(dx, drop);
+        const cx = (x + px) / 2, cy = (top + bottom) / 2;
+        const pawY = PAW.h / 2 + lift;
+        root.ellipse(cx, cy, LEG_W + OUTLINE * 2, h + OUTLINE * 2, P.outline, angle);
+        root.ellipse(px + .04, pawY, PAW.w + OUTLINE * 2, PAW.h + OUTLINE * 2, P.outline);
+        root.ellipse(cx, cy, LEG_W, h, fur, angle);
+        root.ellipse(px + .04, pawY, PAW.w, PAW.h, paw);
         if (!far)
             for (const toe of [-.035, .035])
-                root.line([[x + .04 + toe, .015], [x + .04 + toe, .05]], .014, P.whiteShade);
+                root.line([[px + .04 + toe, pawY - .04], [px + .04 + toe, pawY - .005]], .014, P.whiteShade);
     }
+}
+
+/** Where a paw is in the trot cycle (diagonal pairs: near front with far back) and in a leap. */
+function legSwing(look, front, far)
+{
+    if (look.walk <= 0 && look.air <= 0)
+        return { dx: 0, lift: 0 };
+    const phase = look.gait + (front !== far ? 0 : Math.PI);
+    const reach = front ? GAIT.reach.front : GAIT.reach.back;
+    return {
+        dx: Math.sin(phase) * GAIT.stride * look.walk + reach.dx * look.air,
+        // Lifted while swinging forward (cos > 0), planted while pushing back.
+        lift: Math.max(0, Math.cos(phase)) * GAIT.lift * look.walk + reach.lift * look.air,
+    };
 }
 
 function drawBodyOutline(root, { body, haunch })
@@ -210,9 +264,17 @@ function drawBib(root, bib)
 function headFrame(root, shape, look)
 {
     // Licking: the head dips forward to meet the paw. Petted: a happy little upward tilt.
+    // lookUp tilts her face toward Sammy; waiting, she cocks her head a little (curious).
+    // headTurn below 0: she's looking back over her shoulder (the head flips, squeezing through
+    // the middle like the body does when she turns round).
     const dip = look.lick * (1 - look.happy);
     const x = shape.head.x + dip * .05, y = shape.head.y - dip * .08;
-    return root.child(x, y, -dip * .28 + look.happy * .08);
+    const back = look.headTurn < 0 ? -1 : 1;
+    const squeeze = back * (.35 + .65 * Math.min(1, Math.abs(look.headTurn)));
+    // Looking back, the head swings round over her shoulder: drawn back over the body and lifted.
+    const over = Math.max(0, -look.headTurn);
+    const tilt = (look.lookUp + look.curious * .13 + over * .12) * back + look.shake * TWYX_MOTION.SHAKE_ANGLE;
+    return root.child(x - over * .12, y + over * .04, -dip * .28 + look.happy * .08 + tilt, squeeze, 1);
 }
 
 function drawEars(head, look)
@@ -221,7 +283,8 @@ function drawEars(head, look)
     {
         // Near ear (+1) a touch bigger: the face is turned toward the facing side.
         const size = (side > 0 ? 1 : .9) * (1 + look.perk * .12);
-        const lean = side * (.32 - look.perk * .22);
+        // Curious (waiting): the far ear tips out a little, the classic "hm?" ear.
+        const lean = side * (.32 - look.perk * .22) + (side < 0 ? -look.curious * .2 : 0);
         const ear = head.child(side * .17 + TURN * .5, .17 + look.perk * .025, -lean, size);
         const outer = [[-.12, -.02], [.11, -.02], [.035, .2], [.0, .215], [-.03, .2]];
         ear.poly(outer, P.fur, OUTLINE * .95, P.outline);
@@ -257,7 +320,7 @@ function drawFace(head, look)
         const far = side < 0 ? 1 - TURN * 2.2 : 1;
         drawEye(head.child(x + side * .135, .035, 0, far, 1), look);
     }
-    drawNoseAndMouth(head, x);
+    drawNoseAndMouth(head, x, look.mrrp);
     drawWhiskers(head, x);
 }
 
@@ -285,8 +348,14 @@ function drawEye(eye, look)
     eye.circle(.03, -.035, .025, P.shine.withAlpha(.85));
 }
 
-function drawNoseAndMouth(head, x)
+function drawNoseAndMouth(head, x, mrrp)
 {
+    if (mrrp > .15)
+    {
+        // "Mrrp?": a little round open mouth with a peek of tongue, under the nose.
+        head.ellipse(x, -.14, .075 * mrrp + .02, .07 * mrrp + .015, P.mouth);
+        head.ellipse(x, -.155, .05 * mrrp, .03 * mrrp, P.tongue);
+    }
     head.poly([[x - .04, -.052], [x + .04, -.052], [x + .012, -.088], [x - .012, -.088]], P.nose, OUTLINE * .55, P.outline);
     head.ellipse(x - .012, -.06, .022, .012, P.shine.withAlpha(.7));
     head.line([[x, -.088], [x, -.112]], .014, P.mouth);
