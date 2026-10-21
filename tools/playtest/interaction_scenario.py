@@ -247,7 +247,9 @@ def test_exit_door(pg):
     time.sleep(0.6)
     harness.shot(pg, "interact_exit_complete")
     save = st(pg)["save"]
-    check(save is not None and save["levelId"] == "test", f"exit door autosaved: {save}")
+    # No nextLevel: the end of a chapter, so Continue goes home to the bedroom (T-017).
+    check(save is not None and save["flags"].get("levelComplete.test") is True and save["levelId"] == "bedroom",
+          f"exit door autosaved: {save}")
     check(st(pg)["level"]["completed"], "zones report the level completed")
 
 

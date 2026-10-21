@@ -28,6 +28,7 @@ export const AUDIO_TUNING = {
     GLIDE_FADE_OUT: .25,        // seconds
     MUSIC_FADE_IN: 2,           // seconds; music eases in instead of starting abruptly
     LAND_IMPACT_FLOOR: .35,     // land volume = lerp(floor, 1, impact): soft hops stay audible
+    PORTAL_SAME_VOLUME: .35,    // the portal shimmer when the lever finds no other chapter: just a fizzle
 };
 
 // One bell-ish note reused for chimes and the fanfare (pitched with `semitones`). C5 base.
@@ -138,6 +139,22 @@ export const SOUNDS = {
         { zzfx: [.2, .04, 520, .01, .03, .06, 2, 1, 12, 0, 0, 0, 0, 0, 0, 0, 0, .8, 0, 0, -1800], semitones: 5, at: .09 },
     ] },
 
+    // Portal turns to another chapter (T-017): a warbly rising shimmer and two high bell notes,
+    // just after the lever's clack.
+    portalSelect: { minInterval: .15, layers: [
+        { zzfx: [.12, 0, 700, .03, .22, .3, 0, 1, 7, 0, 0, 0, 0, 0, 6, 0, 0, .7, 0, .45, 0], at: .06 },
+        { zzfx: BELL, semitones: 19, at: .14, volume: .55 },
+        { zzfx: BELL, semitones: 24, at: .24, volume: .45 },
+    ] },
+
+    // Stepping into the portal: a swirling whoosh that winds upward, then a sparkle as the
+    // swirl closes.
+    portalEnter: { minInterval: .5, layers: [
+        { zzfx: [.28, 0, 180, .08, .55, .35, 0, 1, 5, 0, 0, 0, 0, .2, 9, 0, 0, .6, 0, .35, -2200] },
+        { zzfx: [.14, 0, 1400, .01, .08, .4, 0, 1, 3, 0, 0, 0, .06, 0, 0, 0, 0, .6, 0, .5], at: .55 },
+        { zzfx: BELL_LONG, semitones: 24, at: .6, volume: .5 },
+    ] },
+
     // Little arpeggio C-E-G-C, a ringing top note, and a sparkle on top.
     levelComplete: { minInterval: .5, layers: [
         { zzfx: BELL, semitones: 0 },
@@ -167,6 +184,8 @@ export const SOUND_EVENTS = {
     'door:open':            'doorOpen',
     'mechanism:toggle':     'leverThrow',   // any trigger thrown (a lever, later a cat spot)
     'mechanism:cycle':      'leverThrow',
+    'portal:select':        'portalSelect',  // quieter when it found no other chapter (Audio.js)
+    'portal:enter':         'portalEnter',
     'bridge:move':          'bridgeMove',
     'gate:move':            'gateMove',
     'lift:move':            'liftHum',

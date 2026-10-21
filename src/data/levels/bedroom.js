@@ -1,5 +1,5 @@
-// The bedroom: Sammy's home base (M2). Rescued cats live here, and later the chapter portal
-// (T-017) and a practice course (T-018). Narration lives in src/data/narration/bedroom.js.
+// The bedroom: Sammy's home base (M2). Rescued cats live here, the chapter portal (T-017) stands
+// here, and later a practice course (T-018). Narration lives in src/data/narration/bedroom.js.
 //
 // `companionHub: true` marks the home base: the cats roam here, and Sammy picks a companion here
 // (T-015 reads it).
@@ -10,7 +10,9 @@
 //
 // Sammy is owl-sized, so the furniture is a climbing frame. Surfaces are world heights (y up);
 // the floor top is at 5 so the narrator's text box never covers the walkway.
-//   - Portal alcove (x 1-9): RESERVED, see `room.reserved`. Sammy arrives just right of it.
+//   - Portal alcove (x 1-9): the chapter portal (opening x 3-5, frame x 2-6, its sign above) and,
+//     beside it, the lever that turns it to the next unlocked chapter. Sammy arrives just right
+//     of them, and walking left into the swirl steps through to the chapter it shows.
 //   - The rug, Twyx, and the toy chest (top 7), then two brick stacks (tops 8 and 10).
 //   - The desk (top 10, walk under it) below the window. Its sill (top 13) is a one-way ledge;
 //     a long one-way shelf above the window (top 24) holds a brick castle and plushies.
@@ -75,6 +77,9 @@ export default {
     ],
     entities: [
         { type: 'twyx', id: 'twyx', x: 13, y: 22 },
+        // T-017: the chapter portal (x = the middle of its opening) and its lever.
+        { type: 'portal', id: 'portal', x: 4, y: 22 },
+        { type: 'lever', id: 'portal-lever', mode: 'cycle', targets: ['portal'], x: 8, y: 22 },
     ],
     zones: [
         { type: 'spawn', rect: { x: 11, y: 21, w: 1, h: 2 } },
@@ -153,9 +158,6 @@ export default {
         // Space kept free for later tasks (checked at load): no tiles, furniture, decor, entities
         // or zones inside, unless the region allows furniture or decor.
         reserved: [
-            // T-017: the chapter portal stands here (needs at least 6x8 tiles at floor level),
-            // with its lever beside it and its sign above.
-            { id: 'portal-alcove', task: 'T-017', x: 1, y: 12, w: 9, h: 11 },
             // T-018: the practice course, about one screen. The bed and cubby (and the toys on
             // them) are placeholders it can keep, move, or rebuild (the course goes under and
             // around them).

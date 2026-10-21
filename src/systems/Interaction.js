@@ -10,6 +10,10 @@
 //   canInteract()      false while it has nothing to offer (e.g. a door already opening)
 //   interactPayload()  plain data for the event, at least {id}
 //   interact()
+//   interactPriority?  number, default INTERACTION.PRIORITY_DEFAULT (cats: PRIORITY_CAT). Of the
+//                      things in range, E picks the highest priority, then one on the side Sammy
+//                      faces, then the nearest. So a cat at Sammy's side never takes E from the
+//                      lever he walked up to; with nothing else in range, E is hers.
 //
 // Wiring (PlayingScene): update() runs AFTER narrator.update() in the same step, because the
 // narrator consumes the E press it uses to skip or dismiss a line; a consumed press is never an
@@ -63,28 +67,39 @@ export class Interaction
         this.appear = 0;
     }
 
-    /** @param {Vector2|null} playerPos - Sammy's center, or null when there is no player or the level is frozen */
-    update(playerPos)
+    /**
+     * @param {Vector2|null} playerPos - Sammy's center, or null when there is no player or the level is frozen
+     * @param {number} [facing] - 1 right, -1 left
+     */
+    update(playerPos, facing = 1)
     {
         const live = !!playerPos && gameplayLockReasons().length === 0;
-        this.nearest = live ? this.findNearest(playerPos) : null;
+        this.nearest = live ? this.findNearest(playerPos, facing) : null;
         if (live && wasPressed('interact'))
             this.press();
         this.updatePrompt();
     }
 
-    findNearest(playerPos)
+    /** The best target in range: by priority, then on the facing side, then nearest. */
+    findNearest(playerPos, facing)
     {
-        let best = null, bestDistance = Infinity;
+        let best = null, bestRank = null;
         for (const target of this.targets)
         {
             if (target.destroyed || !target.canInteract())
                 continue;
             const distance = target.interactPos.distance(playerPos);
-            if (distance <= target.interactRadius && distance < bestDistance)
+            if (distance > target.interactRadius)
+                continue;
+            const rank = [
+                target.interactPriority ?? INTERACTION.PRIORITY_DEFAULT,
+                (target.interactPos.x - playerPos.x) * facing >= 0 ? 1 : 0,
+                -distance,
+            ];
+            if (!bestRank || isBetter(rank, bestRank))
             {
                 best = target;
-                bestDistance = distance;
+                bestRank = rank;
             }
         }
         return best;
@@ -146,6 +161,15 @@ export class Interaction
             targets: this.targets.filter(target => !target.destroyed).map(target => target.debugState?.() ?? describe(target)),
         };
     }
+}
+
+/** Lexicographic: the first differing entry decides. */
+function isBetter(rank, other)
+{
+    for (let i = 0; i < rank.length; i++)
+        if (rank[i] !== other[i])
+            return rank[i] > other[i];
+    return false;
 }
 
 function describe(target)

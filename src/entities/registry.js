@@ -4,9 +4,11 @@
 // A factory receives (pos, props, context):
 //   pos     - world-space center of the tile cell the entity was placed on
 //   props   - everything in the entity entry except type/x/y
-//   context - { levelId, levelSize, timeOfDay, triggerExit(exitId), playerPos() }
+//   context - { levelId, levelSize, timeOfDay, triggerExit(exitId), playerPos(), chapters }
 //             triggerExit fires one of the level's exits (level:complete), e.g. for an exit door
 //             playerPos() is Sammy's center (a Vector2) or null; read-only, e.g. a cat facing him
+//             chapters: { list(), selected() } the unlocked chapters and the portal's pick
+//             (systems/Chapters.js view()), read-only; null when the host has none
 // and returns the created object (usually an EngineObject) so the level can destroy it on unload.
 //
 // Collision: Sammy collides with every SOLID engine object (that is how closed doors block).
@@ -20,6 +22,8 @@
 //
 // Mechanisms (T-014): an entry with `mechanismTarget: true` can be named in a trigger's
 // `targets` (a lever's, later a cat spot's) and `mechanismTrigger: true` marks a trigger;
+// `cycleOnly: true` means only a trigger with `mode: 'cycle'` may target it (a portal has no
+// on/off for a toggle to flip);
 // spawnEntity copies that onto the instance as mechanismRole/mechanismType, and
 // validateMechanismLinks checks every `targets` list against the level. See
 // systems/Mechanisms.js for the activation API.
@@ -39,6 +43,7 @@ import { Lever } from './Lever.js';
 import { Bridge } from './Bridge.js';
 import { Gate } from './Gate.js';
 import { Lift } from './Lift.js';
+import { Portal } from './Portal.js';
 
 const ENTITY_TYPES = {
     door: {
@@ -66,12 +71,17 @@ const ENTITY_TYPES = {
         mechanismTarget: true,
         keepsClear: entity => Lift.pathCells(entity),
     },
+    // T-017: a cycle lever targets it to step through the chapters (cycleOnly: a toggle can't).
+    portal: {
+        create: (pos, props, context) => new Portal(pos, props, context), validate: Portal.validateEntry,
+        mechanismTarget: true, cycleOnly: true,
+    },
 };
 
 const types = new Map(Object.entries(ENTITY_TYPES));
 
 /** Add or replace a factory at runtime (debug tools and tests use this). `extra` takes the
- *  optional entry fields: mechanismTarget, mechanismTrigger, blocksCells, keepsClear. */
+ *  optional entry fields: mechanismTarget, mechanismTrigger, cycleOnly, blocksCells, keepsClear. */
 export function registerEntityType(type, factory, validate = null, extra = {})
 {
     types.set(type, { create: factory, validate, ...extra });
@@ -102,6 +112,8 @@ export function validateMechanismLinks({ entities }, fail)
                 fail(`${entity.type} "${entity.id}" targets "${id}", but no entity has that id`);
             if (!drivable.includes(target.type))
                 fail(`${entity.type} "${entity.id}" targets "${id}", a ${target.type}, which can't be moved (only ${drivable.join(', ')})`);
+            if (types.get(target.type).cycleOnly && entity.mode !== 'cycle')
+                fail(`${entity.type} "${entity.id}" targets ${target.type} "${id}", which only a mode: 'cycle' trigger can drive`);
         }
 }
 

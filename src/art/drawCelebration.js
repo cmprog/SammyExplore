@@ -1,7 +1,7 @@
-// Level complete art: confetti (stars, feathers, dots), a bouncy banner, and the
-// "To be continued..." storybook card. Canvas2D in screen pixels; pure functions of their arguments.
+// Level complete art: confetti (stars, feathers, dots), a bouncy banner, and the continue prompt.
+// Canvas2D in screen pixels; pure functions of their arguments.
 import { drawFeather } from './drawFeather.js';
-import { drawTitleText, drawLabel, UI_FONT } from './drawMenu.js';
+import { drawTitleText, drawLabel } from './drawMenu.js';
 
 export const CONFETTI_COLORS = ['#ffd36e', '#ff8fab', '#8fd3ff', '#b8f28c', '#fff6df', '#c9a0ff'];
 
@@ -86,40 +86,5 @@ export function drawPrompt(ctx, text, pos, time)
     ctx.save();
     ctx.globalAlpha = .75 + .25 * Math.sin(time * 4);
     drawLabel(ctx, text, pos, { size: 44, color: '#fff2cc' });
-    ctx.restore();
-}
-
-/** Full-screen storybook card. appear 0..1 fades it in over whatever is underneath. */
-export function drawToBeContinued(ctx, size, text, appear, time)
-{
-    ctx.save();
-    ctx.globalAlpha = appear;
-    const sky = ctx.createRadialGradient(size.x / 2, size.y / 2, 100, size.x / 2, size.y / 2, size.x * .7);
-    sky.addColorStop(0, '#2a2466');
-    sky.addColorStop(1, '#0a0b2b');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, size.x, size.y);
-    // A ring of slowly turning stars around the words.
-    for (let i = 0; i < 14; i++)
-    {
-        const a = i / 14 * Math.PI * 2 + time * .15;
-        const twinkle = .6 + .4 * Math.sin(time * 3 + i);
-        ctx.save();
-        ctx.translate(size.x / 2 + Math.cos(a) * 640, size.y / 2 + Math.sin(a) * 330);
-        ctx.rotate(a);
-        ctx.fillStyle = `rgba(255, 223, 140, ${twinkle})`;
-        ctx.beginPath();
-        traceStar(ctx, 22 * twinkle, 10 * twinkle);
-        ctx.fill();
-        ctx.restore();
-    }
-    ctx.restore();
-
-    // Letters arrive one by one, the dots last, like the narrator is writing it down.
-    const shown = Math.floor(text.length * Math.min(1, appear * 1.3));
-    ctx.save();
-    ctx.globalAlpha = appear;
-    ctx.font = `bold 120px ${UI_FONT}`;
-    drawTitleText(ctx, text.slice(0, shown).padEnd(text.length, ' '), { x: size.x / 2, y: size.y / 2 }, { size: 120 }, time);
     ctx.restore();
 }

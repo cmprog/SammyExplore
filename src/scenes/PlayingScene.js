@@ -5,6 +5,8 @@
 // narrator forget every line it has said this session, so the story is told fresh. A level that fails to load emits
 // level:loadFailed (main.js falls back to the title). companion: a cat id (or null) sets who comes
 // along (Continue passes the saved one, New Game null); left out, the current companion stays.
+// chapterProgress: {unlockedChapters, completedChapters} (Continue: the saved lists; New Game: {})
+// resets the chapters (systems/Chapters.js); left out, they stay as they are.
 // Hosts the narrator (see the wiring notes at the top of systems/Narrator.js) and the
 // interaction system, which reads E only after the narrator has had its chance to use it.
 import {
@@ -18,6 +20,7 @@ import { createEnvironment } from '../systems/createEnvironment.js';
 import { Interaction } from '../systems/Interaction.js';
 import { Companion } from '../systems/Companion.js';
 import { registerTestCat } from '../data/cats.js';
+import { registerTestChapter } from '../data/chapters.js';
 import { WORLD_GRAVITY } from '../data/tuning.js';
 
 export const DEFAULT_LEVEL_ID = 'test';
@@ -25,9 +28,11 @@ const ERROR_COLOR = rgb(1, .75, .75);
 
 export class PlayingScene
 {
-    constructor(narrator)
+    /** @param {Narrator} narrator  @param {Chapters} chapters */
+    constructor(narrator, chapters)
     {
         this.narrator = narrator;
+        this.chapters = chapters;
         this.level = null;
         this.player = null;
         this.camera = new Camera();
@@ -44,10 +49,12 @@ export class PlayingScene
         this.overlaid = false;   // an overlay scene is on top (see pause())
     }
 
-    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null, reachedCheckpoints = [], newStory = false, companion } = {})
+    enter({ levelId = DEFAULT_LEVEL_ID, checkpointId = null, reachedCheckpoints = [], newStory = false, companion, chapterProgress } = {})
     {
         if (companion !== undefined)
             this.companion.choose(companion);
+        if (chapterProgress !== undefined)
+            this.chapters.restore(chapterProgress);
         this.startCheckpointId = checkpointId;
         this.reachedCheckpoints = reachedCheckpoints;
         this.overlaid = false;
@@ -90,7 +97,7 @@ export class PlayingScene
             if (token !== this.loadToken)
                 return;
             this.unload();
-            this.level = buildLevel(data, { playerPos: () => this.playerPos() });
+            this.level = buildLevel(data, { playerPos: () => this.playerPos(), chapters: this.chapters.view() });
             this.player = new Sammy(this.startPoint());
             this.interaction.setTargets(this.level.entities);
             this.camera.attach(this.player, this.level.size);
@@ -172,7 +179,7 @@ export class PlayingScene
         this.narrator.update();
         this.environment?.tick?.(timeDelta);   // the day goes by (rooms with a day cycle)
         // Under an overlay nothing can be started (and the bubble fades away).
-        this.interaction.update(this.overlaid ? null : this.player?.pos ?? null);
+        this.interaction.update(this.overlaid ? null : this.player?.pos ?? null, this.player?.facing ?? 1);
     }
 
     // An overlay is on top (pause, level complete). The level may keep running underneath
@@ -238,6 +245,14 @@ export class PlayingScene
         // Set a mechanism by id: activate('gate-lever', true) throws a lever (moving its targets),
         // activate('lab-gate', false) drives a target directly. False for an unknown id.
         hook.commands.activate = (id, on = true) => this.level?.mechanisms.activate(id, on) ?? false;
+        // {unlocked, completed, selected}: chapter ids (data/chapters.js); selected = the portal's pick.
+        hook.register('chapters', () => this.chapters.debugState());
+        // Unlock a chapter for this session (not saved), e.g. one made with addTestChapter.
+        hook.commands.unlockChapter = id => this.chapters.unlock(id);
+        // A pretend chapter (never saved) for tests: addTestChapter('test-chapter') points at the
+        // `test` level; options {levelId, title, portalColor: [r, g, b]}.
+        hook.commands.addTestChapter = (id, { levelId, title, portalColor } = {}) =>
+            registerTestChapter(id, { levelId, title, portalColor: Array.isArray(portalColor) ? rgb(...portalColor) : undefined });
         hook.commands.loadLevel = (levelId, checkpointId = null, reachedCheckpoints = []) =>
             sceneManager.change('playing', { levelId, checkpointId, reachedCheckpoints });
         // Poke an entity's debug action by id, e.g. entityAction('twyx', 'sit', true) to hold a pose.

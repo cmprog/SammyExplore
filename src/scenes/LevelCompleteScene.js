@@ -4,14 +4,17 @@
 // The continue prompt waits until that remark is fully shown (or SCREENS.LEVEL_COMPLETE_LINE_WAIT
 // passes), so the last line of the chapter is never cut off; a press while it is still typing
 // finishes it instead (narrator:skip).
-// Then: on to the level data's `nextLevel`, or a "To be continued..." card and back to the title.
+// Then: on to the level data's `nextLevel`, or (the end of a chapter) home to the bedroom through
+// the portal swirl (systems/SwirlTransition.js), where the narrator welcomes Sammy back.
 import { mainCanvasSize, timeReal, rand, randInt, smoothStep, clamp } from 'littlejs';
 import { on, emit } from '../core/events.js';
 import { wasPressed, mouse, lockGameplay, unlockGameplay } from '../core/input.js';
 import { drawScreenCanvas } from '../art/screenCanvas.js';
-import { drawConfetti, drawBanner, drawPrompt, drawToBeContinued, CONFETTI_COLORS } from '../art/drawCelebration.js';
+import { drawConfetti, drawBanner, drawPrompt, CONFETTI_COLORS } from '../art/drawCelebration.js';
 import { LEVEL_COMPLETE_TEXT } from '../data/screens.js';
 import { SCREENS } from '../data/tuning.js';
+import { HOME_LEVEL_ID } from '../data/progression.js';
+import { chapterEndingAt, HOME_SWIRL_COLOR } from '../data/chapters.js';
 
 const LOCK_REASON = 'levelComplete';
 const BANNER_POS = { x: 960, y: 230 };
@@ -20,9 +23,12 @@ const SHAPES = ['star', 'star', 'dot', 'dot', 'feather'];
 
 export class LevelCompleteScene
 {
-    constructor(scenes)
+    /** @param {SceneManager} scenes  @param {SwirlTransition} transition */
+    constructor(scenes, transition)
     {
         this.scenes = scenes;
+        this.transition = transition;
+        this.levelId = null;
         this.updatesBelow = true;
         this.phase = 'celebrate';
         this.phaseTime = 0;
@@ -50,9 +56,10 @@ export class LevelCompleteScene
     }
 
     /** params: the level:complete payload ({id, levelId, nextLevel?, ...}). */
-    enter({ nextLevel = null } = {})
+    enter({ levelId = null, nextLevel = null } = {})
     {
         lockGameplay(LOCK_REASON);
+        this.levelId = levelId;
         this.nextLevel = nextLevel;
         this.phase = 'celebrate';
         this.phaseTime = 0;
@@ -81,15 +88,16 @@ export class LevelCompleteScene
             emit('menu:select');
             if (this.nextLevel)
                 return this.scenes.change('playing', { levelId: this.nextLevel });
-            this.phase = 'toBeContinued';
-            this.phaseTime = 0;
+            this.goHome();
         }
-        else if (this.phase === 'toBeContinued')
-        {
-            const skip = pressed && this.phaseTime >= SCREENS.TO_BE_CONTINUED_MIN_TIME;
-            if (skip || this.phaseTime >= SCREENS.TO_BE_CONTINUED_AUTO_TIME)
-                this.scenes.change('title');
-        }
+    }
+
+    /** The end of a chapter: swirl home to the bedroom in the chapter's color. */
+    goHome()
+    {
+        const color = chapterEndingAt(this.levelId)?.portalColor ?? HOME_SWIRL_COLOR;
+        if (this.transition.start({ levelId: HOME_LEVEL_ID, color }))
+            this.phase = 'goingHome';
     }
 
     canContinue()
@@ -103,14 +111,9 @@ export class LevelCompleteScene
         drawScreenCanvas(ctx =>
         {
             drawConfetti(ctx, this.confetti);
-            if (this.phase === 'celebrate')
-            {
-                drawBanner(ctx, LEVEL_COMPLETE_TEXT.banner, BANNER_POS, smoothStep(clamp(this.phaseTime / .6, 0, 1)), time);
-                if (this.canContinue())
-                    drawPrompt(ctx, LEVEL_COMPLETE_TEXT.prompt, PROMPT_POS, time);
-            }
-            else
-                drawToBeContinued(ctx, mainCanvasSize, LEVEL_COMPLETE_TEXT.toBeContinued, clamp(this.phaseTime / 1.2, 0, 1), time);
+            drawBanner(ctx, LEVEL_COMPLETE_TEXT.banner, BANNER_POS, smoothStep(clamp(this.phaseTime / .6, 0, 1)), time);
+            if (this.phase === 'celebrate' && this.canContinue())
+                drawPrompt(ctx, LEVEL_COMPLETE_TEXT.prompt, PROMPT_POS, time);
         });
     }
 
@@ -119,6 +122,7 @@ export class LevelCompleteScene
     {
         return {
             screen: this.phase,
+            levelId: this.levelId,
             nextLevel: this.nextLevel,
             seconds: Math.round(this.phaseTime * 10) / 10,
             waitingForLine: this.waitingForLine,

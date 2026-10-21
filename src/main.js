@@ -17,6 +17,9 @@ import { SaveSystem } from './systems/SaveSystem.js';
 import { TITLE_TEXT } from './data/screens.js';
 import { initAudio } from './systems/Audio.js';
 import { Narrator } from './systems/Narrator.js';
+import { Chapters } from './systems/Chapters.js';
+import { SwirlTransition } from './systems/SwirlTransition.js';
+import { chapterDef } from './data/chapters.js';
 
 const GAME_RESOLUTION = vec2(1920, 1080);
 const BACKGROUND_COLOR = rgb(.07, .07, .14);   // deep night blue
@@ -33,19 +36,30 @@ setDebugWatermark(false);
 // One narrator for the whole game; whichever scene hosts gameplay drives it (see Narrator.js).
 const narrator = new Narrator();
 
+// Before Chapters: on level:complete the save is written first, then chapter:complete adds to it.
 const saveSystem = new SaveSystem();
+const chapters = new Chapters();
 
 const scenes = new SceneManager();
+// Travel between the bedroom and the chapters (survives the scene change it makes).
+const playingScene = new PlayingScene(narrator, chapters);
+const transition = new SwirlTransition(scenes, () => playingScene.playerPos());
 scenes.register('title', new TitleScene(scenes, saveSystem));
-const playingScene = new PlayingScene(narrator);
 scenes.register('playing', playingScene);
 // Overlays: pushed over 'playing' so the level keeps its state (see SceneManager.js).
 scenes.register('pause', new PauseScene(scenes));
-scenes.register('levelComplete', new LevelCompleteScene(scenes));
+scenes.register('levelComplete', new LevelCompleteScene(scenes, transition));
 on('level:complete', payload =>
 {
     if (scenes.currentName === 'playing')
         scenes.push('levelComplete', payload);
+});
+// Stepping into the bedroom portal: swirl away into its chapter (the companion comes along).
+on('portal:enter', ({ chapterId, pos } = {}) =>
+{
+    const chapter = chapterDef(chapterId);
+    if (chapter && scenes.currentName === 'playing')
+        transition.start({ levelId: chapter.levelId, color: chapter.portalColor, focus: pos });
 });
 // A level that won't load (e.g. a save or nextLevel naming a missing level) must not strand
 // the player on an error screen.
@@ -64,6 +78,7 @@ debugHook.register('menu', () => scenes.current?.menuDebugState?.() ?? null);
 debugHook.register('save', () => saveSystem.current());
 debugHook.register('saveStatus', () => saveSystem.debugState());
 debugHook.commands.clearSave = () => saveSystem.clear();
+debugHook.register('transition', () => transition.debugState());
 
 function gameInit()
 {
@@ -76,9 +91,10 @@ function gameInit()
 function gameUpdatePost()
 {
     // Esc during gameplay opens the pause overlay; the pause scene itself handles closing it.
-    if (scenes.currentName === 'playing' && wasPressed('pause'))
+    if (scenes.currentName === 'playing' && !transition.active && wasPressed('pause'))
         scenes.push('pause');
     scenes.updatePost();
+    transition.updatePost();
     endInputFrame();
     tickFrame();
 }
@@ -91,6 +107,7 @@ engineInit(
     () =>
     {
         scenes.renderPost();
+        transition.renderPost();   // the swirl covers the scenes, under the "saved" feather
         saveSystem.renderPost();   // the "saved" feather sits above every scene
     },
 );

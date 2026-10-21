@@ -2,7 +2,8 @@
 
 Checks (real key presses for movement; teleport and setTimeOfDay only set up tests):
 - The bedroom loads as an indoor level (environment, room backdrop, lighting, no outdoor sky), with
-  Twyx idling, and its two reserved regions (portal alcove >= 6x8 at floor level, practice course).
+  Twyx idling, the chapter portal and its lever in the old portal alcove (T-017; portal_scenario.py
+  tests them), and the practice course still reserved.
 - The day/night cycle: __sammy.dayCycle {t, phase}; setTimeOfDay steps through night, dawn, day,
   and dusk; daycycle:phase fires on each change; the room is darker at night than by day; the
   nightlight is on at night and off by day; the clock runs on its own.
@@ -142,28 +143,17 @@ def test_loads(pg):
     starts = [e for e in recorded(pg, "level:start") if e["levelId"] == "bedroom"]
     check(starts and starts[-1].get("environment") == "bedroom", f"level:start carries the environment: {starts[-1:]}")
     regions = {r["id"]: r for r in level["reserved"]}
-    alcove, course = regions.get("portal-alcove"), regions.get("practice-course")
-    check(alcove is not None and alcove["y0"] == 5 and alcove["x1"] - alcove["x0"] >= 6 and alcove["y1"] - alcove["y0"] >= 8,
-          f"portal alcove reserved, >= 6x8 at floor level: {alcove}")
+    course = regions.get("practice-course")
+    check("portal-alcove" not in regions, "the portal alcove is no longer reserved (T-017 built it)")
+    portal = next((e for e in s["entities"] if e and e.get("type") == "portal"), None)
+    lever = next((e for e in s["entities"] if e and e.get("id") == "portal-lever"), None)
+    check(portal is not None and 1 <= portal["feet"]["x"] - 2.5 and portal["feet"]["x"] + 2.5 <= 10 and portal["feet"]["y"] == 5,
+          f"the chapter portal stands in the old alcove (x 1-10), on the floor: {portal and portal['feet']}")
+    check(lever is not None and lever["mode"] == "cycle" and lever["pos"]["x"] < 10, f"its cycle lever stands beside it: {lever}")
     check(course is not None and 25 <= course["x1"] - course["x0"] <= 35, f"practice course reserved, about a screen: {course}")
     twyx = next((e for e in s["entities"] if e and e.get("type") == "twyx"), None)
     check(twyx is not None and twyx["action"] in ("stand", "sit", "lick"), f"Twyx is in the bedroom, idling: {twyx and twyx['action']}")
     check(any(t.get("type") == "twyx" for t in s["interaction"]["targets"]), "Twyx can be petted (interactable)")
-
-
-def test_alcove_is_empty(pg):
-    """Walk through the portal alcove at floor level and hop in it: nothing in the way."""
-    alcove = next(r for r in st(pg)["level"]["reserved"] if r["id"] == "portal-alcove")
-    settle(pg)
-    stand(pg, alcove["x1"] - .6)
-    pg.keyboard.down("KeyA")
-    time.sleep(1.2)
-    pg.keyboard.up("KeyA")
-    x = landed(pg)["x"]
-    check(x < alcove["x0"] + 1, f"walked across the alcove to its left wall (x {x:.2f})")
-    jump(pg, hold=.4)
-    p = landed(pg)
-    check(abs(p["y"] - FLOOR_Y) < .05, "nothing to land on in the alcove (back on the floor)")
 
 
 # --- the day/night cycle ------------------------------------------------------------------------
@@ -308,7 +298,6 @@ def main():
         load_level(pg, "bedroom")
         test_loads(pg)
         test_cycle(pg)
-        test_alcove_is_empty(pg)
         test_furniture(pg)
         screenshots(pg)
         for phase, t in PHASES:

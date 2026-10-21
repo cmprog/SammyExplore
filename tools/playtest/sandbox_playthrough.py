@@ -1,4 +1,4 @@
-"""T-011b full playthrough of the M1 sandbox ("Chapter One"), from the title screen to "To be continued...".
+"""T-011b full playthrough of the M1 sandbox ("Chapter One"), from the title screen home to the bedroom (T-017).
 
 Every input is a real Playwright key press (keyboard.down/up); there are NO debug teleports. Timing:
 the script waits on conditions checked once per engine step, in page (a wrapped Sammy.update), so a
@@ -13,8 +13,9 @@ Beats (each with a screenshot in tools/playtest/out/sandbox_NN_*.png):
   Eagle's Perch (correction) -> Great Gap hint -> a flaps-only attempt that falls short (the gap
   correction and its glide hint) -> the glide across -> far-side checkpoint -> locked door (up on
   the ledge) -> tunnel door -> last pit -> exit door -> level complete (the continue prompt waits
-  for the narrator's last line; Space while it types finishes it) -> To be continued -> title
-  -> New Game again (the whole story is told fresh) -> a Continue-style load at a checkpoint (the
+  for the narrator's last line; Space while it types finishes it) -> Chapter One completed -> the swirl
+  home -> the bedroom (arrival line, Chapter One saved as completed, the portal showing it) -> Quit to
+  Title -> New Game again (the whole story is told fresh) -> a Continue-style load at a checkpoint (the
   resume line, not the intro).
 
     .venv/Scripts/python tools/playtest/sandbox_playthrough.py
@@ -56,7 +57,7 @@ PILOT = """async () => {
         'correction:reset', 'correction:done', 'narration:zone', 'narrator:line', 'player:jump',
         'player:flap', 'player:flapEmpty', 'player:glideStart', 'player:glideEnd', 'player:land',
         'interact:sign', 'interact:twyx', 'interact:door', 'interact:doorLocked', 'interact:nothing',
-        'door:open', 'scene:change', 'narrator:revealed', 'narrator:skip'];
+        'door:open', 'scene:change', 'narrator:revealed', 'narrator:skip', 'chapter:complete'];
     for (const n of names)
         bus.on(n, d => {
             const p = window.__pilotSammy;
@@ -553,20 +554,36 @@ def beat_finish(pg):
               and st(pg)["menu"]["screen"] == "celebrate", "Space while the line types reveals it all, and stays on the celebration")
         check(any(e["n"] == "narrator:revealed" and e["d"]["id"] == "sandbox.complete" for e in log(pg)[m:]),
               "narrator:revealed sent for the last line")
+    done = events(pg, "chapter:complete", m)
+    check([e["d"] for e in done] == [{"chapterId": "chapter-one", "unlocked": []}], f"Chapter One completed ({[e['d'] for e in done]})")
     pg.wait_for_function("window.__sammy.menu && window.__sammy.menu.canContinue === true", timeout=6000)
     shot(pg, "level_complete_prompt")
     harness.tap(pg, "Space")
-    time.sleep(0.8)
-    shot(pg, "to_be_continued")
-    check("levelComplete" in st(pg)["sceneStack"], "still on the level complete overlay (To be continued...)")
-    time.sleep(1.0)
-    harness.tap(pg, "Space")
+    time.sleep(0.5)
+    t = st(pg)["transition"]
+    check(t["phase"] == "closing" and t["levelId"] == "bedroom", f"the swirl takes Sammy home ({t})")
+    shot(pg, "swirl_home")
+    pg.wait_for_function("window.__sammy.transition.phase === 'idle' && window.__sammy.level && window.__sammy.level.id === 'bedroom'",
+                         timeout=10000)
+    s = st(pg)
+    check(s["sceneStack"] == ["playing"] and s["inputLocks"] == [], f"in the bedroom, input live ({s['sceneStack']}, {s['inputLocks']})")
+    wait_line(pg, "bedroom.arrive", "bedroom_arrival")
+    save = stored_save(pg)
+    check(save and save["levelId"] == "bedroom" and save["checkpointId"] is None and save["completedChapters"] == ["chapter-one"],
+          f"level complete autosaved: Continue goes to the bedroom, Chapter One completed ({save})")
+    p = next((e for e in s["entities"] if e and e.get("type") == "portal"), None)
+    check(p is not None and p["chapterId"] == "chapter-one", f"the portal shows Chapter One ({p and p['chapterId']})")
+    check(s["chapters"]["completed"] == ["chapter-one"], f"__sammy.chapters: {s['chapters']}")
+    settle(pg)
+    # Quit to Title from the pause menu (W wraps from Resume to Quit).
+    harness.tap(pg, "Escape")
+    time.sleep(0.4)
+    harness.tap(pg, "KeyW")
+    time.sleep(0.2)
+    harness.tap(pg, "Enter")
     harness.wait_scene(pg, "title", 8)
     time.sleep(0.6)
     shot(pg, "back_to_title")
-    save = stored_save(pg)
-    check(save and save["levelId"] == "sandbox" and save["checkpointId"] is None,
-          f"level complete autosaved (no next level, so the save stays on the sandbox) ({save})")
 
 
 def beat_new_game_again(pg):

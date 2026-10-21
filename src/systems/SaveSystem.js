@@ -5,11 +5,15 @@
 //
 // Shape (SAVE_SCHEMA_VERSION 2):
 //   { schemaVersion, levelId, checkpointId, reachedCheckpoints: [], flags: {}, catsRescued: [],
-//     companion, updatedAt }
+//     companion, unlockedChapters: [], completedChapters: [], updatedAt }
 //   checkpointId null = start of the level. reachedCheckpoints = every checkpoint id reached in
 //   levelId so far (they stay used up on Continue). companion = the cat id along with Sammy
-//   (data/cats.js), or null. updatedAt is an ISO timestamp.
+//   (data/cats.js), or null. unlockedChapters / completedChapters = chapter ids (data/chapters.js).
+//   updatedAt is an ISO timestamp.
 // History: v1 (M1, live on the deployed site) had no companion; v1 -> v2 adds companion: null.
+// v2 is live too, so T-017's chapter lists are ADDITIVE v2 fields (no schema bump): a save
+// without them gets them in migrate(), worked out from its levelComplete.* flags (see
+// withChapters), so a player who already finished Chapter One keeps it finished.
 // Audio settings are NOT here: Audio owns sammyexplore.settings.
 //
 // Two separate questions: is there a usable save (Continue), and is there anything stored at
@@ -18,13 +22,16 @@
 // | newer (from a later game version) | blocked (storage could not be read).
 //
 // Events consumed: checkpoint:reached {id, levelId}, level:complete {id, levelId, nextLevel?},
-//   companion:join {cat}, companion:leave {cat}
+//   companion:join {cat}, companion:leave {cat}, chapter:complete {chapterId, unlocked},
+//   portal:enter {chapterId}
 import { timeReal } from 'littlejs';
 import { on } from '../core/events.js';
 import { SAVE_SCHEMA_VERSION } from '../data/version.js';
 import { SCREENS } from '../data/tuning.js';
 import { SAVE_TEXT } from '../data/screens.js';
 import { CATS } from '../data/cats.js';
+import { CHAPTERS, isRealChapter, chapterDef, startingChapterIds } from '../data/chapters.js';
+import { HOME_LEVEL_ID } from '../data/progression.js';
 import { drawSaveIcon } from '../art/drawSaveIcon.js';
 
 export const SAVE_KEY = 'sammyexplore.save';
@@ -47,6 +54,8 @@ export class SaveSystem
         this.unsubscribers = [
             on('checkpoint:reached', payload => this.onCheckpoint(payload)),
             on('level:complete', payload => this.onLevelComplete(payload)),
+            on('chapter:complete', payload => this.onChapterComplete(payload)),
+            on('portal:enter', payload => this.onPortalEnter(payload)),
             on('companion:join', ({ cat } = {}) => this.onCompanion(cat)),
             on('companion:leave', ({ cat } = {}) =>
             {
@@ -102,10 +111,41 @@ export class SaveSystem
 
     onLevelComplete({ levelId, nextLevel })
     {
-        // Continue picks up at the start of the next level. After the last level there is nowhere
-        // further yet, so Continue replays the finished level from its start.
+        // Continue picks up at the start of the next level. The end of a chapter (no nextLevel)
+        // goes home to the bedroom, so that is where Continue picks up.
         const flags = { ...this.data?.flags, [`levelComplete.${levelId}`]: true };
-        this.write({ levelId: nextLevel ?? levelId, checkpointId: null, reachedCheckpoints: [], flags });
+        this.write({ levelId: nextLevel ?? HOME_LEVEL_ID, checkpointId: null, reachedCheckpoints: [], flags });
+    }
+
+    /** A finished chapter, and the ones it opened. Test chapters (debug) are never saved. It
+     *  arrives just after level:complete has written the save (SaveSystem subscribes first). */
+    onChapterComplete({ chapterId, unlocked = [] } = {})
+    {
+        if (!this.data || !isRealChapter(chapterId))
+            return;
+        const add = (list, ids) => [...new Set([...(list ?? []), ...ids.filter(isRealChapter)])];
+        // A replay of a finished chapter changes nothing: no write, no "saved" feather.
+        this.writeIfChanged({
+            completedChapters: add(this.data.completedChapters, [chapterId]),
+            unlockedChapters: add(this.data.unlockedChapters ?? startingChapterIds(), [chapterId, ...unlocked]),
+        });
+    }
+
+    /** Stepping through the portal is a milestone: Continue starts that chapter. Only into a story
+     *  in progress, and never for a test chapter. */
+    onPortalEnter({ chapterId } = {})
+    {
+        if (!this.data || !isRealChapter(chapterId))
+            return;
+        this.writeIfChanged({ levelId: chapterDef(chapterId).levelId, checkpointId: null, reachedCheckpoints: [] });
+    }
+
+    /** write(), unless every field in `changes` already holds that value. */
+    writeIfChanged(changes)
+    {
+        const same = Object.entries(changes).every(([key, value]) => JSON.stringify(this.data?.[key]) === JSON.stringify(value));
+        if (!same)
+            this.write(changes);
     }
 
     /** Choosing (or letting go of) a companion is a milestone. Only into a story in progress:
@@ -197,7 +237,8 @@ function emptySave()
 {
     return {
         schemaVersion: SAVE_SCHEMA_VERSION, levelId: null, checkpointId: null, reachedCheckpoints: [],
-        flags: {}, catsRescued: [], companion: null, updatedAt: null,
+        flags: {}, catsRescued: [], companion: null,
+        unlockedChapters: startingChapterIds(), completedChapters: [], updatedAt: null,
     };
 }
 
@@ -222,5 +263,29 @@ function migrate(data)
         merged.reachedCheckpoints = [];
     if (!CATS[merged.companion])
         merged.companion = null;   // a cat this version doesn't know (or junk): nobody along
+    if (!merged.flags || typeof merged.flags !== 'object' || Array.isArray(merged.flags))
+        merged.flags = {};
+    return withChapters(merged, save);
+}
+
+/** T-017's chapter lists, added to v2 without a schema bump. A save from before them (no
+ *  completedChapters) gets them from its levelComplete.* flags; and if it was sitting at the
+ *  start of a chapter it had already finished (the old "Continue replays the last level" spot),
+ *  it now continues in the bedroom, where finishing a chapter leads. Ids are always checked
+ *  against data/chapters.js, so junk or a chapter this version doesn't know is dropped. */
+function withChapters(merged, raw)
+{
+    const ids = list => Array.isArray(list) ? list.filter(isRealChapter) : [];
+    if (!Array.isArray(raw.completedChapters))
+    {
+        const finished = CHAPTERS.filter(chapter => merged.flags[`levelComplete.${chapter.endLevelId ?? chapter.levelId}`] === true);
+        merged.completedChapters = finished.map(chapter => chapter.id);
+        merged.unlockedChapters = [...ids(raw.unlockedChapters), ...finished.flatMap(chapter => [chapter.id, ...chapter.unlock])];
+        const atFinishedStart = finished.some(chapter => chapter.levelId === merged.levelId) && merged.checkpointId === null;
+        if (atFinishedStart)
+            Object.assign(merged, { levelId: HOME_LEVEL_ID, reachedCheckpoints: [] });
+    }
+    merged.completedChapters = [...new Set(ids(merged.completedChapters))];
+    merged.unlockedChapters = [...new Set([...startingChapterIds(), ...ids(merged.unlockedChapters), ...merged.completedChapters])];
     return merged;
 }

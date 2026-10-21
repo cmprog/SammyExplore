@@ -100,8 +100,10 @@ export class TitleScene
         }
         else if (action?.id === 'continue')
         {
-            const { levelId, checkpointId, reachedCheckpoints, companion } = this.save.current();
-            this.scenes.change('playing', { levelId, checkpointId, reachedCheckpoints, companion });
+            const { levelId, checkpointId, reachedCheckpoints, companion, unlockedChapters, completedChapters } = this.save.current();
+            this.scenes.change('playing', {
+                levelId, checkpointId, reachedCheckpoints, companion, chapterProgress: { unlockedChapters, completedChapters },
+            });
         }
     }
 
@@ -120,7 +122,7 @@ export class TitleScene
     startNewGame()
     {
         this.save.newGame(FIRST_LEVEL_ID);
-        this.scenes.change('playing', { levelId: FIRST_LEVEL_ID, newStory: true, companion: null });
+        this.scenes.change('playing', { levelId: FIRST_LEVEL_ID, newStory: true, companion: null, chapterProgress: {} });
     }
 
     renderPost()

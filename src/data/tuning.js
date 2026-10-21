@@ -203,13 +203,16 @@ export const SCREENS = {
     LEVEL_COMPLETE_LINE_WAIT: 5,   // the continue prompt waits for the narrator's line to be fully shown, at most this long
     CONFETTI_COUNT: 90,
     CONFETTI_GRAVITY: 520,         // px/s^2, screen space
-    TO_BE_CONTINUED_MIN_TIME: 1.0,
-    TO_BE_CONTINUED_AUTO_TIME: 6,  // back to the title on its own after this
     TITLE_NOTICE_TIME: 6,          // how long a title-screen notice (e.g. a level failed to load) stays up
 };
 
 // --- Interaction (T-007) --- distances in tiles, times in seconds
 export const INTERACTION = {
+    // interactPriority: what E picks when several things are in range (higher first; then the one
+    // on the side Sammy faces; then the nearest). A cat beside Sammy must never steal E from the
+    // lever or door he walked up to, so cats rank below everything else.
+    PRIORITY_DEFAULT: 1,
+    PRIORITY_CAT: 0,
     PROMPT_FADE_IN: 0.16,     // the E bubble pops in...
     PROMPT_FADE_OUT: 0.12,    // ...and out a little faster, so swapping targets feels snappy
     PROMPT_LIFT: 0.2,         // gap between an interactable's top and the bubble's tail
@@ -318,6 +321,32 @@ export const LEVER = {
     SPARKS: 5,                 // little stars that pop off the knob on a throw
     SPARK_LIFE: 0.55,
     SPARK_SPEED: 2.2,
+};
+
+// --- The chapter portal (T-017) --- tiles and seconds
+export const PORTAL = {
+    ENTER_HALF_WIDTH: 1.2,
+    REARM_AFTER: 1,            // a step in that started no trip: the portal works again after this (Portal.js)     // Sammy's center this close to the middle (sideways), inside the opening, steps through
+    SWITCH_TIME: 0.6,          // the swirl's color blends to the new chapter's over this long...
+    FLIP_TIME: 0.5,            // ...while the sign flips over to the new title
+    SPIN: 0.9,                 // swirl turns, radians per second
+    SPIN_BOOST: 7,             // extra spin right after the lever is thrown (fades over SWITCH_TIME)
+    POP: 0.08,                 // the swirl swells this much on a switch, and springs back
+    MOTE_EVERY: 0.22,          // a glowing mote drifts out of the swirl this often
+    MOTE_LIFE: 2.4,
+    BURST: 14,                 // sparkles on a switch
+    ENTER_BURST: 26,           // and when Sammy steps in
+    LIGHT_RADIUS: 4.5,         // the soft glow it casts in the room's light map (diameter = 2x)
+    LIGHT_STRENGTH: 0.8,
+    LIGHT_PULSE: 0.08,
+};
+
+// The swirl that carries Sammy between the bedroom and a chapter (screen effect), seconds.
+export const SWIRL_TRANSITION = {
+    CLOSE_TIME: 0.85,          // the swirl closes in over the view...
+    HOLD_MIN: 0.2,             // ...stays shut at least this long (and until the new level is built)...
+    HOLD_MAX: 6,               // ...but never longer than this, even if the level is slow to load
+    OPEN_TIME: 0.9,            // ...then opens out on the new place
 };
 
 export const BRIDGE = {

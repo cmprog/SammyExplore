@@ -88,6 +88,8 @@ function eventVolume(eventName, data)
 {
     if (eventName === 'player:land' && Number.isFinite(data?.impact))
         return lerp(AUDIO_TUNING.LAND_IMPACT_FLOOR, 1, clamp(data.impact, 0, 1));
+    if (eventName === 'portal:select' && data?.changed === false)
+        return AUDIO_TUNING.PORTAL_SAME_VOLUME;
     return 1;
 }
 

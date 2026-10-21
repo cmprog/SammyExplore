@@ -8,13 +8,14 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/sammy_poses.py        # T-005 art: zoomed close-up of every pose -> out/poses/, out/poses_sheet.png
     .venv/Scripts/python tools/playtest/interaction_scenario.py   # T-007 E prompt, sign, doors (real E presses)
     .venv/Scripts/python tools/playtest/twyx_scenario.py      # T-011a Twyx: facing, petting, narrator lines; pose sheet -> out/twyx/, out/twyx_sheet.png
-    .venv/Scripts/python tools/playtest/sandbox_playthrough.py   # T-011b full sandbox run, title -> To be continued -> New Game again (~2 min); out/sandbox_NN_*.png
+    .venv/Scripts/python tools/playtest/sandbox_playthrough.py   # T-011b full sandbox run, title -> swirl home to the bedroom -> New Game again (~2 min); out/sandbox_NN_*.png
     .venv/Scripts/python tools/playtest/narrator_queue_scenario.py   # T-012 queue rules: noStale, condition re-check, forgetSeen
     .venv/Scripts/python tools/playtest/release_smoke.py      # T-012 release build (no ?debug): loads clean, no speed keys, no debug overlay
     .venv/Scripts/python tools/playtest/bedroom_scenario.py   # T-013 bedroom: day/night cycle, nightlight, furniture platforming, fps vs sandbox; out/bedroom_*.png
     .venv/Scripts/python tools/playtest/mechanism_scenario.py # T-014 levers, bridge, gate, lift (real E presses): state, collision, riding; out/mech_*.png
     .venv/Scripts/python tools/playtest/companion_scenario.py # T-015 Twyx following (companion course, test + sandbox levels), save v1->v2; out/companion/, out/companion_sheet.png (~4 min)
     .venv/Scripts/python tools/playtest/planner_bench.py      # T-015 cat leap planner cost per call (ms)
+    .venv/Scripts/python tools/playtest/portal_scenario.py    # T-017 portal + chapters: live v1/v2 saves, lever cycling (fake test chapter), swirl in/out with Twyx, chapter complete -> bedroom, Continue; out/portal_*.png
 
 ## Debug and release builds
 

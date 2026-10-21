@@ -23,7 +23,6 @@ export const PAUSE_TEXT = {
 export const LEVEL_COMPLETE_TEXT = {
     banner: 'Level Complete!',
     prompt: 'Press Space or click to continue',
-    toBeContinued: 'To be continued...',
 };
 
 export const SAVE_TEXT = {

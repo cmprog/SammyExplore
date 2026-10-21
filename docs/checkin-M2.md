@@ -15,7 +15,13 @@
 
 - Replaying Chapter One with Twyx along: Chapter One is where Sammy *meets* Twyx. If she's already following him, should the "meeting" lines be skipped (she's just with him), should she wait at her usual spot anyway, or something else?
 
+- Portal look: a slate-stone block frame with a gem keystone, a swirl in the chapter's color (Chapter One is moonlit aqua), and a wooden sign above. Colors OK?
+- When Sammy arrives in the bedroom, the portal shows the newest unlocked chapter. OK?
+
 ## Decisions PM made (FYI)
 - A lever is the single source of truth for whether its targets start on or off.
 - Bridges refuse to raise while anyone is standing on them (the lift does the same). A companion cat can never be dropped.
 - GitHub Pages now deploys only the game files via Actions (switch Settings → Pages → Source to "GitHub Actions").
+- Finishing any chapter returns to the bedroom (replaces "To be continued..."). Returning M1 players who already finished Chapter One continue in the bedroom.
+- Entering a chapter through the portal autosaves at that chapter's start.
+- E prefers levers, portals and signs over the companion cat, so a kid never accidentally sends Twyx home.

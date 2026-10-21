@@ -1,7 +1,7 @@
 """T-008 screens and autosave: title (keyboard + mouse), Continue greyed with no save, New Game, checkpoint
 autosave (localStorage), pause overlay keeps level state, sound settings via the pause menu, Quit to Title,
-Continue at the checkpoint, overwrite confirm (No keeps / Yes replaces), level complete -> To be continued
--> title, nextLevel path, used-up checkpoints on Continue, zones frozen under the celebration, held keys
+Continue at the checkpoint, overwrite confirm (No keeps / Yes replaces), level complete -> swirl home to the bedroom
+(T-017), nextLevel path, used-up checkpoints on Continue, zones frozen under the celebration, held keys
 carrying through a pause, corrupt / newer-schema saves still asking before New Game, a level that fails to
 load falling back to the title, and blocked storage (read and write)."""
 import json
@@ -304,14 +304,16 @@ def level_complete(pg):
               "Space while the remark types reveals it and stays on the celebration")
     ok = wait_for(pg, lambda: st(pg)["menu"]["canContinue"] is True)
     check(ok, "the continue prompt appears once the remark is fully shown")
-    press(pg, "Space", 0.8)
-    check(st(pg)["menu"]["screen"] == "toBeContinued", "no nextLevel -> To be continued")
-    time.sleep(0.8)
-    harness.shot(pg, "screens_07_to_be_continued")
-    press(pg, "Enter", 0.5)
-    harness.wait_scene(pg, "title")
+    press(pg, "Space", 0.4)
     s = st(pg)
-    check(s["sceneStack"] == ["title"] and s["inputLocks"] == [], "To be continued -> title, input unlocked")
+    check(s["menu"]["screen"] == "goingHome" and s["transition"]["phase"] == "closing" and s["transition"]["levelId"] == "bedroom",
+          f"no nextLevel -> swirl home to the bedroom (T-017) ({s['menu']['screen']}, {s['transition']})")
+    harness.shot(pg, "screens_07_swirl_home")
+    ok = wait_for(pg, lambda: st(pg)["transition"]["phase"] == "idle", 8)
+    s = st(pg)
+    check(ok and s["sceneStack"] == ["playing"] and s["level"]["id"] == "bedroom" and s["inputLocks"] == [],
+          f"-> the bedroom, input unlocked ({s['sceneStack']}, {s['level'].get('id')}, {s['inputLocks']})")
+    check(stored_save(pg)["levelId"] == "bedroom", "the save continues in the bedroom")
 
 
 def next_level_path(pg):

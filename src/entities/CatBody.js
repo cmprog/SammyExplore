@@ -11,7 +11,7 @@
 import { EngineObject, vec2, clamp, timeDelta } from 'littlejs';
 import { collidesWithTerrain } from '../systems/terrainCollision.js';
 import { RENDER_ORDER } from '../data/renderOrder.js';
-import { COMPANION, WORLD_GRAVITY } from '../data/tuning.js';
+import { COMPANION, WORLD_GRAVITY, INTERACTION } from '../data/tuning.js';
 
 const BRAKE = .012;   // per step, settling to a stop
 const HEAD_HEIGHT = .8;   // roughly where her eyes are above her feet, for looking at Sammy
@@ -32,6 +32,7 @@ export class CatBody extends EngineObject
         this.catId = catId;
         this.roam = roam;
         this.home = false;             // the Companion sets this: placed by a companion hub level
+        this.interactPriority = INTERACTION.PRIORITY_CAT;   // E prefers anything else in range (Interaction.js)
         this.playerPos = playerPos;
         this.renderOrder = RENDER_ORDER.cats;
         this.setCollision(true, false, true);
