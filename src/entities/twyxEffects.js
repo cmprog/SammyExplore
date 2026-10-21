@@ -1,6 +1,6 @@
 // Recipes for Twyx's particle bursts, spawned into a ParticleField. Numbers in TWYX.
 import { vec2, rand } from 'littlejs';
-import { drawHeart, drawQuestion } from '../art/drawTwyxFx.js';
+import { drawHeart, drawQuestion, drawPurrWave } from '../art/drawTwyxFx.js';
 import { drawDust } from '../art/drawSammyFx.js';
 import { TWYX } from '../data/tuning.js';
 
@@ -70,6 +70,42 @@ export function spawnLandPuff(field, feet, impact)
             life: rand(.3, .45),
             drag: 4,
             size: rand(.14, .22) * (.6 + impact),
+        });
+    }
+}
+
+/** Comfort (T-016): a purr ripple rising off her back. */
+export function spawnPurrWave(field, backPos)
+{
+    field.add({
+        draw: drawPurrWave,
+        pos: backPos.copy(),
+        vel: vec2(rand(-.1, .1), .45),
+        life: 1.3,
+        drag: .4,
+        sway: .08,
+        swayPhase: rand(0, 6.28),
+        angle: rand(-.15, .15),
+        size: .42,
+    });
+}
+
+/** Comfort: the moment it works, a warm little burst of hearts over both of them. */
+export function spawnComfortHearts(field, between)
+{
+    for (let i = 0; i < 5; i++)
+    {
+        const side = (i / 4) * 2 - 1;
+        field.add({
+            draw: drawHeart,
+            pos: between.add(vec2(side * .35, i === 2 ? .1 : 0)),
+            vel: vec2(side * rand(.35, .6), TWYX.HEART_RISE * rand(.75, 1)),
+            life: TWYX.HEART_LIFE * rand(1, 1.2),
+            drag: .5,
+            sway: TWYX.HEART_SWAY * .7,
+            swayPhase: rand(0, 6.28),
+            angle: side * -.3,
+            size: i === 2 ? .32 : rand(.17, .23),
         });
     }
 }

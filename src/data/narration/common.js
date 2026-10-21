@@ -203,6 +203,41 @@ export default {
             ],
         },
 
+        // Cat spots (T-016). PLACEHOLDERS: T-019 writes the real lines. Soft hints only: a cat is
+        // needed / a different cat is needed / clear her way. Never say WHICH cat a spot wants.
+        // A spot's `key` (level data) lets a level give one spot its own lines.
+        {
+            id: 'catspot.noCat',
+            trigger: 'catspot:noCat',
+            cooldown: 4,
+            texts: [
+                'A cushion with a paw print on it. Eagles do not have paws. Somebody with paws, perhaps?',
+                'You pat the cushion. The cushion waits for someone furrier.',
+            ],
+        },
+        {
+            id: 'catspot.wrongCat',
+            trigger: 'catspot:wrongCat',
+            cooldown: 4,
+            texts: [
+                'The cat sniffs the cushion and looks at you. Not this cat, apparently. Picky cushion.',
+                'Hmm. This looks like a job for a different sort of cat.',
+            ],
+        },
+        {
+            id: 'catspot.unreachable',
+            trigger: 'catspot:unreachable',
+            cooldown: 6,
+            text: "Your cat would love to help, but she can't get there. Perhaps the owl could clear the way?",
+        },
+        {
+            id: 'ability.comfort',
+            trigger: 'ability:used',
+            condition: ctx => ctx.payload?.ability === 'comfort',
+            cooldown: 6,
+            text: 'Twyx snuggles the frazzled thing until it feels better. The Eagle would have shouted. This is nicer.',
+        },
+
         // A sign with no line of its own (its key has no keyed line). Keyed lines always win.
         {
             id: 'sign.fallback',

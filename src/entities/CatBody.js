@@ -196,6 +196,22 @@ export class CatBody extends EngineObject
     refuse() {}
     /** @param {{vx:number, vy:number, grounded:boolean, waiting:boolean, riding:boolean, wantsToMove:boolean}} motion */
     animate(motion) {}
+
+    // --- abilities (T-016, data/abilities.js) -------------------------------------------------
+    // The CatSpots system plays her ability at a cat spot: performAbility when she gets there,
+    // abilityEffect at the moment it works, endAbility when it's over (or called off). A cat
+    // class with an ability overrides these; one without returns false and nothing happens.
+
+    /** Start an ability animation, facing whoever it's for (1 right, -1 left). False if she has none by that name. */
+    performAbility(animation, facing) { return false; }
+    /** The moment it works (hearts, sparkle). */
+    abilityEffect() {}
+    endAbility() {}
+    /** The animation name she's performing, or null. */
+    get performing() { return null; }
+
+    /** Sent somewhere by goTo() (a cat spot errand), or performing: E on her does nothing then. */
+    get busyWithErrand() { return !!this.mover?.goal || !!this.performing; }
 }
 
 export function round(value)

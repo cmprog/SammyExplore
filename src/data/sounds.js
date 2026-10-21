@@ -1,5 +1,6 @@
 // Sound catalog (ZzFX) plus the event -> sound mapping and audio defaults.
 // Audio.js reads this; nothing else should call zzfx or build sounds.
+import { abilityDef } from './abilities.js';
 //
 // ZzFX parameter order (unset = ZzFX default):
 //  [volume, randomness, frequency, attack, sustain, release, shape, shapeCurve, slide, deltaSlide,
@@ -155,6 +156,30 @@ export const SOUNDS = {
         { zzfx: BELL_LONG, semitones: 24, at: .6, volume: .5 },
     ] },
 
+    // Cat spots (T-016). A soft "pff" pat on the cushion (E with no cat, or the wrong one).
+    catspotPoke: { minInterval: .2, layers: [
+        { zzfx: [.22, 0, 200, .005, .03, .12, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, .6, .04, 0, -700] },
+        { zzfx: [.08, 0, 1800, .005, .02, .2, 0, 1, 0, 0, 0, 0, .05, 0, 0, 0, 0, .5, 0, .4], at: .04 },
+    ] },
+
+    // Twyx's Comfort: a low, warm purr that rumbles (tremolo at ~22 Hz) for the whole snuggle.
+    purr: { minInterval: 1, layers: [
+        { zzfx: [.32, 0, 58, .35, 2.6, 1, 2, 1, 0, 0, 0, 0, .045, .25, 0, 0, 0, .9, 0, .85, -420] },
+    ] },
+
+    // The moment Comfort works: a slow, soft rising chime.
+    comfortChime: { minInterval: .5, layers: [
+        { zzfx: BELL, semitones: 7, volume: .45 },
+        { zzfx: BELL, semitones: 12, at: .16, volume: .45 },
+        { zzfx: BELL_LONG, semitones: 16, at: .32, volume: .5 },
+    ] },
+
+    // The wind-up mouse calms down: a happy little two-note squeak.
+    mouseRelief: { minInterval: .5, layers: [
+        { zzfx: [.16, 0, 1400, .01, .04, .06, 0, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, .7, 0, 0, 0] },
+        { zzfx: [.16, 0, 1700, .01, .05, .08, 0, 1, 8, 0, 0, 0, 0, 0, 0, 0, 0, .7, 0, 0, 0], at: .1 },
+    ] },
+
     // Little arpeggio C-E-G-C, a ringing top note, and a sparkle on top.
     levelComplete: { minInterval: .5, layers: [
         { zzfx: BELL, semitones: 0 },
@@ -182,7 +207,6 @@ export const SOUND_EVENTS = {
     'companion:waiting':    'mrrp',
     'companion:caughtUp':   'chirp',
     'door:open':            'doorOpen',
-    'mechanism:toggle':     'leverThrow',   // any trigger thrown (a lever, later a cat spot)
     'mechanism:cycle':      'leverThrow',
     'portal:select':        'portalSelect',  // quieter when it found no other chapter (Audio.js)
     'portal:enter':         'portalEnter',
@@ -196,6 +220,25 @@ export const SOUND_EVENTS = {
     'menu:move':            'menuMove',
     'menu:select':          'menuSelect',
     'level:complete':       'levelComplete',
+    'interact:catspot':     'catspotPoke',  // the pat; the right cat then purrs (ability:start)
+};
+
+// An upset thing's sound when it calms down, by its entity type (upset:calmed {kind}).
+export const UPSET_CALM_SOUNDS = {
+    windupMouse: 'mouseRelief',
+};
+
+// The start sound of an ability (sounds.start) stops early on ability:cancel (Audio.js).
+export const ABILITY_CANCEL_EVENT = 'ability:cancel';
+
+// Events whose sound depends on the payload: payload -> sound name, or null for none.
+export const SOUND_EVENT_CHOOSERS = {
+    // Any trigger thrown clunks, except a cat spot (her ability has its own sounds) or an upset
+    // thing doing its job (its calm sound plays).
+    'mechanism:toggle': data => data?.by === 'catspot' || data?.by === 'upset' ? null : 'leverThrow',
+    'upset:calmed': data => UPSET_CALM_SOUNDS[data?.kind] ?? null,
+    'ability:start': data => abilityDef(data?.ability)?.sounds?.start ?? null,
+    'ability:used': data => abilityDef(data?.ability)?.sounds?.used ?? null,
 };
 
 export const GLIDE_START_EVENTS = ['player:glideStart'];

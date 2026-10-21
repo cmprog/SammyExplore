@@ -8,13 +8,18 @@
 // (systems/Companion.js) uses that same E to ask her along, or to let her stay.
 //
 // Her body, physics and movement are CatBody's; this class is her look: art, animator, effects.
+// T-016: her ability is Comfort (data/abilities.js). At a cat spot she snuggles in close to
+// whoever is upset, bunts them, grooms them, then curls up purring; hearts and purr ripples rise.
 import { vec2, lerp, time, timeDelta, isOnScreen } from 'littlejs';
 import { CatBody, round } from './CatBody.js';
 import { drawTwyx } from '../art/drawTwyx.js';
 import { TwyxAnimator } from './TwyxAnimator.js';
 import { ParticleField } from './ParticleField.js';
-import { spawnPetHearts, spawnHappyHearts, spawnMrrp, spawnLandPuff } from './twyxEffects.js';
-import { TWYX, COMPANION } from '../data/tuning.js';
+import {
+    spawnPetHearts, spawnHappyHearts, spawnMrrp, spawnLandPuff, spawnPurrWave, spawnComfortHearts,
+} from './twyxEffects.js';
+import { TWYX, COMPANION, TWYX_COMFORT } from '../data/tuning.js';
+import { RENDER_ORDER } from '../data/renderOrder.js';
 import { TWYX_SHAPES } from '../data/twyxPoses.js';
 import { CATS } from '../data/cats.js';
 import { requireId, allowOnlyProps, requireEmptyColumn, entityLabel } from './entityValidation.js';
@@ -57,9 +62,11 @@ export class Twyx extends CatBody
     get interactPos() { return this.pos; }
     get promptPos()   { return vec2(this.pos.x, this.headPos().y + PROMPT_ABOVE_HEAD); }   // rises when Twyx sits
 
+    /** Not while she's on her way to a cat spot or comforting someone: a pet would knock her out
+     *  of it, and in a hub E could even send her home. */
     canInteract()
     {
-        return true;
+        return !this.busyWithErrand;
     }
 
     interactPayload()
@@ -78,10 +85,12 @@ export class Twyx extends CatBody
     /** Center of the head in world space, standing or sitting. */
     headPos()
     {
-        const { stand, sit } = TWYX_SHAPES;
-        const amount = this.animator.sit;
-        const x = lerp(stand.head.x, sit.head.x, amount) * this.animator.facing;
-        return this.feet.add(vec2(x, lerp(stand.head.y, sit.head.y, amount)));
+        const { stand, sit, snuggle, loaf } = TWYX_SHAPES;
+        const a = this.animator;
+        let x = lerp(stand.head.x, sit.head.x, a.sit), y = lerp(stand.head.y, sit.head.y, a.sit);
+        x = lerp(lerp(x, snuggle.head.x, a.comfort), loaf.head.x, a.curl);
+        y = lerp(lerp(y, snuggle.head.y, a.comfort), loaf.head.y, a.curl);
+        return this.feet.add(vec2(x * a.facing, y));
     }
 
     // --- CatBody hooks ------------------------------------------------------------------------
@@ -118,7 +127,47 @@ export class Twyx extends CatBody
 
     animate(motion)
     {
+        const before = this.animator.abilityTime;
         this.animator.update(timeDelta, this.offsetToPlayer(NOTICE), motion);
+        if (this.animator.ability === 'comfort')
+            this.comfortCues(before, this.animator.abilityTime);
+    }
+
+    // --- Comfort (T-016) ----------------------------------------------------------------------
+
+    performAbility(animation, facing)
+    {
+        if (!this.animator.startAbility(animation, facing))
+            return false;
+        // The star of the moment: in front of Sammy, so standing on the cushion never hides her.
+        this.renderOrder = RENDER_ORDER.characters + .5;
+        return true;
+    }
+
+    /** It worked: a warm burst of hearts between her and whoever she comforted. */
+    abilityEffect()
+    {
+        const head = this.headPos();
+        spawnComfortHearts(this.fx, head.add(vec2(this.animator.facing * .35, HEARTS_ABOVE_HEAD)));
+    }
+
+    endAbility()
+    {
+        this.animator.endAbility();
+        this.renderOrder = RENDER_ORDER.cats;
+    }
+
+    get performing() { return this.animator.ability; }
+
+    /** Purr ripples off her back, and a little heart at each bunt and mid-groom. */
+    comfortCues(from, to)
+    {
+        const C = TWYX_COMFORT;
+        const crossed = at => from < at && to >= at;
+        if (to >= C.PURR_FROM && Math.floor((to - C.PURR_FROM) / C.PURR_EVERY) !== Math.floor((from - C.PURR_FROM) / C.PURR_EVERY))
+            spawnPurrWave(this.fx, this.feet.add(vec2(-.1 * this.animator.facing, .75)));
+        if (C.HEARTS_AT.some(crossed))
+            spawnHappyHearts(this.fx, this.headPos().add(vec2(this.animator.facing * .15, HEARTS_ABOVE_HEAD)));
     }
 
     // --- drawing and debug --------------------------------------------------------------------
@@ -161,16 +210,29 @@ export class Twyx extends CatBody
             perk: round(a.perk),
             pets: this.pets,
             hearts: this.fx.count,
+            ability: a.ability,
+            abilityTime: round(a.abilityTime),
+            comfort: round(a.comfort),
+            curl: round(a.curl),
+            renderOrder: this.renderOrder,
+            onErrand: this.busyWithErrand,
         };
     }
 
-    /** Debug and pose captures (window.__sammy.commands.entityAction). */
+    /** Debug and pose captures (window.__sammy.commands.entityAction): also 'comfort' (plays the
+     *  animation where she stands, toward where she faces), 'abilityEffect' and 'endAbility'. */
     debugAction(what, hold = false)
     {
         if (what === 'pet')
             return void this.interact();
         if (what === 'mrrp')
             return void this.mrrp();
+        if (what === 'comfort')
+            return void this.performAbility('comfort', this.animator.facing);
+        if (what === 'endAbility')
+            return void this.endAbility();
+        if (what === 'abilityEffect')
+            return void this.abilityEffect();
         this.animator.force(what, hold);
     }
 }

@@ -303,15 +303,19 @@ export class Companion
      *  from just off the current screen, or else under a page flip. Returns whether she's coming. */
     bringIn(via)
     {
+        if (this.cat.performing)
+            return false;   // never moved mid-ability: she comes once it's over (still pending)
         const late = this.noSpotFor >= C.FETCH_FALLBACK_AFTER;
         const spot = this.unseenEntrySpot() ?? (late ? this.offscreenEntrySpot() : null);
         if (spot)
         {
+            this.follower.goTo(null);   // brought back to Sammy: an errand (a cat spot) is off
             this.placeBeside(via, { spot });
             return true;
         }
         if (!late)
             return false;
+        this.follower.goTo(null);
         this.cover = { age: 0, via, placed: false };
         return true;
     }
@@ -391,7 +395,9 @@ export class Companion
     onWaiting(reason)
     {
         this.cat.mrrp();
-        emit('companion:waiting', { cat: this.cat.catId, reason });
+        // On an errand (a cat spot) CatSpots sends catspot:unreachable instead: one narrator cue, not two.
+        if (!this.follower?.goal)
+            emit('companion:waiting', { cat: this.cat.catId, reason });
     }
 
     onCaughtUp(via)
@@ -432,6 +438,22 @@ export class Companion
     {
         this.follower?.goTo(pos);
         return !!this.follower;
+    }
+
+    /** T-016 (CatSpots): the companion's entity in this level, or null. */
+    currentCat()
+    {
+        return this.follower ? this.cat : null;
+    }
+
+    /** T-016 (CatSpots): how her goTo() errand is going: {hasGoal, arrived, waiting, reason}, or
+     *  null with nobody along. hasGoal turns false if she was brought back to Sammy (bringIn). */
+    errandState()
+    {
+        const follower = this.follower;
+        if (!follower)
+            return null;
+        return { hasGoal: !!follower.goal, arrived: follower.atGoal, waiting: follower.state === 'waiting', reason: follower.reason };
     }
 
     // --- debug --------------------------------------------------------------------------------

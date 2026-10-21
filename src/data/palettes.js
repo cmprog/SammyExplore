@@ -120,4 +120,6 @@ export const TWYX_PALETTE = {
     heart:       rgb(1, .42, .58),
     heartShine:  rgb(1, .80, .86),
     note:        rgb(1, .93, .62),
+    // Comfort (T-016): the soft rings of her purr
+    purr:        rgb(.92, .86, 1),
 };

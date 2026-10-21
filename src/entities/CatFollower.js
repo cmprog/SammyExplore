@@ -26,6 +26,7 @@ import {
 import { COMPANION as C } from '../data/tuning.js';
 
 const REACHED = .3;             // a crumb this close (sideways) is reached
+const AT_GOAL = .08;            // goTo(): she eases in this close to the spot
 const AT_TAKEOFF = .15;         // close enough to the edge/wall to try the leap from here
 const SHORTCUT_EVERY = .15;     // seconds between looks for a later crumb she can walk straight to
 const SHORTCUT_TRIES = 8;       // walk checks per look, newest crumbs first
@@ -317,7 +318,9 @@ export class CatFollower
     toGoal(cat, feet, solids, riding)
     {
         const goal = this.goal;
-        if (Math.abs(goal.x - feet.x) < REACHED && Math.abs(goal.y - feet.y) < SAME_HEIGHT)
+        const dx = goal.x - feet.x, sameHeight = Math.abs(goal.y - feet.y) < SAME_HEIGHT;
+        // Close enough, or already settled there (a nudge doesn't send her off again).
+        if (sameHeight && Math.abs(dx) < (this.atGoal ? REACHED : AT_GOAL))
         {
             this.atGoal = true;
             this.state = 'idle';
@@ -327,6 +330,9 @@ export class CatFollower
         this.atGoal = false;
         if (this.state === 'waiting' && (this.recheck -= timeDelta) > 0)
             return this.keepWaiting(cat, feet, solids);
+        // The last stretch: ease in to stop right on the spot (a cat spot wants her just there).
+        if (sameHeight && Math.abs(dx) < 1 && !walkSpan(cat, feet.x, feet.y, goal.x, solids).blocked)
+            return this.walk(cat, goal.x, C.TROT_SPEED, true);
         return this.goToward(cat, feet, goal, solids, C.CATCHUP_DISTANCE, riding);
     }
 

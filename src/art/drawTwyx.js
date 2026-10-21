@@ -1,7 +1,8 @@
 // Twyx the tuxedo cat, drawn from layered primitives in the same round style as Sammy.
 // A pure function of (pos, pose, time): the remembered animation (facing turn, sit and lick
 // blends, blink, tail swish, pet reaction, squash spring, and since T-015 the trot cycle, leaps,
-// head turns and the waiting look) arrives in `pose`, worked out by TwyxAnimator. Missing fields
+// head turns and the waiting look; since T-016 her Comfort: snuggling in, headbutts, grooming
+// licks, curling up with a purr) arrives in `pose`, worked out by TwyxAnimator. Missing fields
 // fall back to a calm standing cat, so drawTwyx(pos, {}, t) works.
 //
 // Art units: 1 = one tile. Origin between the feet, y up, drawn facing right and mirrored for
@@ -12,7 +13,7 @@ import { lerp } from 'littlejs';
 import { ArtFrame } from './ArtFrame.js';
 import { TWYX_PALETTE as P } from '../data/palettes.js';
 import { TWYX_SHAPES, TWYX_GAIT as GAIT, TWYX_FACE_TURN as TURN } from '../data/twyxPoses.js';
-import { TWYX, TWYX_MOTION } from '../data/tuning.js';
+import { TWYX, TWYX_MOTION, TWYX_COMFORT } from '../data/tuning.js';
 
 const OUTLINE = .04;
 const HEAD = { w: .66, h: .56 };
@@ -62,11 +63,13 @@ function lookFor(pose, time)
 {
     const turn = pose.turn ?? pose.facing ?? 1;
     const breath = Math.sin(time * TWYX.BREATHE_SPEED);
+    const purr = pose.purr ?? 0;
     return {
         mirror: turn < 0 ? -1 : 1,
         // Turning around is a quick squeeze through the middle, like a paper cutout flipping.
         turnSqueeze: .3 + .7 * Math.min(1, Math.abs(turn)),
-        squash: (pose.squash ?? 0) + breath * .018,
+        // A purr is a tiny fast shiver on top of her breathing.
+        squash: (pose.squash ?? 0) + breath * .018 + Math.sin(time * 41) * TWYX_COMFORT.PURR_SHIVER * purr,
         sit: pose.sit ?? 0,
         lick: pose.lick ?? 0,
         lickTime: pose.lickTime ?? time,
@@ -83,6 +86,12 @@ function lookFor(pose, time)
         curious: pose.curious ?? 0,
         mrrp: pose.mrrp ?? 0,
         shake: pose.shake ?? 0,
+        comfort: pose.comfort ?? 0,
+        curl: pose.curl ?? 0,
+        bunt: pose.bunt ?? 0,
+        groom: pose.groom ?? 0,
+        groomPhase: pose.groomPhase ?? 0,
+        purr,
     };
 }
 
@@ -99,6 +108,10 @@ function shapeFor(look)
         shape = trotBob(blendShape(shape, TWYX_SHAPES.trot, ease(walk)), look);
     if (air > 0)
         shape = blendShape(shape, TWYX_SHAPES.leap, ease(air));
+    if (look.comfort > 0)
+        shape = blendShape(shape, TWYX_SHAPES.snuggle, ease(look.comfort));
+    if (look.curl > 0)
+        shape = blendShape(shape, TWYX_SHAPES.loaf, ease(look.curl));
     return shape;
 }
 
@@ -268,13 +281,19 @@ function headFrame(root, shape, look)
     // headTurn below 0: she's looking back over her shoulder (the head flips, squeezing through
     // the middle like the body does when she turns round).
     const dip = look.lick * (1 - look.happy);
-    const x = shape.head.x + dip * .05, y = shape.head.y - dip * .08;
+    // Comfort: a headbutt pushes her forehead forward (the head tips down so the brow leads);
+    // grooming, she nods down into each lick.
+    const lickNod = look.groom * (.5 + .5 * Math.sin(look.groomPhase));
+    const bunt = look.bunt, groom = look.groom;
+    const x = shape.head.x + dip * .05 + bunt * .13 + groom * .03;
+    const y = shape.head.y - dip * .08 - bunt * .03 - groom * .05 - lickNod * .03;
     const back = look.headTurn < 0 ? -1 : 1;
     const squeeze = back * (.35 + .65 * Math.min(1, Math.abs(look.headTurn)));
     // Looking back, the head swings round over her shoulder: drawn back over the body and lifted.
     const over = Math.max(0, -look.headTurn);
     const tilt = (look.lookUp + look.curious * .13 + over * .12) * back + look.shake * TWYX_MOTION.SHAKE_ANGLE;
-    return root.child(x - over * .12, y + over * .04, -dip * .28 + look.happy * .08 + tilt, squeeze, 1);
+    const comfortTilt = -bunt * .32 - groom * .22 - lickNod * .12 + look.curl * .1;
+    return root.child(x - over * .12, y + over * .04, -dip * .28 + look.happy * .08 * (1 - groom) + tilt + comfortTilt, squeeze, 1);
 }
 
 function drawEars(head, look)
@@ -322,6 +341,18 @@ function drawFace(head, look)
     }
     drawNoseAndMouth(head, x, look.mrrp);
     drawWhiskers(head, x);
+    if (look.groom > .4 && Math.sin(look.groomPhase) > -.3)
+        drawGroomTongue(head, x, Math.sin(look.groomPhase));
+}
+
+/** Grooming: a little pink tongue reaching out and down from under the nose, in and out with each lick. */
+function drawGroomTongue(head, x, phase)
+{
+    const reach = .5 + .5 * phase;
+    const tx = x + .06 + reach * .05, ty = -.18 - reach * .03;
+    head.ellipse(tx, ty, .09 + reach * .05, .1, P.outline, -.6);
+    head.ellipse(tx, ty, .07 + reach * .05, .08, P.tongue, -.6);
+    head.line([[tx - .01, ty + .025], [tx + .015, ty - .03]], .012, P.mouth.withAlpha(.5));
 }
 
 function drawEye(eye, look)

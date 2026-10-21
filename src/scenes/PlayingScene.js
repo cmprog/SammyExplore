@@ -19,6 +19,7 @@ import { Sammy } from '../entities/Sammy.js';
 import { createEnvironment } from '../systems/createEnvironment.js';
 import { Interaction } from '../systems/Interaction.js';
 import { Companion } from '../systems/Companion.js';
+import { CatSpots } from '../systems/CatSpots.js';
 import { registerTestCat } from '../data/cats.js';
 import { registerTestChapter } from '../data/chapters.js';
 import { WORLD_GRAVITY } from '../data/tuning.js';
@@ -38,6 +39,7 @@ export class PlayingScene
         this.camera = new Camera();
         this.interaction = new Interaction();
         this.companion = new Companion();
+        this.catSpots = new CatSpots();   // T-016: E at a cat spot (uses the companion)
         this.environment = null;   // the sky backdrop outdoors, or a room (systems/createEnvironment.js)
         this.levelId = null;
         this.loading = false;
@@ -105,6 +107,7 @@ export class PlayingScene
                 level: this.level, player: this.player, interaction: this.interaction, playerPos: () => this.playerPos(),
                 canSee: (pos, size) => this.camera.canSee(pos, size),
             });
+            this.catSpots.attach({ level: this.level, companion: this.companion, playerPos: () => this.playerPos() });
         }
         catch (error)
         {
@@ -147,6 +150,7 @@ export class PlayingScene
         this.environment?.destroy();
         this.environment = null;
         this.camera.detach();
+        this.catSpots.detach();
         this.companion.detach();
         this.interaction.clear();
         this.player?.destroy();
@@ -195,6 +199,13 @@ export class PlayingScene
         if (!this.overlaid)
             this.level.zones.update(this.player.pos, this.player.size);
         this.companion.update();
+        this.catSpots.update();
+        // Ease in a little on a cat's ability while it plays (and back out when it's done).
+        const focus = this.catSpots.abilityFocus();
+        if (focus)
+            this.camera.setAbilityFocus(focus.a, focus.b);
+        else
+            this.camera.clearAbilityFocus();
         this.camera.setNarrating(this.narrator.showing);
         this.camera.update();
     }
@@ -231,6 +242,8 @@ export class PlayingScene
         hook.register('mechanisms', () => this.level?.mechanisms.debugState() ?? []);
         // {cat, state: following|waiting|catchingUp|idle, pos, reason, ...}, or null with no companion.
         hook.register('companion', () => this.companion.debugState());
+        // T-016: every cat spot in the level: {id, ability, targets, state: ready|busy|done, errand, ...}.
+        hook.register('catSpots', () => this.catSpots.debugState());
         // Make a cat the companion right now (null: nobody), e.g. setCompanion('twyx').
         hook.commands.setCompanion = catId => this.companion.debugChoose(catId ?? null);
         // Bring the companion to Sammy's side (she trots in), e.g. after a teleport.

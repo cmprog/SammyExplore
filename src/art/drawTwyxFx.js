@@ -42,3 +42,16 @@ export function drawQuestion(pos, p)
     frame.circle(.02, -.38, .17, P.white.withAlpha(a));
     frame.circle(-.12, .4, .07, P.heartShine.withAlpha(a * .8));
 }
+
+/** Comfort's purr (T-016): two soft nested arcs, like ripples, that widen as they drift up off
+ *  her back and fade. @param {{size:number, alpha:number, angle:number, progress:number}} p */
+export function drawPurrWave(pos, p)
+{
+    const frame = ArtFrame.root(pos, { scale: p.size * (.6 + p.progress * .9) }).child(0, 0, p.angle);
+    const a = p.alpha * .85;
+    for (const [r, width] of [[.5, .11], [.8, .09]])
+    {
+        frame.arc(0, 0, r * 2, r * 1.3, Math.PI * .22, Math.PI * .78, width + .07, P.outline.withAlpha(a * .35), 10);
+        frame.arc(0, 0, r * 2, r * 1.3, Math.PI * .22, Math.PI * .78, width, P.purr.withAlpha(a), 10);
+    }
+}

@@ -62,9 +62,21 @@ export class Mechanisms
         for (const trigger of this.triggers())
         {
             if (trigger.startsOn)
-                trigger.targets.forEach(id => this.drive(id, target => target.setActive(true, { instant: true })));
+                trigger.targets.forEach(id => this.snapOn(id));
             trigger.bindTargets?.(() => trigger.targets.map(id => !!this.members.get(id)?.active));
         }
+    }
+
+    /** Level start: snap a target active, silently, and any targets of its own (an Upset that
+     *  starts calm has already done its job). `seen` stops a loop of targets naming each other. */
+    snapOn(id, seen = new Set())
+    {
+        if (seen.has(id))
+            return;
+        seen.add(id);
+        this.drive(id, target => target.setActive(true, { instant: true }));
+        for (const next of this.members.get(id)?.targets ?? [])
+            this.snapOn(next, seen);
     }
 
     triggers()

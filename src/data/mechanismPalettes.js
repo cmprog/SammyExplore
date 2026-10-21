@@ -31,6 +31,25 @@ const day = {
     shine:       rgb(1, 1, 1, .7),
     key:         rgb(.98, .82, .30),      // the lift's wind-up key
     star:        rgb(1, .94, .45),
+    // Cat spot cushion (T-016): a plain velvet cushion with an embroidered paw print. Deliberately
+    // no cat's colors (not black, white or tuxedo), so it never hints which cat it wants.
+    cushion:      rgb(.42, .62, .86),
+    cushionLight: rgb(.62, .80, .98),
+    cushionDark:  rgb(.28, .44, .68),
+    piping:       rgb(.98, .84, .44),
+    pawPrint:     rgb(.96, .92, .84),
+    sparkle:      rgb(1, .96, .72),
+    // The wind-up toy mouse (T-016): grey felt, pink ears and nose, black bead eyes, a brass key.
+    mouseFur:     rgb(.70, .68, .78),
+    mouseFurLight: rgb(.86, .85, .92),
+    mouseFurDark: rgb(.52, .50, .62),
+    mouseBelly:   rgb(.94, .91, .93),
+    mouseEar:     rgb(1, .66, .76),
+    mouseNose:    rgb(1, .46, .60),
+    bead:         rgb(.07, .06, .10),
+    wheel:        rgb(.26, .23, .32),
+    sweat:        rgb(.62, .86, 1),
+    blush:        rgb(1, .55, .68, .55),
 };
 
 /** Moonlight: a little darker and bluer, but the toys still read as toys. */

@@ -15,6 +15,7 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/mechanism_scenario.py # T-014 levers, bridge, gate, lift (real E presses): state, collision, riding; out/mech_*.png
     .venv/Scripts/python tools/playtest/companion_scenario.py # T-015 Twyx following (companion course, test + sandbox levels), save v1->v2; out/companion/, out/companion_sheet.png (~4 min)
     .venv/Scripts/python tools/playtest/planner_bench.py      # T-015 cat leap planner cost per call (ms)
+    .venv/Scripts/python tools/playtest/catspot_scenario.py   # T-016 cat spots (catspot dev level): no cat, wrong (test) cat, Twyx's Comfort clearing the tunnel, can't-get-there hint, call-offs (correction, mid-ability, checkpoint fetch), camera zoom in/out and reset on level change; pose sheet -> out/catspot/, out/catspot_sheet.png
     .venv/Scripts/python tools/playtest/portal_scenario.py    # T-017 portal + chapters: live v1/v2 saves, lever cycling (fake test chapter), swirl in/out with Twyx, chapter complete -> bedroom, Continue; out/portal_*.png
 
 ## Debug and release builds
@@ -55,7 +56,10 @@ lists every level entity's debug state. `__sammy.mechanisms` lists levers and th
 `__sammy.commands.setCompanion('twyx' | null)` chooses one now (any level; E only chooses in a `companionHub` level),
 `addTestCat('id')` adds a pretend cat (Twyx's body, never saved) for wrong-cat tests, `companionGoTo(x, y)` sends her to a
 spot (no args: follow again), `regroupCompanion()` brings her to Sammy (she trots in),
-and `cameraFocus(x, y)` / `cameraFocus()` frames a point instead of Sammy (pose captures). `loadLevel('companion')` is
+and `cameraFocus(x, y)` / `cameraFocus()` frames a point instead of Sammy (pose captures). `__sammy.catSpots` lists the level's cat spots
+(`{id, ability, targets, state: ready|busy|done, errand}`); `loadLevel('catspot')` is the cat spot course (a companion hub);
+`entityAction('twyx', 'comfort' | 'abilityEffect' | 'endAbility')` plays Comfort where she stands, and
+`entityAction('tunnel-mouse', 'calm')` calms the wind-up mouse. `loadLevel('companion')` is
 the companion course (a companion hub); `loadLevel('companion_narrow')` is a room narrower than the view (page-flip fallback). Debug `teleport` puts Sammy's center there: give it a hair over feet + 0.45, since 8.45 - 0.45
 rounds into the tile below and he falls through. Keys are KeyboardEvent codes (`KeyD`, `Space`).
 LittleJS "DEBUG build loaded" is a warning and is ignored.

@@ -2,12 +2,15 @@
 // toward Sammy when she stops), the idle routine (stand, sit down, lick a paw), blinks, tail
 // swishes, the pet reaction, a squash-and-stretch spring, and (T-015) moving: the trot cycle,
 // leaps, glancing up at Sammy or back over her shoulder for him, and the curious sit-and-look
-// while she waits. Twyx calls update() once per step; pose() hands drawTwyx plain data, so the
+// while she waits, and (T-016) her Comfort ability: lean in, headbutts, grooming licks, then
+// curling up close with a purr (timeline TWYX_COMFORT). Twyx calls update() once per step; pose() hands drawTwyx plain data, so the
 // drawing stays a pure function of (pos, pose, time).
 import { clamp, rand, randBool } from 'littlejs';
-import { TWYX as T, TWYX_MOTION as M } from '../data/tuning.js';
+import { TWYX as T, TWYX_MOTION as M, TWYX_COMFORT as CF } from '../data/tuning.js';
 
 export const TWYX_ACTIONS = ['stand', 'sit', 'lick'];
+/** Ability animations she has (CatBody.performAbility). */
+export const TWYX_ABILITIES = ['comfort'];
 
 /** What a still cat reports (no mover). */
 const STILL = { vx: 0, vy: 0, grounded: true, waiting: false, riding: false, wantsToMove: false };
@@ -55,6 +58,31 @@ export class TwyxAnimator
         this.caughtUpAge = Infinity;
         this.settled = false;       // sitting tight: waiting at an edge, or riding a lift
         this.moving = false;
+        // Abilities (T-016)
+        this.ability = null;        // 'comfort' while she's doing it
+        this.abilityTime = 0;
+        this.abilityFacing = 1;
+        this.comfort = 0;           // blend toward the snuggle shape
+        this.curl = 0;              // ...and on toward the curled-up loaf
+    }
+
+    /** Start an ability animation, facing whoever it's for. False if she has no such animation. */
+    startAbility(name, facing = this.facing)
+    {
+        if (!TWYX_ABILITIES.includes(name))
+            return false;
+        this.ability = name;
+        this.abilityTime = 0;
+        this.abilityFacing = facing < 0 ? -1 : 1;
+        this.startAction('stand');
+        this.frozen = false;
+        return true;
+    }
+
+    /** Done: she eases back to her normal stance (and goes back to following). */
+    endAbility()
+    {
+        this.ability = null;
     }
 
     /** E pressed on Twyx: ears perk, eyes squint happily, a little hop. Stops a paw lick. */
@@ -89,10 +117,11 @@ export class TwyxAnimator
     update(dt, toPlayer, motion = STILL)
     {
         this.moving = motion.grounded && Math.abs(motion.vx) > MOVING_SPEED;
-        this.settled = motion.waiting || motion.riding;
+        this.settled = (motion.waiting || motion.riding) && !this.ability;
+        this.updateAbility(dt);
         this.updateFacing(dt, toPlayer, motion);
         this.updateAction(dt, motion);
-        const sitTarget = this.settled || (this.action !== 'stand' && !this.busy(motion)) ? 1 : 0;
+        const sitTarget = !this.ability && (this.settled || (this.action !== 'stand' && !this.busy(motion))) ? 1 : 0;
         const sitSpeed = sitTarget ? T.SIT_SPEED : this.busy(motion) ? M.STAND_UP_SPEED : T.SIT_SPEED;
         this.sit = approach(this.sit, sitTarget, sitSpeed * dt);
         const licking = this.action === 'lick' && this.sit > .9 && !this.settled;
@@ -104,7 +133,8 @@ export class TwyxAnimator
         this.mrrpAge += dt;
         this.shakeAge += dt;
         this.caughtUpAge += dt;
-        const perked = this.petAge < T.PET_TIME || this.mrrpAge < M.MRRP_TIME * 2 || this.curious > .5;
+        // Comforting, her ears stay soft and relaxed.
+        const perked = !this.ability && (this.petAge < T.PET_TIME || this.mrrpAge < M.MRRP_TIME * 2 || this.curious > .5);
         this.perk += ((perked ? 1 : 0) - this.perk) * T.PERK_EASE;
         this.squashVelocity = (this.squashVelocity - this.squash * T.SQUASH_SPRING) * T.SQUASH_DAMPING;
         this.squash = clamp(this.squash + this.squashVelocity, -.4, .4);
@@ -115,9 +145,26 @@ export class TwyxAnimator
         return this.moving || motion.wantsToMove || !motion.grounded;
     }
 
+    /** Comfort's two body blends: in over LEAN_IN, curled from CURL_FROM; eased out after. */
+    updateAbility(dt)
+    {
+        if (!this.ability)
+        {
+            this.comfort = approach(this.comfort, 0, CF.END_EASE * dt);
+            this.curl = approach(this.curl, 0, CF.END_EASE * dt);
+            return;
+        }
+        this.abilityTime += dt;
+        const t = this.abilityTime;
+        this.comfort = clamp(t / CF.LEAN_IN, 0, 1);
+        this.curl = clamp((t - CF.CURL_FROM) / CF.CURL_TIME, 0, 1);
+    }
+
     updateFacing(dt, toPlayer, motion)
     {
-        if (this.moving || (!motion.grounded && Math.abs(motion.vx) > MOVING_SPEED))
+        if (this.ability)
+            this.facing = this.abilityFacing;   // toward whoever she's comforting, not Sammy
+        else if (this.moving || (!motion.grounded && Math.abs(motion.vx) > MOVING_SPEED))
             this.facing = Math.sign(motion.vx);
         else if (toPlayer && Math.abs(toPlayer.x) > .1)
             this.facing = Math.sign(toPlayer.x);
@@ -127,7 +174,7 @@ export class TwyxAnimator
     updateAction(dt, motion)
     {
         this.actionTime += dt;
-        if (this.frozen)
+        if (this.frozen || this.ability)
             return;
         // On the move (or sitting tight), the idle routine waits; it starts over once she's still.
         if (this.busy(motion) || this.settled)
@@ -166,7 +213,7 @@ export class TwyxAnimator
         const glancingBack = this.glanceBack && this.glanceAge < M.GLANCE_TIME;
         this.headTurn = approach(this.headTurn, behind || glancingBack ? -1 : 1, M.HEAD_TURN_SPEED * dt);
         let look = 0;
-        if (toPlayer)
+        if (toPlayer && !this.ability)
             look = clamp(Math.atan2(toPlayer.y, Math.abs(toPlayer.x) + .5) * .7, -M.LOOK_MAX_DOWN, M.LOOK_MAX_UP);
         if (!this.glanceBack)
             look += this.glanceAmount() * M.GLANCE_UP;
@@ -250,11 +297,44 @@ export class TwyxAnimator
         }
         else if (what === 'release')
             this.frozen = false;
+        else if (TWYX_ABILITIES.includes(what))
+            this.startAbility(what, this.facing);
+        else if (what === 'endAbility')
+            this.endAbility();
     }
 
     get happy()
     {
-        return this.petAge < T.PET_TIME || this.caughtUpAge < M.CAUGHT_UP_TIME;
+        return this.petAge < T.PET_TIME || this.caughtUpAge < M.CAUGHT_UP_TIME || this.contented;
+    }
+
+    /** Comforting, past the first look: eyes shut in a content squint for the bunts, licks and curl. */
+    get contented()
+    {
+        return !!this.ability && this.abilityTime > CF.BUNTS[0] - .12;
+    }
+
+    /** 0..1..0 over each headbutt. */
+    buntAmount()
+    {
+        if (!this.ability)
+            return 0;
+        for (const at of CF.BUNTS)
+        {
+            const x = (this.abilityTime - at) / CF.BUNT_TIME;
+            if (x >= 0 && x < 1)
+                return Math.sin(x * Math.PI) ** 1.5;
+        }
+        return 0;
+    }
+
+    /** The grooming blend: eased in and out at the ends of its stretch. */
+    groomAmount()
+    {
+        if (!this.ability)
+            return 0;
+        const t = this.abilityTime, edge = .2;
+        return clamp(Math.min(t - CF.GROOM_FROM, CF.GROOM_TO - t) / edge, 0, 1);
     }
 
     /** Plain data for drawTwyx. */
@@ -282,6 +362,13 @@ export class TwyxAnimator
             mrrp: mrrp < 1 ? Math.sin(mrrp * Math.PI) : 0,
             // Side to side three times, fading out.
             shake: shake < 1 ? Math.sin(shake * Math.PI * 6) * (1 - shake) : 0,
+            // Comfort (T-016)
+            comfort: this.comfort,
+            curl: this.curl,
+            bunt: this.buntAmount(),
+            groom: this.groomAmount(),
+            groomPhase: (this.abilityTime - CF.GROOM_FROM) * CF.GROOM_RATE * Math.PI * 2,
+            purr: this.ability && this.abilityTime >= CF.PURR_FROM ? 1 : 0,
         };
     }
 }

@@ -3,13 +3,17 @@
 // The host calls setNarrating() every step with whether the narrator's text box is up, to frame
 // the view a little lower. The lower framing outlasts the box a moment, so back-to-back lines
 // don't make the view bob up and down between them.
+// T-016: setAbilityFocus(a, b) eases the zoom in a little (CAMERA_ABILITY.ZOOM) and the view
+// toward the middle of a and b (a cat and whoever she's helping) while an ability plays;
+// clearAbilityFocus() eases back. A debug setFocus() still wins. detach() resets the zoom, so it
+// never carries into the next level (WindowView and Terrain bake at the current scale).
 import {
     vec2, lerp, clamp, timeDelta, setCameraPos, setCameraScale, cameraPos, cameraScale, getCameraSize, isOnScreen,
 } from 'littlejs';
 import {
     CAMERA_SCALE, CAMERA_FOLLOW_LERP_X, CAMERA_FOLLOW_LERP_Y, CAMERA_LOOK_AHEAD,
     CAMERA_LOOK_AHEAD_LERP, CAMERA_LOOK_AHEAD_MIN_SPEED, CAMERA_OFFSET_Y, CAMERA_NARRATION_OFFSET_Y,
-    CAMERA_NARRATION_HOLD,
+    CAMERA_NARRATION_HOLD, CAMERA_ABILITY,
 } from '../data/tuning.js';
 
 export class Camera
@@ -23,6 +27,25 @@ export class Camera
         this.narrating = false;  // eased like any other move, by the follow lerp
         this.narrationHold = 0;  // seconds the lower framing stays after the box closes
         this.focus = null;       // debug: look at this point instead of the target (pose captures)
+        this.abilityFocus = null; // the middle of a cat and whoever she's helping (T-016)
+        this.zoom = 1;           // eased toward CAMERA_ABILITY.ZOOM while abilityFocus is set
+    }
+
+    /** T-016: an ability is playing between world points a and b: ease in on their middle. */
+    setAbilityFocus(a, b)
+    {
+        this.abilityFocus = a.add(b).scale(.5);
+    }
+
+    clearAbilityFocus()
+    {
+        this.abilityFocus = null;
+    }
+
+    /** 0 normal .. 1 fully zoomed in on the ability. */
+    get zoomBlend()
+    {
+        return (this.zoom - 1) / (CAMERA_ABILITY.ZOOM - 1);
     }
 
     /** Debug: frame this world point instead of the target (null to follow the target again). */
@@ -57,6 +80,9 @@ export class Camera
     detach()
     {
         this.target = null;
+        this.abilityFocus = null;
+        this.zoom = 1;
+        setCameraScale(CAMERA_SCALE);
     }
 
     snap()
@@ -74,6 +100,7 @@ export class Camera
             this.facing = Math.sign(speedX);
         // Ease the lead separately (and slower) so turning around swings the view gently.
         this.lookAhead = lerp(this.lookAhead, this.facing * CAMERA_LOOK_AHEAD, CAMERA_LOOK_AHEAD_LERP);
+        this.updateZoom();
 
         const goal = this.clampToBounds(this.desiredPos());
         setCameraPos(vec2(
@@ -81,12 +108,31 @@ export class Camera
             lerp(cameraPos.y, goal.y, CAMERA_FOLLOW_LERP_Y)));
     }
 
+    /** Ease the zoom toward the ability's (or back to 1). Sammy wandering off eases it out. */
+    updateZoom()
+    {
+        const focus = this.abilityFocus;
+        const zoomedW = getCameraSize().x * this.zoom / CAMERA_ABILITY.ZOOM;
+        const near = focus && Math.abs(this.target.pos.x - focus.x) <= zoomedW * CAMERA_ABILITY.WANDER
+            && Math.abs(this.target.pos.y - focus.y) <= zoomedW * CAMERA_ABILITY.WANDER;
+        const goal = near && !this.focus ? CAMERA_ABILITY.ZOOM : 1;
+        const zoom = lerp(this.zoom, goal, 1 - Math.exp(-CAMERA_ABILITY.EASE * timeDelta));
+        this.zoom = Math.abs(zoom - goal) < 1e-3 ? goal : zoom;
+        if (!this.focus && cameraScale !== CAMERA_SCALE * this.zoom)
+            setCameraScale(CAMERA_SCALE * this.zoom);
+    }
+
     desiredPos()
     {
         if (this.focus)
             return this.focus.copy();
         const offsetY = CAMERA_OFFSET_Y + (this.narrating ? CAMERA_NARRATION_OFFSET_Y : 0);
-        return vec2(this.target.pos.x + this.lookAhead, this.target.pos.y + offsetY);
+        const follow = vec2(this.target.pos.x + this.lookAhead, this.target.pos.y + offsetY);
+        // Third blend: toward the middle of the ability, as far as the zoom has eased in.
+        const blend = this.abilityFocus ? clamp(this.zoomBlend, 0, 1) : 0;
+        if (!blend)
+            return follow;
+        return follow.lerp(vec2(this.abilityFocus.x, this.abilityFocus.y + CAMERA_OFFSET_Y * .5), blend);
     }
 
     /**
@@ -107,6 +153,14 @@ export class Camera
                           && Math.abs(pos.y - view.y) * 2 < half.y * 2 + size.y + margin * 2;
         if (near(cameraPos))
             return true;
+        // Zoomed in on an ability: the wider view it eases back out to counts too.
+        if (this.zoom !== 1)
+        {
+            const wide = getCameraSize().scale(.5 * this.zoom);
+            if (Math.abs(pos.x - cameraPos.x) * 2 < wide.x * 2 + size.x + margin * 2
+                && Math.abs(pos.y - cameraPos.y) * 2 < wide.y * 2 + size.y + margin * 2)
+                return true;
+        }
         if (!this.target || this.focus)
             return false;
         for (const lead of [this.lookAhead, -CAMERA_LOOK_AHEAD, CAMERA_LOOK_AHEAD])
@@ -131,6 +185,8 @@ export class Camera
             pos: { x: cameraPos.x, y: cameraPos.y }, scale: cameraScale, lookAhead: this.lookAhead,
             narrating: this.narrating, narrationHold: this.narrationHold,
             focus: this.focus ? { x: this.focus.x, y: this.focus.y } : null,
+            zoom: Math.round(this.zoom * 1000) / 1000,
+            abilityFocus: this.abilityFocus ? { x: this.abilityFocus.x, y: this.abilityFocus.y } : null,
         };
     }
 }

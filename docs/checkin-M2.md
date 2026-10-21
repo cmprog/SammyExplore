@@ -18,6 +18,10 @@
 - Portal look: a slate-stone block frame with a gem keystone, a swirl in the chapter's color (Chapter One is moonlit aqua), and a wooden sign above. Colors OK?
 - When Sammy arrives in the bedroom, the portal shows the newest unlocked chapter. OK?
 
+- Cat spot look: a plump blue velvet cushion with a paw print and soft sparkles (doesn't hint which cat). OK?
+- Comfort target (draft): a frazzled grey-lavender felt wind-up mouse in a tunnel. After Twyx comforts it, it scoots to the far end and sits contentedly. Keep it?
+- When a cat-spot errand gets called off (Sammy wanders far away), Twyx just comes back to him. OK?
+
 ## Decisions PM made (FYI)
 - A lever is the single source of truth for whether its targets start on or off.
 - Bridges refuse to raise while anyone is standing on them (the lift does the same). A companion cat can never be dropped.
@@ -25,3 +29,4 @@
 - Finishing any chapter returns to the bedroom (replaces "To be continued..."). Returning M1 players who already finished Chapter One continue in the bedroom.
 - Entering a chapter through the portal autosaves at that chapter's start.
 - E prefers levers, portals and signs over the companion cat, so a kid never accidentally sends Twyx home.
+- While a cat ability plays, the camera gently zooms in so the moment reads at normal play size.

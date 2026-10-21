@@ -30,6 +30,13 @@ export const CAMERA_NARRATION_OFFSET_Y = -2.5;
 /** Seconds the narration framing holds after the text box closes, so the short breath between
  *  two lines doesn't bob the camera up and back down. */
 export const CAMERA_NARRATION_HOLD = 1;
+/** T-016: while a cat's ability plays, the camera eases in a little on her and whoever she's
+ *  helping. Keep the zoom at or below 1.2 so the baked terrain (pixels per tile) stays crisp. */
+export const CAMERA_ABILITY = {
+    ZOOM: 1.15,
+    EASE: 2.2,          // per second (exponential ease of the zoom, in and out)
+    WANDER: .5,         // Sammy further than this many zoomed view-widths from the middle: ease back out
+};
 
 // --- Sammy (T-004) ---
 // Speeds are tiles per step (x60 = tiles per second), accelerations tiles per step squared,
@@ -444,4 +451,52 @@ export const TWYX_MOTION = {
     SHAKE_TIME: 0.6,           // the "not now" head shake
     SHAKE_ANGLE: 0.22,         // radians at its widest
     CAUGHT_UP_TIME: 1.2,       // happy squint after catching up
+};
+
+// --- Cat spots and abilities (T-016) --- tiles and seconds. Abilities themselves are data/abilities.js.
+export const CATSPOT = {
+    RADIUS: 1.4,               // E range, from the cushion to Sammy's center
+    GIVE_UP_DISTANCE: 9,       // Sammy this far from a spot his companion is still heading for: she follows him again
+    POKE_TIME: 0.45,           // E with no cat or the wrong one: the cushion squashes and puffs a few sparkles
+    POKE_SQUASH: 0.22,
+    POKE_SPARKS: 6,
+    DONE_FADE: 1.2,            // the sparkle fades out over this long once its targets are all done
+};
+
+// Twyx's Comfort (T-016): the animation's timeline, seconds from the start. data/abilities.js
+// takes the ability's length (LENGTH) and its "it worked" moment (CURL_FROM) from here.
+export const TWYX_COMFORT = {
+    LEAN_IN: 0.55,             // settles low and close
+    BUNTS: [0.75, 1.3],        // two gentle headbutts...
+    BUNT_TIME: 0.42,           // ...each this long (push in, ease back)
+    GROOM_FROM: 1.75,          // little grooming licks...
+    GROOM_TO: 3.0,
+    GROOM_RATE: 2.4,           // ...this many per second
+    CURL_FROM: 3.05,           // then she curls up close (a loaf), eyes shut, purring
+    CURL_TIME: 0.6,
+    PURR_FROM: 0.35,           // purr waves ripple off her back every PURR_EVERY
+    PURR_EVERY: 0.6,
+    PURR_SHIVER: 0.012,        // the tiny body vibration of a purr
+    HEARTS_AT: [0.95, 1.5, 2.3],   // a small heart at each bunt and mid-groom; a big burst at effectAt
+    END_EASE: 4,               // blend per second back to her normal stance when it ends
+    LENGTH: 4.6,               // the whole thing; she stays curled up purring until then
+};
+
+// Upset things that a cat can calm (T-016, entities/Upset.js), and the wind-up toy mouse.
+export const UPSET = {
+    CALM_TIME: 0.8,            // setActive(true): eases from frazzled to calm over this long
+    SHAKE: 0.045,              // frazzled jitter, tiles
+    SHAKE_SPEED: 47,
+    SOOTHED_SHAKE: 0.35,       // being comforted shrinks the jitter to this fraction before it calms
+};
+
+export const WINDUP_MOUSE = {
+    SIZE: { x: 0.8, y: 0.62 },  // its solid box while it blocks the way
+    SWEAT_EVERY: 0.38,         // a sweat drop flies off this often while frazzled
+    KEY_SPIN_UPSET: 16,        // radians per second: whirring frantically
+    KEY_SPIN_CALM: 1.4,        // a lazy turn
+    HOP_EVERY: 1.1,            // frazzled little hops in place
+    HOP_HEIGHT: 0.08,
+    SCOOT_DELAY: 0.7,          // calm: a relieved sigh, then it scoots off...
+    SCOOT_SPEED: 3.2,          // ...at up to this many tiles per second (eased at both ends)
 };

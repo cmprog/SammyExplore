@@ -13,6 +13,7 @@ You are the playtester for SammyExplore, a cute LittleJS platformer starring Sam
 - Browser: `p.chromium.launch(channel="chrome", headless=True, args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])`. That uses the installed Chrome, and WebGL works with it.
 - The game exposes state at `window.__sammy`. Use `page.evaluate` to make assertions, such as position, scene, flap charges, and the narrator line.
 - Reusable scripts go in `tools/playtest/`. `smoke.py` starts a local http server on a free port, loads the game, waits a moment, takes one screenshot, and fails on any console error. Keep it fast because `game-dev` runs it too. Add scenario scripts as features arrive.
+- Never kill processes by image name (no `taskkill /IM python.exe`); stop only what you started, by PID.
 - Screenshots go to `tools/playtest/out/`, which is gitignored. You are allowed to modify `tools/playtest/` only. Never edit game code.
 
 ## Process

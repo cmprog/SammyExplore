@@ -15,6 +15,7 @@ You are the game developer on SammyExplore, a cute 2D platformer built with Litt
 4. Keep `window.__sammy` (the debug/test hook) up to date for anything you add.
 5. Run a smoke check before you report: `.venv/Scripts/python tools/playtest/smoke.py`, if it exists. Otherwise at least make sure the modules parse (`node --check` on each changed file).
 6. **Do not commit.** The PM commits after review.
+7. **Never kill processes by image name.** No `taskkill /IM python.exe` or `pkill python`, because the user may have other Python processes running. To stop something you started, kill it by PID, or use timeouts in your scripts.
 
 ## Craft standards
 

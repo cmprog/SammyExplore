@@ -21,7 +21,7 @@
 // row whose top their top is flush with, so they line up with ground tiles in that same row.
 //
 // Mechanisms (T-014): an entry with `mechanismTarget: true` can be named in a trigger's
-// `targets` (a lever's, later a cat spot's) and `mechanismTrigger: true` marks a trigger;
+// `targets` (a lever's, a cat spot's, an upset thing's own) and `mechanismTrigger: true` marks a trigger;
 // `cycleOnly: true` means only a trigger with `mode: 'cycle'` may target it (a portal has no
 // on/off for a toggle to flip);
 // spawnEntity copies that onto the instance as mechanismRole/mechanismType, and
@@ -44,6 +44,8 @@ import { Bridge } from './Bridge.js';
 import { Gate } from './Gate.js';
 import { Lift } from './Lift.js';
 import { Portal } from './Portal.js';
+import { CatSpot } from './CatSpot.js';
+import { WindupMouse } from './WindupMouse.js';
 
 const ENTITY_TYPES = {
     door: {
@@ -75,6 +77,16 @@ const ENTITY_TYPES = {
     portal: {
         create: (pos, props, context) => new Portal(pos, props, context), validate: Portal.validateEntry,
         mechanismTarget: true, cycleOnly: true,
+    },
+    // T-016: a cat spot (a trigger driven by a companion's ability) and the first comfort target.
+    catspot: {
+        create: (pos, props, context) => new CatSpot(pos, props, context), validate: CatSpot.validateEntry,
+        mechanismTrigger: true,
+    },
+    windupMouse: {
+        create: (pos, props, context) => new WindupMouse(pos, props, context), validate: WindupMouse.validateEntry,
+        mechanismTarget: true,
+        blocksCells: ({ x, y }) => ({ x0: x, y0: y, x1: x, y1: y }),
     },
 };
 

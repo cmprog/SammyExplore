@@ -3,6 +3,8 @@
 // by `walk` and toward `leap` by `air`. Every shape has the same parts and fields. A paw lick is the sit
 // shape plus `lick` (front paw raised to the mouth, head dipped).
 //
+// Comfort (T-016) blends toward `snuggle` by the pose's `comfort`, then toward `loaf` by `curl`.
+//
 // Art units: 1 = one tile. Origin between the feet, y up, facing right (+x is the front).
 // body/haunch/bib: ellipses {x, y, w, h, tilt}. head: center. legs: x of the near front/back
 // leg, the hip height they hang from and their length. tail: base point and base angle (CCW
@@ -47,6 +49,28 @@ export const TWYX_SHAPES = {
         frontLeg: { x: .29,  hip: .38, length: .3 },
         backLeg:  { x: -.29, hip: .38, length: .3 },
         tail:   { x: -.44, y: .5, angle: 2.75, curl: -.9 },
+    },
+    // Comfort (T-016), blended in by the pose's `comfort`: low and close, leaning in toward
+    // whoever she's comforting, head forward and down, tail curled softly round behind.
+    snuggle: {
+        body:   { x: .04,  y: .31, w: .94, h: .46, tilt: -.07 },
+        haunch: { x: -.22, y: .28, w: .38, h: .37, tilt: 0 },
+        bib:    { x: .33,  y: .28, w: .3,  h: .33, tilt: -.38 },
+        head:   { x: .47,  y: .63 },
+        frontLeg: { x: .29,  hip: .24, length: .24 },
+        backLeg:  { x: -.26, hip: .26, length: .26 },
+        tail:   { x: -.42, y: .36, angle: 2.7, curl: -2.2 },
+    },
+    // ...and then by `curl`: curled up close in a cosy loaf, paws tucked under, tail lying
+    // along the ground with its tip curled up.
+    loaf: {
+        body:   { x: .02,  y: .27, w: .92, h: .5,  tilt: -.02 },
+        haunch: { x: -.2,  y: .25, w: .44, h: .42, tilt: 0 },
+        bib:    { x: .3,   y: .25, w: .3,  h: .3,  tilt: -.3 },
+        head:   { x: .42,  y: .6 },
+        frontLeg: { x: .27,  hip: .1, length: .08 },
+        backLeg:  { x: -.24, hip: .1, length: .08 },
+        tail:   { x: -.42, y: .12, angle: 3.25, curl: -1.7 },
     },
 };
 

@@ -9,7 +9,7 @@ import {
 } from 'littlejs';
 import { on, emit } from '../core/events.js';
 import {
-    SOUNDS, SOUND_EVENTS, GLIDE_START_EVENTS, GLIDE_STOP_EVENTS, AUDIO_DEFAULTS, AUDIO_TUNING,
+    SOUNDS, SOUND_EVENTS, SOUND_EVENT_CHOOSERS, ABILITY_CANCEL_EVENT, GLIDE_START_EVENTS, GLIDE_STOP_EVENTS, AUDIO_DEFAULTS, AUDIO_TUNING,
 } from '../data/sounds.js';
 import { MUSIC_TRACKS, DEFAULT_MUSIC_TRACK } from '../data/music.js';
 
@@ -25,6 +25,7 @@ let unlocked = false;           // a user input has happened (audio is allowed t
 let music = null;               // ZzFXMusic, built shortly after init (it takes a moment)
 let musicInstance = null;
 let glideInstances = [];
+let abilityInstances = [];      // the playing ability's start sound (Comfort's purr), stopped on ability:cancel
 let initialized = false;
 
 /** Call once after engineInit has set up audio (main.js does this from gameInit). */
@@ -40,6 +41,17 @@ export function initAudio()
 
     for (const [eventName, soundName] of Object.entries(SOUND_EVENTS))
         on(eventName, data => playSound(soundName, eventVolume(eventName, data)));
+    for (const [eventName, choose] of Object.entries(SOUND_EVENT_CHOOSERS))
+        on(eventName, data =>
+        {
+            const soundName = choose(data);
+            if (!soundName)
+                return;
+            const started = playSound(soundName, eventVolume(eventName, data));
+            if (eventName === 'ability:start')
+                abilityInstances = started || [];
+        });
+    on(ABILITY_CANCEL_EVENT, stopAbilitySound);
     for (const eventName of GLIDE_START_EVENTS)
         on(eventName, startGlide);
     for (const eventName of GLIDE_STOP_EVENTS)
@@ -59,7 +71,8 @@ export function initAudio()
     registerDebugHook();
 }
 
-/** Play a named sound from the catalog, volume scaled by `volumeScale`. Returns true if triggered. */
+/** Play a named sound from the catalog, volume scaled by `volumeScale`. Returns the SoundInstances
+ *  started right away (an array, truthy) if triggered, or false. */
 export function playSound(name, volumeScale = 1)
 {
     const entry = library.get(name);
@@ -78,9 +91,16 @@ export function playSound(name, volumeScale = 1)
     lastSound = name;
     soundCount++;
     if (!canPlay())
-        return true;
-    playLayers(entry, settings.sfxVolume * volumeScale, false);
-    return true;
+        return [];
+    return playLayers(entry, settings.sfxVolume * volumeScale, false);
+}
+
+/** The ability was called off before it worked: its purr fades out. */
+function stopAbilitySound()
+{
+    for (const instance of abilityInstances)
+        fadeOutAndStop(instance, AUDIO_TUNING.GLIDE_FADE_OUT);
+    abilityInstances = [];
 }
 
 /** Per-event volume tweaks driven by the payload. */
@@ -362,5 +382,5 @@ function registerDebugHook()
         contextRunning: audioIsRunning(),
         glidePlaying: glideInstances.some(instance => instance.isPlaying()),
     }));
-    hook.commands.play = name => playSound(name);
+    hook.commands.play = name => !!playSound(name);
 }
