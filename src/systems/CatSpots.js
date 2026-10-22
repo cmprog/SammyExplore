@@ -27,7 +27,6 @@
 // spot is ready again, its targets are unsoothed, and if she had started, ability:cancel stops
 // the start sound. Nothing happened. (The Companion never moves her while she performs.)
 // One errand at a time: while one is under way the spot is busy (no E prompt).
-import { timeDelta, getPaused } from 'littlejs';
 import { on, emit } from '../core/events.js';
 import { abilityDef, catHasAbility } from '../data/abilities.js';
 import { CATSPOT } from '../data/tuning.js';
@@ -94,9 +93,7 @@ export class CatSpots
     update()
     {
         const errand = this.errand;
-        // updatePost runs even while the engine is paused; the ability's clock must stop with
-        // her animation (which only runs in object updates).
-        if (!errand || getPaused())
+        if (!errand)
             return;
         if (errand.cat.destroyed || this.companion.currentCat() !== errand.cat)
             return this.callOff();   // she isn't the companion any more
@@ -140,7 +137,9 @@ export class CatSpots
     {
         const { spot, cat } = errand;
         const def = spot.def;
-        errand.time += timeDelta;
+        // Her animation's own clock, so the moment it works always matches what she's doing, and
+        // it stops with her whenever the world is frozen.
+        errand.time = cat.abilityTime;
         if (!errand.effected)
         {
             const progress = Math.min(1, errand.time / def.effectAt);

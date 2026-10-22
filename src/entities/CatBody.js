@@ -209,6 +209,9 @@ export class CatBody extends EngineObject
     endAbility() {}
     /** The animation name she's performing, or null. */
     get performing() { return null; }
+    /** Seconds into the ability she's performing. Her own animation clock: it only runs while she
+     *  does (object updates), so it stops whenever the world is frozen. */
+    get abilityTime() { return 0; }
 
     /** Sent somewhere by goTo() (a cat spot errand), or performing: E on her does nothing then. */
     get busyWithErrand() { return !!this.mover?.goal || !!this.performing; }

@@ -172,6 +172,9 @@ export class PlayingScene
         if (!this.player || !this.level)
             return;
         this.player.resetTo(this.level.zones.respawnPoint);
+        // Call off any cat spot errand first: the Companion never moves a cat while she performs,
+        // so the ability ends cleanly (ability:cancel) before she is put down beside him.
+        this.catSpots.callOff();
         this.companion.onPlayerReset();   // she trots in beside him once the page lifts
         this.camera.snap();   // under the page, so the world is already settled when it lifts
     }

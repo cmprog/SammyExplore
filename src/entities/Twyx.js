@@ -158,6 +158,7 @@ export class Twyx extends CatBody
     }
 
     get performing() { return this.animator.ability; }
+    get abilityTime() { return this.animator.abilityTime; }
 
     /** Purr ripples off her back, and a little heart at each bunt and mid-groom. */
     comfortCues(from, to)

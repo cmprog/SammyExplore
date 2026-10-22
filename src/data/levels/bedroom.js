@@ -14,7 +14,8 @@
 //   - Portal alcove (x 1-9): the chapter portal (opening x 3-5, frame x 2-6, its sign above) and,
 //     beside it, the lever that turns it to the next unlocked chapter. Sammy arrives just right
 //     of them, and walking left into the swirl steps through to the chapter it shows.
-//   - The rug, Twyx, and the toy chest (top 7), then two brick stacks (tops 8 and 10).
+//   - The rug, Twyx, and the toy chest (top 7), a low brick beside it (top 7), then two brick
+//     stacks (tops 8 and 10).
 //   - The desk (top 10, walk under it) below the window. Its sill (top 13) is a one-way ledge;
 //     a long one-way shelf above the window (top 24) holds a brick castle and plushies.
 //   - The bookshelf: one-way shelves at 8, 11, 14, 17 and a solid top at 20.
@@ -84,8 +85,8 @@ export default {
         '........................ll.dddddddddd...........rrrrrrr......b.......bb.............',   // 18  desk; footboard top
         '........................ll.....................lrrrrrrr--..--bbbbbbbbbb.............',   // 19  bed; toy shelves (top 9)
         '......................llll.............-------.lrrrrrrr......bbbbbbbbbb.....--------',   // 20  cubby shelf
-        '...............tttttt.llll....................llrrrrrrr..--.........................',   // 21  toy shelf (top 7)
-        '...............tttttt.llll....................llrrrrrrr.............................',   // 22  floor level
+        '...............ttttttlllll....................llrrrrrrr..--.........................',   // 21  toy shelf (top 7)
+        '...............ttttttlllll....................llrrrrrrr.............................',   // 22  floor level
         '####################################################################################',   // 23  floor top = 5
         '####################################################################################',   // 24
         '####################################################################################',   // 25
@@ -131,6 +132,8 @@ export default {
         // (legs reach down to the floor). Each kind's art and layout: src/art/room/roomArt.js.
         furniture: [
             { kind: 'toyChest', x: 15, y: 21, w: 6, h: 2 },
+            // A low brick between the chest and the stacks (T-020): no one-tile slot to get stuck in.
+            { kind: 'bricks', x: 21, y: 21, w: 1, h: 2 },
             { kind: 'bricks', x: 22, y: 20, w: 2, h: 3 },
             { kind: 'bricks', x: 24, y: 18, w: 2, h: 5 },
             { kind: 'wallShelf', x: 12, y: 14, w: 8, h: 1 },

@@ -24,12 +24,18 @@ Run B, without a companion (at night):
 Run C, Twyx, cushion before the lever: catspot:unreachable {reason: 'gap'} (the narrator's
   "clear the way" hint), then the lever: she carries on by herself and does it.
 Run D, Twyx follows Sammy down into the gap and back out under the bed (no soft-lock).
+Run E (T-020 regression), Continue from a save at the far-side checkpoint: Twyx is put down on
+  Sammy's side (never in the tunnel, on the mouse), the cushion works. Then Sammy flies back over
+  the gap (bridge up) and stays out of her sight 12 s: she is still waiting, NOT fetched past it.
+  Only a cat stuck for good (put inside the frazzled mouse's cell) is fetched by the safety net
+  (COMPANION.STRANDED_FETCH_AFTER).
 Also: every course zone key has a line; the bedroom has no reserved region left.
 
 Screenshots: tools/playtest/out/practice_*.png (overview, help-her-through, comfort, reward, ...).
 
     .venv/Scripts/python tools/playtest/practice_scenario.py
 """
+import json
 import sys
 import time
 
@@ -346,13 +352,21 @@ def run_with_twyx(pg):
     test_hooks(pg)
     # Ask her along: walk to her and press E.
     tw = twyx(pg)
-    walk_to(pg, tw["pos"]["x"] - 1.0, jump_when_stuck=False)
+    walk_to(pg, tw["pos"]["x"] - .3, jump_when_stuck=False)   # right up to her, as a kid does
     face(pg, "KeyD")
     m0 = mark(pg)
     press_e(pg)
     check(wait_until(lambda: any(e["n"] == "companion:join" for e in since(pg, m0)), 3), "E on Twyx asks her along (companion:join)")
+    tw = twyx(pg)
+    check(tw["hearts"] > 0 and tw["happy"], f"a happy 'joined' reaction: hop, squint, hearts ({tw['hearts']} hearts, happy {tw['happy']})")
     settle(pg)
     check(wait_until(lambda: (comp(pg) or {}).get("cat") == "twyx", 3), f"Twyx is the companion ({comp(pg)})")
+    # T-020: she's never left hidden behind the owl; asked along she does a happy hop with hearts,
+    # then steps out beside him.
+    check(wait_until(lambda: abs(twyx(pg)["pos"]["x"] - player(pg)["pos"]["x"]) >= 1.1, 4),
+          f"she steps out from behind him ({twyx(pg)['pos']['x']:.2f} vs Sammy {player(pg)['pos']['x']:.2f})")
+    time.sleep(0.8)
+    shot(pg, "10_twyx_joined")
 
     # Over to the dresser: the room's furniture platforming is bedroom_scenario's, so Sammy is put
     # down on the floor by the bookshelf and she trots over to him (regroup). From there it is all
@@ -606,6 +620,81 @@ def run_pit(pg):
     check(not since(pg, m0, "companion:waiting") and not since(pg, m0, "correction:triggered"), "no waiting, no corrections")
 
 
+# --- run E: Continue at the course's checkpoint (T-020 regression) ---------------------------------
+
+SAVE_KEY = "sammyexplore.save"
+MID_COURSE_SAVE = {
+    "schemaVersion": 2, "levelId": "bedroom", "checkpointId": "practice-far-side", "reachedCheckpoints": ["practice-far-side"],
+    "flags": {"levelComplete.sandbox": True}, "catsRescued": [], "companion": "twyx",
+    "unlockedChapters": ["chapter-one"], "completedChapters": ["chapter-one"], "updatedAt": "2026-10-21T09:00:00.000Z",
+}
+
+
+def run_continue_mid_course(pg):
+    """A save at the far-side checkpoint: Continue puts Sammy on the cubby (bridge up again, the mouse
+    back in the tunnel). Twyx must be put down on his side, never in the tunnel or on the mouse, and
+    the cushion must work. Then: waiting at the gap out of his sight is NOT fetched (he must lower
+    the bridge); only a cat stuck for good is (the stranded safety net)."""
+    pg.evaluate(f"localStorage.setItem('{SAVE_KEY}', {json.dumps(json.dumps(MID_COURSE_SAVE))})")
+    pg.reload()
+    pg.wait_for_function("window.__sammy && window.__sammy.scene === 'title'", timeout=10000)
+    time.sleep(0.8)
+    install(pg)
+    check((st(pg)["menu"] or {}).get("selected") == "continue", f"Continue is offered ({st(pg)['menu']})")
+    harness.tap(pg, "Enter")
+    pg.wait_for_function("window.__sammy.scene === 'playing' && window.__sammy.level && !window.__sammy.level.loading", timeout=15000)
+    time.sleep(1.5)
+    s = st(pg)
+    p = s["player"]
+    check(s["level"]["checkpointId"] == "practice-far-side" and abs(feet(p) - CUBBY_TOP) < .1, f"resumed on the cubby ({p['pos']})")
+    tw = twyx(pg)
+    check(abs(cat_feet(tw) - CUBBY_TOP) < .1 and GAP[1] <= tw["pos"]["x"] < MOUSE_X - .8,
+          f"Twyx is put down on his side of the mouse, on the cubby, not in the tunnel ({tw['pos']})")
+    check(comp(pg)["state"] != "waiting", f"...and isn't waiting for anything ({comp(pg)['state']}, {comp(pg)['reason']})")
+    settle(pg)
+    shot(pg, "09_continue_mid_course")
+    move_to(pg, SPOT_X - .8)
+    face(pg, "KeyD")
+    settle(pg)
+    m0 = mark(pg)
+    press_e(pg)
+    check(wait_until(lambda: any(e["n"] == "ability:start" for e in since(pg, m0)), 10) and not since(pg, m0, "catspot:unreachable"),
+          f"the cushion works after Continue ({[(e['n'], e['d'].get('reason')) for e in since(pg, m0)]})")
+    check(wait_until(lambda: entity(pg, "practice-mouse")["arrived"], 8), "the mouse calms and scoots into the fort")
+    settle(pg)
+
+    # Helping her through is the game: the checkpoint is used up, Sammy flies back over the gap
+    # (bridge up) and stays away, out of her sight. Nothing fetches her past the gap.
+    m1 = mark(pg)
+    jump_to(pg, 69.7, flaps=2)
+    check(wait_state(pg, "waiting", 8) and comp(pg)["reason"] == "gap", f"she waits at the gap on the cubby ({comp(pg)})")
+    teleport(pg, 30, FLOOR)
+    time.sleep(12)
+    c, tw = comp(pg), twyx(pg)
+    check(c["state"] == "waiting" and tw["pos"]["x"] > GAP[1] - .5 and not c["fetchPending"]
+          and not since(pg, m1, "companion:caughtUp"),
+          f"12 s out of her sight, she is still waiting at the gap, not fetched past it ({c['state']}, {tw['pos']})")
+    pg.evaluate(f"localStorage.removeItem('{SAVE_KEY}')")
+
+    # The safety net is only for a cat stuck for good: put down inside the frazzled mouse's cell
+    # (in its way, overlapping it), out of Sammy's sight, she is fetched after a while.
+    load(pg)
+    settle(pg)
+    teleport(pg, 77.5, CUBBY_TOP)
+    pg.evaluate("__sammy.commands.setCompanion('twyx')")
+    wait_state(pg, "idle", 8)
+    m2 = mark(pg)
+    pg.evaluate("""async x => { const m = await import('littlejs');
+        const cat = m.engineObjects.find(o => o.catId && o.companion && !o.destroyed);
+        cat.placeAt(m.vec2(x, 11)); }""", MOUSE_X)
+    teleport(pg, 30, FLOOR)
+    check(wait_until(lambda: any(e["n"] == "companion:caughtUp" for e in since(pg, m2)), 30),
+          f"stuck for good (in the mouse's cell), out of his sight: she is fetched ({comp(pg)}, {twyx(pg)['pos']})")
+    ups = since(pg, m2, "companion:caughtUp")
+    check(ups and ups[-1]["d"]["via"] == "checkpoint", f"...trotting in like a checkpoint fetch: {ups}")
+    check(abs(twyx(pg)["pos"]["x"] - player(pg)["pos"]["x"]) < 5, f"she's with him ({twyx(pg)['pos']})")
+
+
 def overview(pg):
     """The whole course in one screen, at night and by day, with Twyx along."""
     load(pg)
@@ -631,6 +720,7 @@ def main():
         install(pg)
         for name, run in (("A: with Twyx", run_with_twyx), ("B: without a companion", run_without_cat),
                           ("C: cushion before the lever", run_unreachable), ("D: down into the gap", run_pit),
+                          ("E: Continue mid-course", run_continue_mid_course),
                           ("overview", overview)):
             print(f"--- {name}")
             try:

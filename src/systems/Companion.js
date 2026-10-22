@@ -16,8 +16,12 @@
 //   - checkpoint:reached while she is waiting, or far behind: once she's out of sight she
 //     catches up, trotting in from a spot that is out of sight too (fetchPending; it keeps
 //     trying as Sammy moves until both are true, or until she makes her own way back).
-//     A fetch only ever starts at a checkpoint, so LEVEL DESIGN: put a checkpoint after every
-//     gate, bridge or lift she might be left waiting at (see T-018's level-design notes).
+//     A fetch starts at a checkpoint, so LEVEL DESIGN: put a checkpoint after every gate,
+//     bridge or lift she might be left waiting at (see T-018's level-design notes). Waiting at
+//     something Sammy can fix is never fetched otherwise: helping her through is the game. The
+//     one safety net (watchStranded): if she is stuck for good (inside something solid, in a
+//     keep-clear zone, nothing under her) out of his sight for STRANDED_FETCH_AFTER seconds,
+//     she is fetched the same way.
 //   - she somehow ends up below the world: held there, unseen, until the same kind of spot
 //     comes up.
 //   If no unseen spot turns up within FETCH_FALLBACK_AFTER seconds (a level narrower than the
@@ -38,7 +42,7 @@ import { spawnEntity } from '../entities/registry.js';
 import { CatFollower } from '../entities/CatFollower.js';
 import { CatRoamer } from '../entities/CatRoamer.js';
 import { Trail } from './Trail.js';
-import { walkSpan, blockersFor, inTheWay, keepClearZones, boxAt } from './catNavigation.js';
+import { walkSpan, blockersFor, inTheWay, keepClearZones, boxAt, bodyBlocked, supportedAt } from './catNavigation.js';
 import { catDef, catEntityTypes } from '../data/cats.js';
 import { COMPANION as C, WORLD_FALL_MARGIN } from '../data/tuning.js';
 import { drawPageFlip } from '../art/drawPageFlip.js';
@@ -67,6 +71,8 @@ export class Companion
         this.regroupPending = false; // she's below the world; held there until she can come in unseen
         this.retryIn = 0;
         this.noSpotFor = 0;          // seconds a pending fetch/regroup has found nowhere unseen
+        this.strandedFor = 0;        // seconds she has been stuck for good out of his sight (watchStranded)
+        this.forcedFetch = false;    // that safety net asked for this fetch (she may not count as left behind)
         this.cover = null;           // the page flip bringing her in: {age, via, placed}
         this.lastEntry = null;       // debug: where she was last put down, and whether that was in view
         this.unsubscribers = [];
@@ -119,7 +125,8 @@ export class Companion
         this.cat = this.follower = null;
         this.fetchPending = this.regroupPending = false;
         this.cover = null;
-        this.noSpotFor = 0;
+        this.noSpotFor = this.strandedFor = 0;
+        this.forcedFetch = false;
         this.level = this.player = this.interaction = null;
         this.zones = [];
         this.trail.clear();
@@ -157,6 +164,7 @@ export class Companion
             this.leave(this.cat);
         this.catId = cat.catId;
         this.adopt(cat);
+        cat.happyHop();   // "yes!": a little hop, a happy squint and hearts
         emit('companion:join', { cat: cat.catId });
         return true;
     }
@@ -256,32 +264,23 @@ export class Companion
      *  camera settles), out of every lift's way and gateway. null if there isn't one yet. */
     unseenEntrySpot()
     {
-        const cat = this.cat, player = this.player;
-        const feet = player.feetPos, solids = blockersFor(cat);
-        let best = null;
-        for (const side of [-player.facing, player.facing])
-        {
-            const reach = walkSpan(cat, feet.x, feet.y, feet.x + side * UNSEEN_REACH, solids).x;
-            for (let d = MIN_ENTRY; d <= Math.abs(reach - feet.x) + 1e-6; d += UNSEEN_STEP)
-            {
-                const x = feet.x + side * d, box = boxAt(cat, x, feet.y);
-                if (this.canSee(box, cat.size) || inTheWay(box, cat.size, this.zones))
-                    continue;
-                if (!best || d < Math.abs(best.x - feet.x))
-                    best = vec2(x, feet.y);
-                break;
-            }
-        }
-        return best;
+        return this.nearestEntrySpot(box => !this.canSee(box, this.cat.size));
     }
 
     /** Fallback: the nearest spot on Sammy's ground just past the edge of the screen as it is
      *  right now (the camera may pan over it later, by which time she's already trotting in). */
     offscreenEntrySpot()
     {
+        const margin = this.cat.size.add(vec2(1, 1));
+        return this.nearestEntrySpot(box => !isOnScreen(box, margin));
+    }
+
+    /** The nearest spot on either side of Sammy, on his ground and walkable to him, at least
+     *  MIN_ENTRY away, out of every keep-clear zone, where `ok(box)` holds. null if none. */
+    nearestEntrySpot(ok)
+    {
         const cat = this.cat, player = this.player;
         const feet = player.feetPos, solids = blockersFor(cat);
-        const margin = cat.size.add(vec2(1, 1));
         let best = null;
         for (const side of [-player.facing, player.facing])
         {
@@ -289,7 +288,7 @@ export class Companion
             for (let d = MIN_ENTRY; d <= Math.abs(reach - feet.x) + 1e-6; d += UNSEEN_STEP)
             {
                 const x = feet.x + side * d, box = boxAt(cat, x, feet.y);
-                if (isOnScreen(box, margin) || inTheWay(box, cat.size, this.zones))
+                if (!ok(box) || inTheWay(box, cat.size, this.zones))
                     continue;
                 if (!best || d < Math.abs(best.x - feet.x))
                     best = vec2(x, feet.y);
@@ -367,7 +366,7 @@ export class Companion
 
     leftBehind()
     {
-        return this.follower.state === 'waiting' || this.cat.feet.distance(this.player.feetPos) > C.CATCHUP_FAR;
+        return this.forcedFetch || this.follower.state === 'waiting' || this.cat.feet.distance(this.player.feetPos) > C.CATCHUP_FAR;
     }
 
     tryFetch()
@@ -380,7 +379,7 @@ export class Companion
             return;   // she'd vanish in front of him: not while he can see her (he can go to her)
         }
         if (this.bringIn('checkpoint'))
-            this.fetchPending = false;
+            this.fetchPending = this.forcedFetch = false;
     }
 
     /** Below the world (should never happen): hold her there, unseen, and bring her in the same way. */
@@ -414,6 +413,7 @@ export class Companion
         this.trail.record(this.player);
         if (this.cover)
             return this.updateCover();
+        this.watchStranded();
         if (this.cat.pos.y < -WORLD_FALL_MARGIN && !this.regroupPending)
         {
             this.regroupPending = true;
@@ -431,6 +431,32 @@ export class Companion
             this.tryRegroup();
         else
             this.tryFetch();
+    }
+
+    /** Safety net for a cat who is genuinely stuck (stuckForGood), out of Sammy's sight for
+     *  STRANDED_FETCH_AFTER seconds: fetch her as a checkpoint would. NOT for a cat politely
+     *  waiting at something Sammy can fix (a closed gate, a raised bridge, a gap, a lift): helping
+     *  her through is the game, so only a checkpoint ahead brings her past those. */
+    watchStranded()
+    {
+        const watch = !this.fetchPending && !this.regroupPending && !this.cat.performing;
+        this.strandedFor = watch && !this.canSee(this.cat.pos, this.cat.size) && this.stuckForGood() ? this.strandedFor + timeDelta : 0;
+        if (this.strandedFor < C.STRANDED_FETCH_AFTER)
+            return;
+        this.strandedFor = 0;
+        this.fetchPending = this.forcedFetch = true;
+        this.retryIn = 0;
+        this.noSpotFor = 0;
+    }
+
+    /** Where she stands, nothing Sammy does can free her: inside something solid, in a keep-clear
+     *  zone (a lift's path, a gateway, an upset thing's cell), or with nothing under her. */
+    stuckForGood()
+    {
+        const cat = this.cat, feet = cat.feet, solids = blockersFor(cat);
+        return !!bodyBlocked(cat, feet.x, feet.y, solids)
+            || inTheWay(boxAt(cat, feet.x, feet.y), cat.size, this.zones)
+            || !supportedAt(feet.x, feet.y, solids);
     }
 
     /** Debug and T-016: send her somewhere (a cat spot) instead of following; null to follow again. */

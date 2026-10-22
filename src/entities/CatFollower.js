@@ -57,6 +57,8 @@ export class CatFollower
         this.recheck = 0;
         this.shortcutIn = 0;
         this.escapeX = null;
+        this.roomX = null;            // giveRoom(): where she's stepping to, beside Sammy...
+        this.roomFor = null;          // ...and where he stood when she picked it
         this.stuckTime = 0;
         this.lastX = null;
         this.goal = null;             // goTo(): {x, y}, or null to follow Sammy
@@ -120,13 +122,15 @@ export class CatFollower
                 return this.getOffToward(cat, feet, sammyFeet, solids);
             const except = riding ? riding : null;
             const inTheWay = this.inTheWay(cat, feet, except);
-            this.rest(cat, !inTheWay);
+            const makingRoom = !inTheWay && this.giveRoom(cat, feet, player, solids);
+            this.rest(cat, !inTheWay && !makingRoom);
             if (inTheWay)   // settle somewhere out of a lift's way or a gateway
                 this.stepOutOfTheWay(cat, feet, solids, except, Math.sign(sammyFeet.x - feet.x), sammyFeet.x);
             else if (canWalkTo(cat, feet, sammyFeet, solids))
                 this.trail.clear();
             return;
         }
+        this.roomX = null;   // not settled beside him: any spot picked there is stale
         if (this.state === 'waiting')
         {
             if ((this.recheck -= timeDelta) > 0)
@@ -448,6 +452,38 @@ export class CatFollower
         }
     }
 
+    /** Settled right under Sammy (he walked up to her, or asked her along): she steps to his
+     *  side, behind him if she can, so she's never hidden behind the owl. Only while he stands
+     *  still (walking past her is fine). Returns whether she's on her way. */
+    giveRoom(cat, feet, player, solids)
+    {
+        const sammy = player.feetPos;
+        const still = player.grounded && Math.abs(player.velocity.x) < .01 && Math.abs(feet.y - sammy.y) < SAME_HEIGHT;
+        // A spot picked beside him where he stood: dropped once she's there, or if he moved, or if
+        // the way there is no longer a plain walk.
+        if (this.roomX !== null && (!still || Math.abs(this.roomX - cat.pos.x) < .1 || Math.abs(this.roomFor - sammy.x) > .05
+            || walkSpan(cat, feet.x, feet.y, this.roomX, solids).blocked))
+            this.roomX = null;
+        else if (this.roomX === null && still && Math.abs(feet.x - sammy.x) < C.PERSONAL_SPACE)
+        {
+            const first = Math.sign(feet.x - sammy.x) || -player.facing;
+            for (const side of [first, -first])
+            {
+                const x = sammy.x + side * C.ROOM_BESIDE;
+                if (!this.inTheWay(cat, { x, y: feet.y }) && !walkSpan(cat, feet.x, feet.y, x, solids).blocked)
+                {
+                    this.roomX = x;
+                    this.roomFor = sammy.x;
+                    break;
+                }
+            }
+        }
+        if (this.roomX === null)
+            return false;
+        cat.drive(clamp((this.roomX - cat.pos.x) * .3, -C.TROT_SPEED, C.TROT_SPEED));
+        return true;
+    }
+
     // --- keeping out of the way (lift paths, gateways) --------------------------------------
 
     inTheWay(cat, feet, except = null)
@@ -502,7 +538,7 @@ export class CatFollower
     {
         return {
             state: this.state, reason: this.reason, held: this.held, leaping: !!this.leap,
-            escapeX: this.escapeX, goal: this.goal, atGoal: this.atGoal, trail: this.trail.debugState(),
+            escapeX: this.escapeX, roomX: this.roomX, goal: this.goal, atGoal: this.atGoal, trail: this.trail.debugState(),
         };
     }
 }

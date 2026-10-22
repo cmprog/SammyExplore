@@ -13,7 +13,9 @@
 - Picking a companion: you can only ask a cat along in the bedroom (the home base). In Chapter One, E on Twyx is still just a pet. OK?
 - Saves from before companions (M1 players) continue with no cat along, even if they met Twyx. OK?
 
-- Replaying Chapter One with Twyx along: Chapter One is where Sammy *meets* Twyx. If she's already following him, should the "meeting" lines be skipped (she's just with him), should she wait at her usual spot anyway, or something else?
+- Replaying Chapter One with Twyx along: Chapter One is where Sammy *meets* Twyx. If she's already following him, should the "meeting" lines be skipped (she's just with him), should she wait at her usual spot anyway, or something else? (Today the narrator says "That's a cat. Why is there a cat?" even though she's right beside him.)
+- Narrator memory resets when the page reloads, so after Continue the bedroom cast-list gag and the "first time" lines play again. Should the narrator remember what it has already said, saved with the game?
+- Letting Twyx stay home: pressing E on her in the bedroom lets her stay and roam the room. Is that OK as the way to "un-pick" a companion?
 
 - Portal look: a slate-stone block frame with a gem keystone, a swirl in the chapter's color (Chapter One is moonlit aqua), and a wooden sign above. Colors OK?
 - When Sammy arrives in the bedroom, the portal shows the newest unlocked chapter. OK?

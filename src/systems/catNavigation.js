@@ -14,8 +14,9 @@
 //                           found by stepping the engine's own physics rules forward
 //   keepClearZones(entities) / inTheWay(pos, size, zones, except)
 //                           where a cat must never settle: the boxes lifts sweep through (the
-//                           lift would wait for her forever, lift:held) and gateways (a gate
-//                           closing or rising on her). Passing through is fine.
+//                           lift would wait for her forever, lift:held), gateways (a gate
+//                           closing or rising on her), and the cell of anything upset that
+//                           blocks the way (the wind-up mouse, while it does). Passing through is fine.
 //
 // All of these rely on collideWithObject being side-effect free (see terrainCollision.js).
 //
@@ -23,7 +24,7 @@
 // isn't there, a ledge too tall) she waits, and only a checkpoint (or a correction, or the next
 // level) brings her back to Sammy on its own (systems/Companion.js). So put a checkpoint after
 // every gate, bridge or lift she might be left waiting at.
-import { vec2, tileCollisionTest, engineObjectsCollide, isOverlapping } from 'littlejs';
+import { vec2, tileCollisionTest, engineObjects, isOverlapping } from 'littlejs';
 import { isOneWayTile } from './terrainCollision.js';
 import { COMPANION as C, WORLD_GRAVITY } from '../data/tuning.js';
 
@@ -38,11 +39,14 @@ const SWEEP_STEP = .2;       // lift path test spacing (plates are .4 thick)
 
 const solidTile = data => data > 0 && !isOneWayTile(data);
 
-/** Solid objects that would block `cat` (asked through their own collideWithObject). */
+/** Solid objects that would block `cat` (asked through their own collideWithObject). Reads the
+ *  live object list, not the engine's per-step collide list, so things built this very step (a
+ *  level that just loaded, where she is being put down) already count. Same membership test as
+ *  the engine's list (collideSolidObjects), which leaves out the tile layer itself. */
 export function blockersFor(cat)
 {
-    return engineObjectsCollide.filter(other =>
-        other !== cat && other.isSolid && !other.destroyed && other.collideWithObject(cat));
+    return engineObjects.filter(other =>
+        other !== cat && other.collideSolidObjects && other.isSolid && !other.destroyed && other.collideWithObject(cat));
 }
 
 /** What her body would bump into standing at x (feet at `feet`): 'wall', an object, or null. */
@@ -221,6 +225,9 @@ export function keepClearZones(entities)
             zones.push({ owner: entity, a: entity.a.copy(), b: entity.b.copy(), size: entity.size.add(vec2(.1, .1)) });
         else if (entity?.mechanismType === 'gate' && entity.feet)
             zones.push({ owner: entity, pos: entity.feet.add(vec2(0, entity.height / 2)), size: vec2(entity.size.x + .1, entity.height) });
+        else if (entity && typeof entity.blocking === 'boolean' && entity.pos)
+            // An upset thing in the way (entities/Upset.js): its cell, only while it blocks.
+            zones.push({ owner: entity, pos: entity.pos.copy(), size: entity.size.add(vec2(.1, .1)), active: () => entity.blocking });
     }
     return zones;
 }
@@ -228,7 +235,7 @@ export function keepClearZones(entities)
 /** Would a box at pos overlap a keep-clear zone (other than `except`'s, e.g. the lift Sammy rides)? */
 export function inTheWay(pos, size, zones, except = null)
 {
-    return zones.some(zone => zone.owner !== except && (zone.a ? overlapsSweep(pos, size, zone) : isOverlapping(pos, size, zone.pos, zone.size)));
+    return zones.some(zone => zone.owner !== except && (!zone.active || zone.active()) && (zone.a ? overlapsSweep(pos, size, zone) : isOverlapping(pos, size, zone.pos, zone.size)));
 }
 
 /** Box against a box swept along a segment: tested at the plate's positions every SWEEP_STEP,

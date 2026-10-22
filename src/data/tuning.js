@@ -399,6 +399,8 @@ export const COMPANION = {
 
     FOLLOW_STOP: 1.8,          // she starts settling this close to Sammy (feet to feet; she comes to rest ~1.5)...
     FOLLOW_START: 2.8,         // ...and sets off again when he is further than this
+    PERSONAL_SPACE: .9,        // settled closer than this to Sammy (he walked up to her): she steps aside...
+    ROOM_BESIDE: 1.4,          // ...to this far beside him, so she's never hidden behind him
 
     HOP_MAX_UP: 2.1,
     GAP_MAX: 2.2,
@@ -415,6 +417,7 @@ export const COMPANION = {
 
     ENTRY_DISTANCE: 3,         // she trots in to Sammy from about this far (correction, level start)
     CATCHUP_FAR: 12,           // a checkpoint fetches her if she is waiting, or this far behind, out of sight
+    STRANDED_FETCH_AFTER: 8,   // stuck for good (in a blocker or keep-clear zone, nothing under her) out of sight this long: fetched anyway
     FETCH_FALLBACK_AFTER: 3,   // no unseen spot to bring her in from for this long: just past the screen edge,
                                // or (a level narrower than the view) under a quick page flip
     COVER_TIME: 0.8,           // the page flip: sweeps across, she's put down at full cover, sweeps away

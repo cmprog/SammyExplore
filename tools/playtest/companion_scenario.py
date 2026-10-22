@@ -264,7 +264,9 @@ def test_follow_hops_and_drops(pg):
     time.sleep(2.5)
     s = samples_since(pg, f0)
     cat = cats(pg)[0]
-    check(cat["pos"]["x"] > 24 and abs(cat_feet(cat) - 4) < .05, f"she leapt the 2-wide gap ({cat['pos']})")
+    # Past the gap (x 22..24) and standing on its far ground; where she settles depends on where
+    # Sammy's real-key jump put him, so her center may sit a hair short of the edge (T-020).
+    check(cat["pos"]["x"] > 23.6 and abs(cat_feet(cat) - 4) < .05, f"she leapt the 2-wide gap ({cat['pos']})")
     check(min(x["cy"] for x in s) > 3.9, f"...without dropping into it (lowest {min(x['cy'] for x in s):.2f})")
     gap_air = [x for x in s if x["air"] and x["air"] > .9]
     check(len(gap_air) > 5, f"leap pose shown in the air ({len(gap_air)} steps)")

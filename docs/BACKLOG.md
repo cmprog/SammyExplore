@@ -25,7 +25,7 @@ Sammy moves, jumps, glides, and flaps. The narrator talks and reacts. E interact
 
 Parallel tracks once T-001 is done: {T-003 → T-004 → T-005, T-007, T-010} and {T-006}, {T-008}, {T-009}.
 
-## Milestone 2: Home base and companions (approved 2026-10-13)
+## Milestone 2: Home base and companions (approved 2026-10-13, built 2026-10-22, awaiting stakeholder review)
 
 Goal: after Chapter One, Sammy arrives in the bedroom home base. Twyx follows him. He helps her past places she can't go, and her Comfort ability works at cat spots. A Minecraft-style portal with a lever is the chapter selector. Chapter Two itself is M3.
 
@@ -38,7 +38,7 @@ Goal: after Chapter One, Sammy arrives in the bedroom home base. Twyx follows hi
 | T-017 | Portal and chapters: chapters data, Minecraft-style portal with a per-chapter color and sign, lever cycles unlocked chapters, save progression, Chapter One → bedroom flow | game-dev | T-013 | done |
 | T-018 | Bedroom practice course: a small section of the base that exercises following, a help-her-through mechanism, and a Comfort cat spot | game-dev | T-013..T-017 | done |
 | T-019 | Narration: bedroom lines, the cast-list gag, cat-spot japes, Twyx companion lines, more variety and escalation for repeated actions | game-dev | T-016, T-018 | done |
-| T-020 | M2 final review and playtest, plus fixes | reviewer/playtester | all | in-progress |
+| T-020 | M2 final review and playtest, plus fixes | reviewer/playtester | all | done |
 
 ## Milestone 3: Chapter Two, Snowy (planned)
 - Chapter Two level: Snowy (black cat, kitten-like and mischievous) has her collar stuck in her mouth. Twyx's Comfort frees her. Snowy then joins the base.
@@ -57,4 +57,3 @@ Goal: after Chapter One, Sammy arrives in the bedroom home base. Twyx follows hi
 - Audio: play the `correction` sound when a correction actually starts (e.g. on `narrator:line` for a correction, or a new `correction:start`), not on every `correction:triggered`.
 - Pause mid-glide: the glide sound doesn't resume after unpausing (T-008 may have fixed this; verify).
 - Lift sounds aren't distance-attenuated: an off-screen looping lift hums every leg.
-- Playtest harness: rarely, `window.__sammy` is undefined at a scenario's first step (seen once in interaction_scenario). Make `session()` wait for the hook.
