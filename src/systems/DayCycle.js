@@ -8,6 +8,8 @@
 // Events emitted:
 //   daycycle:phase {phase}   the phase (dawn, day, dusk, night) changed; also sent once when
 //                            the cycle starts, so listeners know the phase a visit begins in
+//   daycycle:nightlight {on}  the nightlight switched on (evening) or off (morning); only on a
+//                            change, never when the cycle starts
 import { Color, smoothStep } from 'littlejs';
 import { emit } from '../core/events.js';
 
@@ -23,6 +25,7 @@ export class DayCycle
         this.config = config;
         this.t = wrap(start);
         this.phase = this.phaseAt(this.t);
+        this.nightlightWasOn = this.nightlightOn;
         // One look object, refilled in place: it is read by several systems every frame.
         this.current = Object.fromEntries([...LOOK_COLORS.map(key => [key, new Color()]), ...LOOK_AMOUNTS.map(key => [key, 0])]);
         this.sample();
@@ -39,11 +42,21 @@ export class DayCycle
     {
         this.t = wrap(t);
         this.sample();
+        this.checkNightlight();
         const phase = this.phaseAt(this.t);
         if (phase === this.phase)
             return;
         this.phase = phase;
         emit('daycycle:phase', { phase });
+    }
+
+    checkNightlight()
+    {
+        const on = this.nightlightOn;
+        if (on === this.nightlightWasOn)
+            return;
+        this.nightlightWasOn = on;
+        emit('daycycle:nightlight', { on });
     }
 
     phaseAt(t)

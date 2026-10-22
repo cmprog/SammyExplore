@@ -17,6 +17,7 @@ Run from the repo root with the project venv:
     .venv/Scripts/python tools/playtest/planner_bench.py      # T-015 cat leap planner cost per call (ms)
     .venv/Scripts/python tools/playtest/catspot_scenario.py   # T-016 cat spots (catspot dev level): no cat, wrong (test) cat, Twyx's Comfort clearing the tunnel, can't-get-there hint, call-offs (correction, mid-ability, checkpoint fetch), camera zoom in/out and reset on level change; pose sheet -> out/catspot/, out/catspot_sheet.png
     .venv/Scripts/python tools/playtest/portal_scenario.py    # T-017 portal + chapters: live v1/v2 saves, lever cycling (fake test chapter), swirl in/out with Twyx, chapter complete -> bedroom, Continue; out/portal_*.png
+    .venv/Scripts/python tools/playtest/narrator_escalation_scenario.py   # T-019 escalation tiers: tier by play count, countPer 'key', counts kept across levels, reset on New Game (~40 s)
     .venv/Scripts/python tools/playtest/practice_scenario.py  # T-018 bedroom practice course, real keys: with Twyx (follow, help-her-through bridge, Comfort, toy star, the way back over the dresser), without a companion (hint, blocked fort, out through the gap), cushion-before-lever hint, Twyx down the gap and out; out/practice_*.png (~4 min)
 
 ## Debug and release builds

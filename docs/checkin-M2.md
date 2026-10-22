@@ -27,6 +27,14 @@
 - The checkpoint past the course bridge autosaves, so Continue can resume up on the toy cubby instead of by the portal. OK, or should Continue always start at the bedroom's arrival spot?
 - To let Twyx reach the course, the dresser got brick steps and the bed's headboard is lower. OK?
 
+### Narration (T-019, all lines are drafts; marked `draft: true` in `src/data/narration/`)
+- Read-through of the new lines: escalation for repeats (corrections, idling, flap spam, E on nothing, petting Twyx, signs, doors, cat spots), each building to a silly payoff (an invisible door, the narrator trying to flap, a sticker over a plot hole, a knock-knock joke).
+- Cast-list gag as written: "Let me check my cast list. 'THE HERO: an Eagle.' Crossed out. 'THE OWL (gender: Owl).' ...Helpful." then "Someone's crayoned 'HE'S A BOY' in the margin. Oh. He. Him. His. Right. Noted. Ahem." That gives the old Eagle jokes a reason (the narrator expected an Eagle). OK?
+- The older Chapter One and common lines still have their Eagle jokes. Trim them now, or wait for the Chapter One pass?
+- Letting Twyx stay home (pressing E on her in the bedroom) is silent, to steer clear of anything goodbye-ish. Want a warm line, like her curling up on the rug?
+- How chatty should the bedroom be? Each decor remark has a 90 s cooldown, sky remarks 60 s.
+- The one-chapter lever payoff is "Chapter Three and a Half: The Owl Pulls A Lever" (avoids "Chapter Two", which is Snowy's).
+
 ## Decisions PM made (FYI)
 - A lever is the single source of truth for whether its targets start on or off.
 - Bridges refuse to raise while anyone is standing on them (the lift does the same). A companion cat can never be dropped.

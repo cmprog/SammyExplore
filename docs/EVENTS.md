@@ -17,9 +17,10 @@ high-frequency events (currently `narrator:blip`). Quiet events still reach ever
 | `correction:done` | `{zoneId}` | Narrator | input unlocked. Also sent immediately (no visuals) on dispose/reload mid-correction. A `correction:triggered` arriving while a correction runs is ignored by the narrator; on `correction:done` the playing scene re-arms correction zones so one the player is still inside fires again |
 | `narration:zone` | `{key, id, levelId}` | LevelLoader | |
 | `daycycle:phase` | `{phase}` | DayCycle | indoor levels with a day/night cycle (the bedroom). `phase`: `dawn`, `day`, `dusk`, or `night`. Sent once when the room is set up (the phase the visit starts in, right after `level:start`), then whenever the phase changes, including after `__sammy.commands.setTimeOfDay` |
+| `daycycle:nightlight` | `{on}` | DayCycle | the nightlight switched on (`on: true`, in the evening) or off (in the morning), at `nightlight.on` / `.off` in `data/dayCycle.js`. Only on a change (including a `__sammy.commands.setTimeOfDay` jump across it), never when the room is set up: a visit that starts at night just has it on. RoomLighting reads the cycle directly; this is for the narrator |
 | `narrator:blip` | `{lineId}` | Narrator | typewriter tick; emitted quietly (kept out of the debug event ring) |
 | `narrator:line` | `{id, text}` | Narrator | a line started showing |
-| `narrator:revealed` | `{id}` | Narrator | the showing line is fully revealed (typed out, or skipped to the end). The level complete overlay waits for it before offering to continue |
+| `narrator:revealed` | `{id}` | Narrator | the showing line is fully revealed (typed out, or skipped to the end). The level complete overlay waits for it before offering to continue. The narrator also hears it itself: a line with trigger `narrator:revealed` and `key` = another line's id follows that line (the bedroom's cast-list gag) |
 | `narrator:skip` | none | any (level complete overlay) | finish revealing the showing line now (no-op if nothing is typing). For screens that take the confirm press while a line is still typing |
 | `player:jump` | none | Sammy | |
 | `player:flap` | `{chargesLeft}` | Sammy | |

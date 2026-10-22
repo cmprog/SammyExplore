@@ -108,6 +108,15 @@ export default {
     ],
     zones: [
         { type: 'spawn', rect: { x: 11, y: 21, w: 1, h: 2 } },
+        // T-019 room remarks (narration/bedroom.js): the portal (just right of its frame, clear
+        // of the lever), the toy chest, the brick stacks, the window sill, the high shelf's brick
+        // castle, and the book stack and craft blocks under the bed.
+        { type: 'narration', key: 'bedroom.portal', rect: { x: 6, y: 17, w: 1, h: 6 } },
+        { type: 'narration', key: 'bedroom.toys', rect: { x: 15, y: 17, w: 6, h: 6 } },
+        { type: 'narration', key: 'bedroom.lego', rect: { x: 22, y: 15, w: 4, h: 8 } },
+        { type: 'narration', key: 'bedroom.window', rect: { x: 27, y: 8, w: 10, h: 7 } },
+        { type: 'narration', key: 'bedroom.castle', rect: { x: 25, y: 0, w: 14, h: 4 } },
+        { type: 'narration', key: 'bedroom.blocks', rect: { x: 59, y: 21, w: 9, h: 2 } },
         // T-018 practice course. The checkpoint is past the bridge, where Twyx may wait.
         { type: 'narration', key: 'practice.entry', rect: { x: 56, y: 17, w: 2, h: 6 } },
         { type: 'narration', key: 'practice.gap', rect: { x: 67, y: 12, w: 4, h: 7 } },

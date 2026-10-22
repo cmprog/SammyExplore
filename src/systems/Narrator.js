@@ -21,6 +21,7 @@
 //
 // Events consumed: any event a line's trigger names (level:start, player:*, interact:*,
 //   narration:zone, checkpoint:reached, ...), plus correction:triggered and narrator:skip (always).
+//   That includes its own narrator:revealed, so a line can follow another (key = the first id).
 // Events emitted:
 //   narrator:line  {id, text}     a line started showing
 //   narrator:revealed {id}        the showing line is fully revealed (typed out or skipped)
@@ -325,11 +326,15 @@ export class Narrator
                 id: line.id,
                 text: line.text,
                 priority: line.priority,
+                tier: line.tier,     // escalation tier index, -1 for a line without tiers
+                count: line.count,   // which play of the line this is (tiers only), else null
                 revealed: this.textBox.revealed,
                 visibleChars: this.textBox.visibleChars(),
             } : null,
             queueLength: this.queue.length,
             seenIds: [...this.book.seenIds],
+            // Plays per escalation count key (line id, or 'id#key' for countPer: 'key').
+            lineCounts: Object.fromEntries(this.book.playCounts),
             script: this.scriptId,
             correction: this.correction.debugState(),
             armedInstructions: this.instructions.armedIds(),

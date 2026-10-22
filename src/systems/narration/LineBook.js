@@ -1,5 +1,6 @@
 // The loaded narration lines and the rules for choosing one: key match, once, cooldown,
-// condition, priority, and which `texts` variant to use. Knows nothing about display.
+// condition, priority, and which `texts` variant (or escalation tier) to use. Knows nothing
+// about display.
 import { randInt } from 'littlejs';
 import { NARRATOR } from '../../data/tuning.js';
 
@@ -19,6 +20,8 @@ export class LineBook
         this.seenVariants = new Map();   // line id -> Set of variant indexes shown
         this.lastVariant = new Map();
         this.lastPlayedAt = new Map();
+        this.playCounts = new Map();     // count key (see countKey) -> times started, for `tiers`
+        this.tierRanges = new Map();     // line id -> [{min, start, end}] into its flattened texts
     }
 
     /** New Game: forget every line said this session, so the story's lines play again. */
@@ -28,6 +31,7 @@ export class LineBook
         this.seenVariants.clear();
         this.lastVariant.clear();
         this.lastPlayedAt.clear();
+        this.playCounts.clear();
     }
 
     /** scripts in precedence order: level script first, then common. */
@@ -35,6 +39,7 @@ export class LineBook
     {
         this.lines = [];
         this.byId.clear();
+        this.tierRanges.clear();
         this.instructions.clear();
         this.spamRules.clear();
         this.spamSources.clear();
@@ -58,7 +63,9 @@ export class LineBook
             console.warn(`narration: duplicate line id "${line.id}" in ${scriptId}; keeping the first`);
             return;
         }
-        if (!line.text && !line.texts?.length)
+        if (line.tiers && !this.addTiers(line))
+            return;
+        if (!line.tiers && !line.text && !line.texts?.length)
         {
             console.warn(`narration: line "${line.id}" has no text`);
             return;
@@ -67,6 +74,27 @@ export class LineBook
         this.byId.set(line.id, line);
         if (line.trigger?.startsWith('spam:'))
             this.spamSources.add(line.trigger.slice('spam:'.length));
+    }
+
+    /** Index a line's escalation tiers into one flat list of texts, so variant memory
+     *  (seenVariants, lastVariant) works the same as for `texts`. False if they're unusable. */
+    addTiers(line)
+    {
+        const tiers = line.tiers.filter(tier => tier.text || tier.texts?.length);
+        if (!tiers.length || tiers.length !== line.tiers.length)
+            console.warn(`narration: line "${line.id}" has a tier with no text`);
+        if (!tiers.length)
+            return false;
+        const ranges = [];
+        let start = 0;
+        for (const tier of [...tiers].sort((a, b) => (a.min ?? 1) - (b.min ?? 1)))
+        {
+            const count = tier.texts ? tier.texts.length : 1;
+            ranges.push({ min: tier.min ?? 1, start, end: start + count, texts: tier.texts ?? [tier.text] });
+            start += count;
+        }
+        this.tierRanges.set(line.id, ranges);
+        return true;
     }
 
     /** Bus events the narrator must subscribe to (line triggers plus spam sources). */
@@ -162,11 +190,14 @@ export class LineBook
     /** A playable instance of a line: its chosen text plus what we need to record it later. */
     instance(line, now, payload = null)
     {
-        const variant = line.texts ? this.chooseVariant(line) : -1;
+        const { text, variant, tier, countKey, count } = this.chooseText(line, payload);
         return {
             id: line.id,
-            text: variant >= 0 ? line.texts[variant] : line.text,
+            text,
             variant,
+            tier,          // index into the line's tiers sorted by min (lowest = 0), or -1
+            countKey,      // where its play count is kept (null without tiers)
+            count,         // which play of this line (per countKey) this would be
             trigger: line.trigger ?? null,
             priority: priorityOf(line),
             once: !!line.once,
@@ -178,13 +209,47 @@ export class LineBook
         };
     }
 
-    chooseVariant(line)
+    chooseText(line, payload)
     {
-        const seen = this.seenVariants.get(line.id) ?? new Set();
-        const all = line.texts.map((_, index) => index);
+        const ranges = this.tierRanges.get(line.id);
+        if (ranges)
+        {
+            const countKey = this.countKey(line, payload);
+            const count = (this.playCounts.get(countKey) ?? 0) + 1;
+            // The highest tier this count has reached; counts below the first tier's min use it.
+            let tier = 0;
+            ranges.forEach((range, index) => { if (count >= range.min) tier = index; });
+            const { start, end, texts } = ranges[tier];
+            const variant = this.chooseVariant(line.id, start, end);
+            return { text: texts[variant - start], variant, tier, countKey, count };
+        }
+        if (line.texts)
+        {
+            const variant = this.chooseVariant(line.id, 0, line.texts.length);
+            return { text: line.texts[variant], variant, tier: -1, countKey: null, count: null };
+        }
+        return { text: line.text, variant: -1, tier: -1, countKey: null, count: null };
+    }
+
+    /** Tiers count per line, or per line and payload key (countPer: 'key', e.g. one count for
+     *  each sign or door, so rereading sign A doesn't escalate sign B). */
+    countKey(line, payload)
+    {
+        if (line.countPer !== 'key')
+            return line.id;
+        return `${line.id}#${payload?.key ?? payload?.id ?? ''}`;
+    }
+
+    /** Pick a variant index in [start, end): unseen ones first, else anything but the last one. */
+    chooseVariant(lineId, start, end)
+    {
+        const seen = this.seenVariants.get(lineId) ?? new Set();
+        const all = [];
+        for (let index = start; index < end; index++)
+            all.push(index);
         let pool = all.filter(index => !seen.has(index));
         if (!pool.length)   // all seen: anything but the one we just said
-            pool = all.length > 1 ? all.filter(index => index !== this.lastVariant.get(line.id)) : all;
+            pool = all.length > 1 ? all.filter(index => index !== this.lastVariant.get(lineId)) : all;
         return pool[randInt(pool.length)];
     }
 
@@ -192,6 +257,13 @@ export class LineBook
     markStarted(instance, now)
     {
         this.lastPlayedAt.set(instance.id, now);
+        // A started line counts toward its tiers even if it is cut off: the player did the
+        // thing again either way. An interrupted line that is replayed only counts once.
+        if (instance.countKey && !instance.counted)
+        {
+            instance.counted = true;
+            this.playCounts.set(instance.countKey, (this.playCounts.get(instance.countKey) ?? 0) + 1);
+        }
     }
 
     /** The line was fully revealed, so the player has actually read it. */

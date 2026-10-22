@@ -37,8 +37,8 @@ Goal: after Chapter One, Sammy arrives in the bedroom home base. Twyx follows hi
 | T-016 | Cat spots and abilities: CatSpot entity (doesn't show which cat), ability registry, Twyx's Comfort, narrator japes for no cat or the wrong cat | game-dev | T-015 | done |
 | T-017 | Portal and chapters: chapters data, Minecraft-style portal with a per-chapter color and sign, lever cycles unlocked chapters, save progression, Chapter One → bedroom flow | game-dev | T-013 | done |
 | T-018 | Bedroom practice course: a small section of the base that exercises following, a help-her-through mechanism, and a Comfort cat spot | game-dev | T-013..T-017 | done |
-| T-019 | Narration: bedroom lines, the cast-list gag, cat-spot japes, Twyx companion lines, more variety and escalation for repeated actions | game-dev | T-016, T-018 | in-progress |
-| T-020 | M2 final review and playtest, plus fixes | reviewer/playtester | all | ready |
+| T-019 | Narration: bedroom lines, the cast-list gag, cat-spot japes, Twyx companion lines, more variety and escalation for repeated actions | game-dev | T-016, T-018 | done |
+| T-020 | M2 final review and playtest, plus fixes | reviewer/playtester | all | in-progress |
 
 ## Milestone 3: Chapter Two, Snowy (planned)
 - Chapter Two level: Snowy (black cat, kitten-like and mischievous) has her collar stuck in her mouth. Twyx's Comfort frees her. Snowy then joins the base.
